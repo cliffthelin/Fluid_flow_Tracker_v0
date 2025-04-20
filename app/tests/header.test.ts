@@ -1,22 +1,42 @@
 /**
- * Header Component Test
+ * Header Component Test Module
  *
- * This test verifies that the header is not sticky (fixed) when scrolling.
+ * This module contains tests for verifying the behavior of the Header component.
+ * Specifically, it tests whether the header is sticky (fixed) when scrolling,
+ * which is an important accessibility and UX consideration.
  */
 
+/**
+ * Tests if the header is not sticky when scrolling.
+ *
+ * This function performs the following checks:
+ * 1. Finds the header element in the DOM
+ * 2. Examines its computed style to determine if it has position: sticky or fixed
+ * 3. Returns a result object indicating success or failure
+ *
+ * @returns {Object} Result object with success status and descriptive message
+ * @property {boolean} success - Whether the test passed (true) or failed (false)
+ * @property {string} message - Descriptive message about the test result
+ */
 export function testHeaderNotSticky(): { success: boolean; message: string } {
   try {
-    // Find the header element
+    // Find the header element in the DOM
     const header = document.querySelector("header")
 
+    // If header element doesn't exist, the test fails
     if (!header) {
-      return { success: false, message: "Header element not found" }
+      return {
+        success: false,
+        message: "Header element not found",
+      }
     }
 
-    // Check if header has sticky or fixed position
+    // Get computed styles to check the position property
     const headerStyles = window.getComputedStyle(header)
     const position = headerStyles.position
 
+    // If position is sticky or fixed, the test fails
+    // Headers should scroll with the page for better accessibility
     if (position === "sticky" || position === "fixed") {
       return {
         success: false,
@@ -24,9 +44,13 @@ export function testHeaderNotSticky(): { success: boolean; message: string } {
       }
     }
 
-    // Test passed
-    return { success: true, message: "Header is not sticky and scrolls away as expected" }
+    // If we get here, the test passed
+    return {
+      success: true,
+      message: "Header is not sticky and scrolls away as expected",
+    }
   } catch (error) {
+    // Handle any unexpected errors during test execution
     return {
       success: false,
       message: `Test threw an error: ${error instanceof Error ? error.message : String(error)}`,

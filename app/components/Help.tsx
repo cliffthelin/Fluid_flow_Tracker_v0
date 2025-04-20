@@ -14,6 +14,7 @@ import {
   Download,
   Code,
   FileText,
+  BookOpenCheck,
 } from "lucide-react"
 import CollapsibleSection from "./CollapsibleSection"
 import { useBuilderLog } from "../hooks/useBuilderLog"
@@ -23,6 +24,7 @@ import { HeaderTest } from "./HeaderTest"
 import { Manual } from "./Manual"
 import { ManualBuilder } from "./ManualBuilder"
 import { ContrastTest } from "./ContrastTest"
+import { TechnicalCompendium } from "./TechnicalCompendium"
 
 const Help: React.FC = () => {
   const { logEntries } = useBuilderLog()
@@ -258,6 +260,22 @@ const Help: React.FC = () => {
         className="mb-6 bg-indigo-50 dark:bg-indigo-900/10 rounded-xl shadow-md border border-indigo-100 dark:border-indigo-800/30 overflow-hidden transition-all duration-200"
       >
         <div className="space-y-6">
+          {/* Technical Compendium Section */}
+          <CollapsibleSection
+            title="Technical Compendium"
+            defaultExpanded={false}
+            title2={<BookOpenCheck className="mr-2 text-blue-500" size={20} />}
+            className="mb-0 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700"
+          >
+            <div className="space-y-4">
+              <p className="text-gray-800 dark:text-gray-100">
+                This technical compendium provides a comprehensive overview of the Flow Tracker codebase, including
+                detailed explanations of each component, utility, and service.
+              </p>
+              <TechnicalCompendium />
+            </div>
+          </CollapsibleSection>
+
           {/* Builders Log Section */}
           <CollapsibleSection
             title="Builders Log"

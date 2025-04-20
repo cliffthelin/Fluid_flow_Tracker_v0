@@ -1,9 +1,28 @@
+/**
+ * ContrastTest Component
+ *
+ * This component tests the contrast ratios of text elements against their backgrounds
+ * to ensure they meet WCAG AA accessibility standards (minimum 4.5:1 ratio).
+ *
+ * Features:
+ * - Tests headings, paragraphs, list items, buttons, links, and table cells
+ * - Toggles between light and dark mode to test both themes
+ * - Provides detailed results with pass/fail status for each element
+ * - Calculates overall accessibility compliance percentage
+ */
+
 "use client"
 
 import { useState, useEffect } from "react"
 import { Sun, Moon, RefreshCw, Check, X } from "lucide-react"
 
-// Function to calculate contrast ratio between two colors
+/**
+ * Calculates the contrast ratio between two colors
+ *
+ * @param foreground - Foreground color in hex format (e.g., "#ffffff")
+ * @param background - Background color in hex format (e.g., "#000000")
+ * @returns Contrast ratio as a number (e.g., 21.0 for white on black)
+ */
 function calculateContrastRatio(foreground: string, background: string): number {
   // Convert hex to RGB
   const hexToRgb = (hex: string): { r: number; g: number; b: number } => {
@@ -13,10 +32,12 @@ function calculateContrastRatio(foreground: string, background: string): number 
     // Parse hex values
     let r, g, b
     if (hex.length === 3) {
+      // Handle shorthand hex format (e.g., #FFF)
       r = Number.parseInt(hex[0] + hex[0], 16)
       g = Number.parseInt(hex[1] + hex[1], 16)
       b = Number.parseInt(hex[2] + hex[2], 16)
     } else {
+      // Handle full hex format (e.g., #FFFFFF)
       r = Number.parseInt(hex.substring(0, 2), 16)
       g = Number.parseInt(hex.substring(2, 4), 16)
       b = Number.parseInt(hex.substring(4, 6), 16)
@@ -25,12 +46,17 @@ function calculateContrastRatio(foreground: string, background: string): number 
     return { r, g, b }
   }
 
-  // Convert RGB to luminance
+  /**
+   * Converts RGB values to relative luminance
+   * Formula from WCAG 2.0: https://www.w3.org/TR/WCAG20/#relativeluminancedef
+   */
   const rgbToLuminance = (r: number, g: number, b: number): number => {
+    // Convert RGB values to sRGB
     const a = [r, g, b].map((v) => {
       v /= 255
       return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)
     })
+    // Calculate luminance using WCAG formula
     return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722
   }
 
@@ -47,13 +73,20 @@ function calculateContrastRatio(foreground: string, background: string): number 
   const l1 = rgbToLuminance(fg.r, fg.g, fg.b)
   const l2 = rgbToLuminance(bg.r, bg.g, bg.b)
 
-  // Calculate contrast ratio
+  // Calculate contrast ratio using WCAG formula
   const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05)
 
+  // Round to 2 decimal places for readability
   return Math.round(ratio * 100) / 100
 }
 
-// Function to get computed color in hex format
+/**
+ * Gets the computed color of an element in hex format
+ *
+ * @param element - DOM element to get color from
+ * @param property - CSS property to get (e.g., "color", "background-color")
+ * @returns Color in hex format (e.g., "#ffffff")
+ */
 function getComputedColor(element: Element, property: string): string {
   const color = window.getComputedStyle(element).getPropertyValue(property).trim()
 
@@ -88,8 +121,14 @@ function getComputedColor(element: Element, property: string): string {
   return "#000000"
 }
 
+/**
+ * ContrastTest Component
+ * Tests contrast ratios of text elements against WCAG AA standards
+ */
 export function ContrastTest() {
+  // State to track current theme mode
   const [isDarkMode, setIsDarkMode] = useState(false)
+  // State to store test results
   const [testResults, setTestResults] = useState<
     Array<{
       element: string
@@ -99,31 +138,37 @@ export function ContrastTest() {
       passes: boolean
     }>
   >([])
+  // State to track if test is running
   const [isRunning, setIsRunning] = useState(false)
+  // State to store summary statistics
   const [summary, setSummary] = useState({ total: 0, passed: 0, percentage: 0 })
 
-  // Toggle between light and dark mode
+  /**
+   * Toggles between light and dark mode
+   */
   const toggleDarkMode = () => {
     const newMode = !isDarkMode
     setIsDarkMode(newMode)
 
+    // Apply dark mode class to HTML element
     if (newMode) {
       document.documentElement.classList.add("dark")
     } else {
       document.documentElement.classList.remove("dark")
     }
 
-    // Run test after mode change
+    // Run test after mode change with a delay to allow styles to update
     setTimeout(runTest, 500)
   }
 
-  // Update the contrast test to check for WCAG AA standards (4.5:1 ratio)
-
-  // Update the contrast test function to be more strict
+  /**
+   * Runs the contrast test on all text elements
+   */
   const runTest = () => {
     setIsRunning(true)
     setTestResults([])
 
+    // Use setTimeout to avoid blocking the UI
     setTimeout(() => {
       const results: Array<{
         element: string
@@ -133,7 +178,7 @@ export function ContrastTest() {
         passes: boolean
       }> = []
 
-      // Test headings
+      // Test headings (h1-h6)
       document.querySelectorAll("h1, h2, h3, h4, h5, h6").forEach((element) => {
         const textColor = getComputedColor(element, "color")
         const bgColor = getComputedColor(element, "background-color")
@@ -143,7 +188,7 @@ export function ContrastTest() {
           textColor,
           bgColor,
           ratio,
-          passes: ratio >= 4.5, // WCAG AA standard
+          passes: ratio >= 4.5, // WCAG AA standard for normal text
         })
       })
 
@@ -217,11 +262,12 @@ export function ContrastTest() {
         })
       })
 
-      // Calculate summary
+      // Calculate summary statistics
       const total = results.length
       const passed = results.filter((r) => r.passes).length
       const percentage = total > 0 ? Math.round((passed / total) * 100) : 0
 
+      // Update state with results and summary
       setTestResults(results)
       setSummary({ total, passed, percentage })
       setIsRunning(false)
@@ -240,6 +286,7 @@ export function ContrastTest() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
+        {/* Test control button */}
         <button
           onClick={runTest}
           disabled={isRunning}
@@ -249,6 +296,7 @@ export function ContrastTest() {
           Run Contrast Test
         </button>
 
+        {/* Theme toggle button */}
         <button
           onClick={toggleDarkMode}
           className="flex items-center px-4 py-2 font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
@@ -267,8 +315,10 @@ export function ContrastTest() {
         </button>
       </div>
 
+      {/* Test results section */}
       {testResults.length > 0 && (
         <div className="space-y-4">
+          {/* Summary panel */}
           <div
             className={`p-4 rounded-lg ${
               summary.percentage >= 90
@@ -290,6 +340,7 @@ export function ContrastTest() {
             </p>
           </div>
 
+          {/* Results table */}
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-700">
