@@ -20,9 +20,6 @@ import {
 import type { FlowEntry, FluidIntakeEntry } from "../types"
 import { isShareAvailable, fallbackShare } from "../services/share"
 
-// Import the share utilities
-import { safeShare } from "../services/share"
-
 interface FluidStatsProps {
   flowEntries: FlowEntry[]
   fluidIntakeEntries: FluidIntakeEntry[]
@@ -878,11 +875,22 @@ const FluidStats: React.FC<FluidStatsProps> = ({ flowEntries, fluidIntakeEntries
         summary += `Entries: ${flowEntries.length}\n`
       }
 
-      // Use the safeShare function which handles errors and fallbacks
-      await safeShare({
-        title,
-        text: summary,
-      })
+      // Check if Web Share API is likely to work
+      if (isShareAvailable()) {
+        try {
+          await navigator.share({
+            title,
+            text: summary,
+          })
+        } catch (error) {
+          console.error("Web Share API failed:", error)
+          // Fall back to clipboard
+          fallbackShare(title, summary)
+        }
+      } else {
+        // Skip trying Web Share API and go straight to fallback
+        fallbackShare(title, summary)
+      }
     } catch (error) {
       console.error("Error sharing chart:", error)
       alert("Failed to share chart. Using clipboard instead.")
@@ -895,12 +903,11 @@ const FluidStats: React.FC<FluidStatsProps> = ({ flowEntries, fluidIntakeEntries
     }
   }
 
-  // Share summary data
+  // Update the shareSummaryData function similarly
   const shareSummaryData = async () => {
     try {
       // Create text summary
-      let summary = "Flow Tracker Summary\n"
-      summary += "-------------------\n\n"
+      let summary = "Flow Tracker Summary\n-------------------\n\n"
 
       if (dataTypeFilter === "flow" || dataTypeFilter === "both") {
         summary += `Time period: ${timeFilter === "all" ? "All Time" : timeFilter === "week" ? "Last Week" : timeFilter === "month" ? "Last Month" : "Last Year"}\n`
@@ -921,19 +928,28 @@ const FluidStats: React.FC<FluidStatsProps> = ({ flowEntries, fluidIntakeEntries
 
       const title = "Flow Tracker Summary"
 
+      // Check if Web Share API is likely to work
       if (isShareAvailable()) {
-        // Share using Web Share API
-        await navigator.share({
-          title,
-          text: summary,
-        })
+        try {
+          await navigator.share({
+            title,
+            text: summary,
+          })
+        } catch (error) {
+          console.error("Web Share API failed:", error)
+          // Fall back to clipboard
+          fallbackShare(title, summary)
+        }
       } else {
-        // Fallback
+        // Skip trying Web Share API and go straight to fallback
         fallbackShare(title, summary)
       }
     } catch (error) {
       console.error("Error sharing:", error)
-      alert("Failed to share. " + (error instanceof Error ? error.message : "Unknown error"))
+      fallbackShare(
+        "Flow Tracker Summary",
+        "Failed to share summary data. This text has been copied to your clipboard instead.",
+      )
     }
   }
 
@@ -1202,10 +1218,10 @@ const FluidStats: React.FC<FluidStatsProps> = ({ flowEntries, fluidIntakeEntries
                 <div className="stats-card flex items-center p-4">
                   <BarChartIcon className="mr-4 text-blue-600 dark:text-blue-400" size={28} />
                   <div>
-                    <p className="stats-label">Average Flow Rate</p>
+                    <p className="stats-label text-gray-600 dark:text-gray-300">Average Flow Rate</p>
                     <p className="stats-value text-blue-600 dark:text-blue-400">{averageFlowRate.toFixed(2)} mL/s</p>
                     {recentFlowEntries.length > 0 && (
-                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                      <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
                         Last 7 days: {recentAverageFlowRate.toFixed(2)} mL/s
                       </p>
                     )}
@@ -1214,24 +1230,24 @@ const FluidStats: React.FC<FluidStatsProps> = ({ flowEntries, fluidIntakeEntries
                 <div className="stats-card flex items-center p-4">
                   <Droplet className="mr-4 text-green-600 dark:text-green-400" size={28} />
                   <div>
-                    <p className="stats-label">Average Volume</p>
+                    <p className="stats-label text-gray-600 dark:text-gray-300">Average Volume</p>
                     <p className="stats-value text-green-600 dark:text-green-400">{averageVolume.toFixed(0)} mL</p>
                   </div>
                 </div>
                 <div className="stats-card flex items-center p-4">
                   <Clock className="mr-4 text-purple-600 dark:text-purple-400" size={28} />
                   <div>
-                    <p className="stats-label">Average Duration</p>
+                    <p className="stats-label text-gray-600 dark:text-gray-300">Average Duration</p>
                     <p className="stats-value text-purple-600 dark:text-purple-400">{averageDuration.toFixed(1)} sec</p>
                   </div>
                 </div>
                 <div className="stats-card flex items-center p-4">
                   <Calendar className="mr-4 text-amber-600 dark:text-amber-400" size={28} />
                   <div>
-                    <p className="stats-label">Total Entries</p>
+                    <p className="stats-label text-gray-600 dark:text-gray-300">Total Entries</p>
                     <p className="stats-value text-amber-600 dark:text-amber-400">{filteredFlowEntries.length}</p>
                     {recentFlowEntries.length > 0 && (
-                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                      <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
                         Last 7 days: {recentFlowEntries.length}
                       </p>
                     )}
@@ -1248,9 +1264,9 @@ const FluidStats: React.FC<FluidStatsProps> = ({ flowEntries, fluidIntakeEntries
                 <div className="flex items-center p-3 bg-cyan-50 dark:bg-cyan-900/20 rounded-lg">
                   <Coffee className="mr-3 text-cyan-500" size={24} />
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Average Fluid Intake</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">Average Fluid Intake</p>
                     <p className="text-xl font-bold">{averageFluidIntake.toFixed(0)} mL</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <p className="text-xs text-gray-600 dark:text-gray-300">
                       ({(averageFluidIntake / 29.5735).toFixed(1)} oz)
                     </p>
                   </div>
@@ -1264,12 +1280,12 @@ const FluidStats: React.FC<FluidStatsProps> = ({ flowEntries, fluidIntakeEntries
                     <Coffee className="mr-3 text-indigo-500" size={24} />
                   )}
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Fluid Intake Trend</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">Fluid Intake Trend</p>
                     <p className="text-xl font-bold">
                       {fluidIntakeTrend === "up" ? "Increasing" : fluidIntakeTrend === "down" ? "Decreasing" : "Stable"}
                     </p>
                     {mostCommonFluidType && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Most common: {mostCommonFluidType}</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-300">Most common: {mostCommonFluidType}</p>
                     )}
                   </div>
                 </div>
@@ -1386,7 +1402,7 @@ const FluidStats: React.FC<FluidStatsProps> = ({ flowEntries, fluidIntakeEntries
           <canvas ref={lineChartRef} width={800} height={400} className="w-full h-auto" />
           {((dataTypeFilter === "flow" || dataTypeFilter === "both") && filteredFlowEntries.length === 0) ||
             ((dataTypeFilter === "intake" || dataTypeFilter === "both") && filteredFluidIntakeEntries.length === 0 && (
-              <div className="text-center p-4 text-gray-500">
+              <div className="text-center p-4 text-gray-600 dark:text-gray-300">
                 No data available for the selected filters. Try adjusting your filter settings.
               </div>
             ))}
@@ -1397,7 +1413,7 @@ const FluidStats: React.FC<FluidStatsProps> = ({ flowEntries, fluidIntakeEntries
         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border">
           <canvas ref={heatmapRef} width={800} height={400} className="w-full h-auto" />
           {filteredFlowEntries.length === 0 && (
-            <div className="text-center p-4 text-gray-500">
+            <div className="text-center p-4 text-gray-600 dark:text-gray-300">
               No flow data available for the selected time period. Try adjusting your filter settings.
             </div>
           )}
@@ -1408,7 +1424,7 @@ const FluidStats: React.FC<FluidStatsProps> = ({ flowEntries, fluidIntakeEntries
         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border">
           <canvas ref={scatterRef} width={800} height={400} className="w-full h-auto" />
           {(filteredFlowEntries.length === 0 || filteredFluidIntakeEntries.length === 0) && (
-            <div className="text-center p-4 text-gray-500">
+            <div className="text-center p-4 text-gray-600 dark:text-gray-300">
               Not enough data available for scatter plot. Add both flow and fluid intake entries or adjust your filter
               settings.
             </div>

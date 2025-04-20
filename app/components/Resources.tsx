@@ -106,7 +106,7 @@ const Resources = () => {
           >
             <div className="text-2xl mb-2">🔍</div>
             <h3 className="font-medium">UTI Information</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Urology Care Foundation</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300">Urology Care Foundation</p>
           </a>
 
           <a
@@ -117,7 +117,7 @@ const Resources = () => {
           >
             <div className="text-2xl mb-2">📋</div>
             <h3 className="font-medium">Bladder Control</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-sm text-gray-600 dark:text-gray-300">
               National Institute of Diabetes and Digestive and Kidney Diseases
             </p>
           </a>
@@ -130,7 +130,7 @@ const Resources = () => {
           >
             <div className="text-2xl mb-2">🏥</div>
             <h3 className="font-medium">Urinary Incontinence</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Mayo Clinic</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300">Mayo Clinic</p>
           </a>
 
           <a
@@ -141,7 +141,7 @@ const Resources = () => {
           >
             <div className="text-2xl mb-2">🧠</div>
             <h3 className="font-medium">Overactive Bladder</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Harvard Health</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300">Harvard Health</p>
           </a>
         </div>
       </CollapsibleSection>
@@ -157,7 +157,7 @@ const Resources = () => {
           >
             <div className="text-2xl mb-2">👨‍⚕️</div>
             <h3 className="font-medium">BPH Guidelines</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">American Urological Association</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300">American Urological Association</p>
           </a>
 
           <a
@@ -168,7 +168,7 @@ const Resources = () => {
           >
             <div className="text-2xl mb-2">💊</div>
             <h3 className="font-medium">UTI Treatment</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Mayo Clinic</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300">Mayo Clinic</p>
           </a>
 
           <a
@@ -179,7 +179,7 @@ const Resources = () => {
           >
             <div className="text-2xl mb-2">🔬</div>
             <h3 className="font-medium">Prostate Problems</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-sm text-gray-600 dark:text-gray-300">
               National Institute of Diabetes and Digestive and Kidney Diseases
             </p>
           </a>
@@ -192,7 +192,7 @@ const Resources = () => {
           >
             <div className="text-2xl mb-2">🪨</div>
             <h3 className="font-medium">Kidney Stones</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Urology Care Foundation</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300">Urology Care Foundation</p>
           </a>
         </div>
       </CollapsibleSection>
@@ -208,7 +208,7 @@ const Resources = () => {
           >
             <div className="text-2xl mb-2">💧</div>
             <h3 className="font-medium">Water: How much should you drink?</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Mayo Clinic</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300">Mayo Clinic</p>
           </a>
 
           <a
@@ -219,7 +219,7 @@ const Resources = () => {
           >
             <div className="text-2xl mb-2">🥗</div>
             <h3 className="font-medium">Kidney Stones: Foods to Avoid</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Harvard Health</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300">Harvard Health</p>
           </a>
 
           <a
@@ -230,7 +230,7 @@ const Resources = () => {
           >
             <div className="text-2xl mb-2">🍽️</div>
             <h3 className="font-medium">Diet for Bladder Control</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-sm text-gray-600 dark:text-gray-300">
               National Institute of Diabetes and Digestive and Kidney Diseases
             </p>
           </a>
@@ -243,7 +243,7 @@ const Resources = () => {
           >
             <div className="text-2xl mb-2">🚫</div>
             <h3 className="font-medium">Bladder Irritants</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Urology Care Foundation</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300">Urology Care Foundation</p>
           </a>
         </div>
       </CollapsibleSection>
@@ -259,7 +259,7 @@ const Resources = () => {
           >
             <div className="text-2xl mb-2">💪</div>
             <h3 className="font-medium">Kegel Exercises</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Mayo Clinic</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300">Mayo Clinic</p>
           </a>
 
           <a
@@ -270,7 +270,7 @@ const Resources = () => {
           >
             <div className="text-2xl mb-2">🏋️</div>
             <h3 className="font-medium">Pelvic Floor Exercises</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-sm text-gray-600 dark:text-gray-300">
               National Institute of Diabetes and Digestive and Kidney Diseases
             </p>
           </a>
@@ -283,7 +283,7 @@ const Resources = () => {
           >
             <div className="text-2xl mb-2">📝</div>
             <h3 className="font-medium">Step-by-Step Kegel Guide</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Harvard Health</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300">Harvard Health</p>
           </a>
 
           <a
@@ -294,7 +294,7 @@ const Resources = () => {
           >
             <div className="text-2xl mb-2">👨</div>
             <h3 className="font-medium">Exercises for Men</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Urology Care Foundation</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300">Urology Care Foundation</p>
           </a>
         </div>
       </CollapsibleSection>
@@ -474,7 +474,7 @@ const Resources = () => {
                 >
                   <div className="text-2xl mb-2">📌</div>
                   <h3 className="font-medium">{resource.title}</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center mt-1">
+                  <p className="text-sm text-gray-600 dark:text-gray-300 flex items-center mt-1">
                     <ExternalLink size={14} className="mr-1" />
                     {resource.category}
                   </p>
@@ -483,17 +483,17 @@ const Resources = () => {
             ))}
           </div>
         ) : (
-          <p className="text-gray-500 dark:text-gray-400 text-center py-4">
+          <p className="text-sm text-gray-600 dark:text-gray-300 text-center py-4">
             No custom resources yet. Add your first resource using the button above.
           </p>
         )}
       </CollapsibleSection>
 
       <style jsx>{`
-        .resource-card {
-          @apply bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow duration-200 flex flex-col;
-        }
-      `}</style>
+       .resource-card {
+         @apply bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow duration-200 flex flex-col;
+       }
+     `}</style>
     </div>
   )
 }

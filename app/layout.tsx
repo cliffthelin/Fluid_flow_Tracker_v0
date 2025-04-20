@@ -1,6 +1,7 @@
 import type React from "react"
 import type { Metadata } from "next"
 import "./globals.css"
+import { BuilderLogProvider } from "./context/BuilderLogContext"
 
 export const metadata: Metadata = {
   title: "Fluid Flow Tracker",
@@ -41,7 +42,9 @@ export default function RootLayout({
         <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
         <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png" />
       </head>
-      <body className="min-h-screen antialiased">{children}</body>
+      <body className="min-h-screen antialiased">
+        <BuilderLogProvider>{children}</BuilderLogProvider>
+      </body>
     </html>
   )
 }

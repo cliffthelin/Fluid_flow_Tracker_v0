@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
 import { Moon, Sun, Droplets, ZoomIn, ZoomOut } from "lucide-react"
 
 interface HeaderProps {
@@ -12,17 +11,6 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ darkMode, setDarkMode, fontSize, setFontSize }) => {
-  const [scrolled, setScrolled] = useState(false)
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 10)
-    }
-
-    window.addEventListener("scroll", handleScroll)
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
-
   const increaseFontSize = () => {
     setFontSize(Math.min(fontSize + 1, 5))
   }
@@ -32,11 +20,7 @@ const Header: React.FC<HeaderProps> = ({ darkMode, setDarkMode, fontSize, setFon
   }
 
   return (
-    <header
-      className={`sticky top-0 z-30 w-full transition-all duration-300 ${
-        scrolled ? "bg-blue-100/90 dark:bg-slate-900/90 backdrop-blur-md shadow-sm" : "bg-blue-50 dark:bg-transparent"
-      }`}
-    >
+    <header className="w-full bg-blue-50 dark:bg-transparent">
       <div className="container mx-auto max-w-4xl px-4 sm:px-6 py-4">
         <div className="flex justify-between items-center">
           <div>
