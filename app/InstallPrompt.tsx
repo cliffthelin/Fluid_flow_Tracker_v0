@@ -56,7 +56,7 @@ const InstallPrompt: React.FC = () => {
     <div className="fixed bottom-4 left-4 right-4 bg-blue-50 dark:bg-blue-900/50 p-4 rounded-lg shadow-lg z-50 border border-blue-200 dark:border-blue-800">
       <div className="flex items-center justify-between">
         <div className="flex-1">
-          <h3 className="font-medium">Install My Uro Log</h3>
+          <h3 className="font-medium">Install Flow Tracker</h3>
           <p className="text-sm text-gray-600 dark:text-gray-300">
             Install this app on your phone for easier access and offline use
           </p>

@@ -6,27 +6,20 @@ import FlowEntryForm from "./components/FlowEntryForm"
 import FluidStats from "./components/FluidStats"
 import DataManagement from "./components/DataManagement"
 import Resources from "./components/Resources"
-import Help from "./components/Help"
-import InstallPrompt from "./components/InstallPrompt"
-import PWARegistration from "./components/PWARegistration"
+import Help from "./components/Help" // Fixed import path
+import InstallPrompt from "./components/InstallPrompt" // Fixed import path
+import PWARegistration from "./components/PWARegistration" // Fixed import path
 import BottomNav from "./components/BottomNav"
-import type { FlowEntry, FluidIntakeEntry } from "./types"
+import type { UroLog, HydroLog } from "./types"
 import { Plus, BarChart, Database, BookMarked, BookOpen } from "lucide-react"
-import {
-  getAllFlowEntries,
-  getAllFluidIntakeEntries,
-  addFlowEntry as dbAddFlowEntry,
-  addFluidIntakeEntry as dbAddFluidIntakeEntry,
-  migrateFromLocalStorage,
-} from "./services/db"
+import { addUroLog as dbAddUroLog, addHydroLog as dbAddHydroLog } from "./services/db"
 
 export default function Home() {
-  const [flowEntries, setFlowEntries] = useState<FlowEntry[]>([])
-  const [fluidIntakeEntries, setFluidIntakeEntries] = useState<FluidIntakeEntry[]>([])
   const [darkMode, setDarkMode] = useState(false)
   const [isOnline, setIsOnline] = useState(true)
   const [fontSize, setFontSize] = useState(0) // 0 is default, negative is smaller, positive is larger
   const [isLoading, setIsLoading] = useState(true)
+  const [dataInitialized, setDataInitialized] = useState(false)
   const [activeSection, setActiveSection] = useState<"entry" | "stats" | "data" | "resources" | "help">("entry")
 
   useEffect(() => {
@@ -47,67 +40,23 @@ export default function Home() {
       setFontSize(Number.parseInt(savedFontSize))
     }
 
-    // Initialize database and load entries
+    // Initialize database
     const initDb = async () => {
       setIsLoading(true)
       try {
+        // Import the database module
+        const { migrateFromLocalStorage, db } = await import("./services/db")
+
+        // Wait for the database to be ready
+        await db.open()
+
         // Migrate data from localStorage if needed
         await migrateFromLocalStorage()
-
-        // Load entries from IndexedDB
-        const dbFlowEntries = await getAllFlowEntries()
-        const dbFluidIntakeEntries = await getAllFluidIntakeEntries()
-
-        setFlowEntries(dbFlowEntries)
-        setFluidIntakeEntries(dbFluidIntakeEntries)
+        setDataInitialized(true)
       } catch (error) {
         console.error("Error initializing database:", error)
-
-        // Fallback to localStorage if IndexedDB fails
-        const savedEntries = localStorage.getItem("flowEntries")
-        if (savedEntries) {
-          try {
-            const parsedEntries = JSON.parse(savedEntries)
-
-            // Separate flow entries and fluid intake entries
-            const flowEntries: FlowEntry[] = []
-            const fluidIntakeEntries: FluidIntakeEntry[] = []
-
-            parsedEntries.forEach((entry: any) => {
-              // Create flow entry
-              const flowEntry: FlowEntry = {
-                timestamp: entry.timestamp,
-                volume: entry.volume,
-                duration: entry.duration,
-                flowRate: entry.flowRate,
-                color: entry.color,
-                urgency: entry.urgency,
-                concerns: entry.concerns,
-                notes: entry.notes,
-              }
-
-              flowEntries.push(flowEntry)
-
-              // If the entry has fluid intake data, create a fluid intake entry
-              if (entry.fluidIntake) {
-                const fluidIntakeEntry: FluidIntakeEntry = {
-                  timestamp: entry.timestamp,
-                  type: entry.fluidIntake.type || "",
-                  customType: entry.fluidIntake.customType,
-                  amount: entry.fluidIntake.amount,
-                  unit: entry.fluidIntake.unit,
-                }
-
-                fluidIntakeEntries.push(fluidIntakeEntry)
-              }
-            })
-
-            setFlowEntries(flowEntries)
-            setFluidIntakeEntries(fluidIntakeEntries)
-          } catch (e) {
-            console.error("Error parsing localStorage data:", e)
-          }
-        }
+        // Still set dataInitialized to true so the app can continue
+        setDataInitialized(true)
       } finally {
         setIsLoading(false)
       }
@@ -130,60 +79,26 @@ export default function Home() {
   }, [])
 
   useEffect(() => {
-    if (!isLoading) {
-      // If there are no entries, start with the help section
-      if (flowEntries.length === 0 && fluidIntakeEntries.length === 0) {
-        setActiveSection("help")
-      }
-    }
-  }, [isLoading, flowEntries.length, fluidIntakeEntries.length])
+    if (!isLoading && dataInitialized) {
+      // Check if there are any entries in the database
+      const checkForEntries = async () => {
+        try {
+          const { db } = await import("./services/db")
+          const uroLogCount = await db.uroLogs.count()
+          const hydroLogCount = await db.hydroLogs.count()
 
-  // We'll keep localStorage as a backup for now
-  useEffect(() => {
-    if (!isLoading) {
-      // Create combined entries for localStorage backup
-      const combinedEntries = flowEntries.map((flowEntry) => {
-        // Find matching fluid intake entry
-        const matchingFluidEntry = fluidIntakeEntries.find((fluidEntry) => fluidEntry.timestamp === flowEntry.timestamp)
-
-        if (matchingFluidEntry) {
-          return {
-            ...flowEntry,
-            fluidIntake: {
-              type: matchingFluidEntry.type,
-              customType: matchingFluidEntry.customType,
-              amount: matchingFluidEntry.amount,
-              unit: matchingFluidEntry.unit,
-            },
+          // If there are no entries, start with the help section
+          if (uroLogCount === 0 && hydroLogCount === 0) {
+            setActiveSection("help")
           }
+        } catch (error) {
+          console.error("Error checking for entries:", error)
         }
+      }
 
-        return flowEntry
-      })
-
-      // Add fluid entries that don't have matching flow entries
-      fluidIntakeEntries.forEach((fluidEntry) => {
-        const hasMatchingFlowEntry = flowEntries.some((flowEntry) => flowEntry.timestamp === fluidEntry.timestamp)
-
-        if (!hasMatchingFlowEntry) {
-          combinedEntries.push({
-            timestamp: fluidEntry.timestamp,
-            volume: 0,
-            duration: 0,
-            flowRate: 0,
-            fluidIntake: {
-              type: fluidEntry.type,
-              customType: fluidEntry.customType,
-              amount: fluidEntry.amount,
-              unit: fluidEntry.unit,
-            },
-          })
-        }
-      })
-
-      localStorage.setItem("flowEntries", JSON.stringify(combinedEntries))
+      checkForEntries()
     }
-  }, [flowEntries, fluidIntakeEntries, isLoading])
+  }, [isLoading, dataInitialized])
 
   useEffect(() => {
     localStorage.setItem("darkMode", darkMode.toString())
@@ -199,37 +114,27 @@ export default function Home() {
     document.documentElement.style.setProperty("--font-size-adjustment", `${fontSize * 0.125}rem`)
   }, [fontSize])
 
-  const addFlowEntry = async (entry: FlowEntry) => {
+  const addUroLog = async (entry: UroLog) => {
     try {
       // Add to IndexedDB
-      await dbAddFlowEntry(entry)
-      // Update state
-      setFlowEntries((prevEntries) => [...prevEntries, entry])
+      await dbAddUroLog(entry)
       // Navigate to stats page after saving
       setActiveSection("stats")
     } catch (error) {
-      console.error("Error adding flow entry:", error)
-      // Still update state even if DB operation fails
-      setFlowEntries((prevEntries) => [...prevEntries, entry])
-      // Navigate to stats page after saving
-      setActiveSection("stats")
+      console.error("Error adding UroLog entry:", error)
+      alert("Error saving entry. Please try again.")
     }
   }
 
-  const addFluidIntakeEntry = async (entry: FluidIntakeEntry) => {
+  const addHydroLog = async (entry: HydroLog) => {
     try {
       // Add to IndexedDB
-      await dbAddFluidIntakeEntry(entry)
-      // Update state
-      setFluidIntakeEntries((prevEntries) => [...prevEntries, entry])
+      await dbAddHydroLog(entry)
       // Navigate to stats page after saving
       setActiveSection("stats")
     } catch (error) {
-      console.error("Error adding fluid intake entry:", error)
-      // Still update state even if DB operation fails
-      setFluidIntakeEntries((prevEntries) => [...prevEntries, entry])
-      // Navigate to stats page after saving
-      setActiveSection("stats")
+      console.error("Error adding HydroLog entry:", error)
+      alert("Error saving entry. Please try again.")
     }
   }
 
@@ -259,6 +164,7 @@ export default function Home() {
           {isLoading ? (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+              <p className="ml-3 text-gray-600 dark:text-gray-300">Initializing My Uro Log...</p>
             </div>
           ) : (
             <div className="space-y-6">
@@ -268,12 +174,7 @@ export default function Home() {
                     <Plus className="mr-2 text-blue-500" size={24} />
                     <h2 className="text-xl font-semibold">Add New Entry</h2>
                   </div>
-                  <FlowEntryForm
-                    addFlowEntry={addFlowEntry}
-                    addFluidIntakeEntry={addFluidIntakeEntry}
-                    flowEntries={flowEntries}
-                    fluidIntakeEntries={fluidIntakeEntries}
-                  />
+                  <FlowEntryForm addUroLog={addUroLog} addHydroLog={addHydroLog} />
                 </div>
               )}
 
@@ -283,7 +184,7 @@ export default function Home() {
                     <BarChart className="mr-2 text-green-500" size={24} />
                     <h2 className="text-xl font-semibold">Fluid Stats</h2>
                   </div>
-                  <FluidStats flowEntries={flowEntries} fluidIntakeEntries={fluidIntakeEntries} />
+                  <FluidStats />
                 </div>
               )}
 
@@ -293,12 +194,7 @@ export default function Home() {
                     <Database className="mr-2 text-purple-500" size={24} />
                     <h2 className="text-xl font-semibold">Data Management</h2>
                   </div>
-                  <DataManagement
-                    flowEntries={flowEntries}
-                    fluidIntakeEntries={fluidIntakeEntries}
-                    setFlowEntries={setFlowEntries}
-                    setFluidIntakeEntries={setFluidIntakeEntries}
-                  />
+                  <DataManagement />
                 </div>
               )}
 

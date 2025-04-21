@@ -1,4 +1,4 @@
-export interface FlowEntry {
+export interface UroLog {
   timestamp: string
   volume: number
   duration: number
@@ -9,16 +9,16 @@ export interface FlowEntry {
   notes?: string
 }
 
-export interface FluidIntakeEntry {
+export interface HydroLogEntry {
   timestamp: string
-  type: FluidType
+  type: HydroLogType
   customType?: string
   amount: number
   unit: "oz" | "mL"
   notes?: string
 }
 
-export type FluidType = "Water" | "Juice" | "Tea" | "Soda" | "Coffee" | "Alcohol" | "Other" | ""
+export type HydroLogType = "Water" | "Juice" | "Tea" | "Soda" | "Coffee" | "Alcohol" | "Other" | ""
 
 export type UrineColor =
   | "Light Yellow"
@@ -58,3 +58,8 @@ export interface CustomResource {
   url: string
   category: string
 }
+
+export type FlowEntry = UroLog
+export type FluidIntakeEntry = HydroLogEntry
+export type HydroLog = HydroLogEntry
+export type FluidType = HydroLogType

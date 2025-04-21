@@ -16,24 +16,20 @@ import {
   TrendingDown,
   Check,
 } from "lucide-react"
-import type { FlowEntry, UrineColor, UrgencyRating, ConcernType, FluidType, FluidIntakeEntry } from "../types"
+import type { UroLog, UrineColor, UrgencyRating, ConcernType, FluidType, HydroLog } from "../types"
 
 interface FlowEntryFormProps {
-  addFlowEntry: (entry: FlowEntry) => void
-  addFluidIntakeEntry: (entry: FluidIntakeEntry) => void
-  flowEntries: FlowEntry[]
-  fluidIntakeEntries: FluidIntakeEntry[]
+  addUroLog: (entry: UroLog) => void
+  addHydroLog: (entry: HydroLog) => void
   title2?: React.ReactNode
 }
 
-const FlowEntryForm: React.FC<FlowEntryFormProps> = ({
-  addFlowEntry,
-  addFluidIntakeEntry,
-  flowEntries,
-  fluidIntakeEntries,
-  title2,
-}) => {
-  // Flow Entry state
+const FlowEntryForm: React.FC<FlowEntryFormProps> = ({ addUroLog, addHydroLog, title2 }) => {
+  // Add this near the top of the component
+  const [dbUroLogs, setDbUroLogs] = useState<UroLog[]>([])
+  const [dbHydroLogs, setDbHydroLogs] = useState<HydroLog[]>([])
+
+  // UroLog Entry state
   const [volume, setVolume] = useState("")
   const [duration, setDuration] = useState("")
   const [color, setColor] = useState<UrineColor>("")
@@ -45,13 +41,13 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({
   const [elapsedTime, setElapsedTime] = useState(0)
   const [calculatedFlowRate, setCalculatedFlowRate] = useState<number | null>(null)
 
-  // Fluid Intake state
-  const [fluidType, setFluidType] = useState<FluidType>("")
+  // HydroLog state
+  const [hydroLogType, setFluidType] = useState<FluidType>("")
   const [customFluidType, setCustomFluidType] = useState("")
-  const [fluidAmount, setFluidAmount] = useState("")
-  const [fluidUnit, setFluidUnit] = useState<"oz" | "mL">("mL")
+  const [hydroLogAmount, setFluidAmount] = useState("")
+  const [hydroLogUnit, setFluidUnit] = useState<"oz" | "mL">("mL")
   const [useCustomAmount, setUseCustomAmount] = useState(false)
-  const [fluidNotes, setFluidNotes] = useState("")
+  const [hydroLogNotes, setFluidNotes] = useState("")
 
   // Shared state
   const [activeTab, setActiveTab] = useState<"basic" | "fluid">("basic")
@@ -128,18 +124,51 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({
     "Blood",
   ]
 
+  // Add this useEffect to fetch data from IndexedDB
+  useEffect(() => {
+    const fetchEntries = async () => {
+      try {
+        const { db } = await import("../services/db")
+
+        // Check if the tables exist before trying to access them
+        if (db.uroLogs && typeof db.uroLogs.toArray === "function") {
+          const uroLogs = await db.uroLogs.toArray()
+          setDbUroLogs(uroLogs)
+        } else {
+          console.warn("uroLogs table not found or not properly initialized")
+          setDbUroLogs([])
+        }
+
+        if (db.hydroLogs && typeof db.hydroLogs.toArray === "function") {
+          const hydroLogs = await db.hydroLogs.toArray()
+          setDbHydroLogs(hydroLogs)
+        } else {
+          console.warn("hydroLogs table not found or not properly initialized")
+          setDbHydroLogs([])
+        }
+      } catch (error) {
+        console.error("Error fetching entries from database:", error)
+        // Set empty arrays to prevent further errors
+        setDbUroLogs([])
+        setDbHydroLogs([])
+      }
+    }
+
+    fetchEntries()
+  }, [])
+
   // Calculate averages from entries
   useEffect(() => {
-    if (flowEntries.length === 0) return
+    if (dbUroLogs.length === 0) return
 
     // Overall average
-    const allFlowRates = flowEntries.map((entry) => entry.flowRate)
+    const allFlowRates = dbUroLogs.map((entry) => entry.flowRate)
     setOverallAverage(allFlowRates.reduce((sum, rate) => sum + rate, 0) / allFlowRates.length)
 
     // Last 7 days average
     const oneWeekAgo = new Date()
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
-    const weekEntries = flowEntries.filter((entry) => new Date(entry.timestamp) >= oneWeekAgo)
+    const weekEntries = dbUroLogs.filter((entry) => new Date(entry.timestamp) >= oneWeekAgo)
     if (weekEntries.length > 0) {
       const weekRates = weekEntries.map((entry) => entry.flowRate)
       setWeekAverage(weekRates.reduce((sum, rate) => sum + rate, 0) / weekRates.length)
@@ -148,7 +177,7 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({
     // Last month average
     const oneMonthAgo = new Date()
     oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1)
-    const monthEntries = flowEntries.filter((entry) => new Date(entry.timestamp) >= oneMonthAgo)
+    const monthEntries = dbUroLogs.filter((entry) => new Date(entry.timestamp) >= oneMonthAgo)
     if (monthEntries.length > 0) {
       const monthRates = monthEntries.map((entry) => entry.flowRate)
       setMonthAverage(monthRates.reduce((sum, rate) => sum + rate, 0) / monthRates.length)
@@ -157,12 +186,12 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({
     // Today's average
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-    const todayEntries = flowEntries.filter((entry) => new Date(entry.timestamp) >= today)
+    const todayEntries = dbUroLogs.filter((entry) => new Date(entry.timestamp) >= today)
     if (todayEntries.length > 0) {
       const todayRates = todayEntries.map((entry) => entry.flowRate)
       setDayAverage(todayRates.reduce((sum, rate) => sum + rate, 0) / todayRates.length)
     }
-  }, [flowEntries])
+  }, [dbUroLogs])
 
   // Initialize date and time fields with current values
   useEffect(() => {
@@ -226,10 +255,10 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({
       timestamp = new Date().toISOString()
     }
 
-    let hasFlowEntry = false
-    let hasFluidEntry = false
+    let hasUroLog = false
+    let hasHydroLog = false
 
-    // Save Flow Entry if data is provided
+    // Save UroLog if data is provided
     if (volume && (duration || isTimerRunning)) {
       let durationValue = Number.parseFloat(duration)
 
@@ -242,7 +271,7 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({
 
       const flowRate = Number.parseFloat(volume) / durationValue
 
-      const flowEntry: FlowEntry = {
+      const uroLog: UroLog = {
         timestamp,
         volume: Number.parseFloat(volume),
         duration: durationValue,
@@ -253,8 +282,8 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({
         notes: flowNotes || undefined,
       }
 
-      addFlowEntry(flowEntry)
-      hasFlowEntry = true
+      addUroLog(uroLog)
+      hasUroLog = true
 
       // Reset flow entry form
       setVolume("")
@@ -266,25 +295,25 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({
       setCalculatedFlowRate(null)
     }
 
-    // Save Fluid Intake if data is provided
-    if (fluidType) {
+    // Save HydroLog if data is provided
+    if (hydroLogType) {
       const amount = useCustomAmount
-        ? Number(fluidAmount)
-        : fluidUnit === "oz"
-          ? commonSizes[Number(fluidAmount)].oz
-          : commonSizes[Number(fluidAmount)].mL
+        ? Number(hydroLogAmount)
+        : hydroLogUnit === "oz"
+          ? commonSizes[Number(hydroLogAmount)].oz
+          : commonSizes[Number(hydroLogAmount)].mL
 
-      const fluidIntakeEntry: FluidIntakeEntry = {
+      const hydroLog: HydroLog = {
         timestamp,
-        type: fluidType,
-        customType: fluidType === "Other" ? customFluidType : undefined,
+        type: hydroLogType,
+        customType: hydroLogType === "Other" ? customFluidType : undefined,
         amount,
-        unit: fluidUnit,
-        notes: fluidNotes || undefined,
+        unit: hydroLogUnit,
+        notes: hydroLogNotes || undefined,
       }
 
-      addFluidIntakeEntry(fluidIntakeEntry)
-      hasFluidEntry = true
+      addHydroLog(hydroLog)
+      hasHydroLog = true
 
       // Reset fluid intake form
       setFluidType("")
@@ -302,15 +331,15 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({
     setUseCustomDateTime(false)
 
     // Show success message
-    if (hasFlowEntry || hasFluidEntry) {
+    if (hasUroLog || hasHydroLog) {
       setSaveSuccess(true)
 
-      if (hasFlowEntry && hasFluidEntry) {
-        setSaveMessage("Flow entry and fluid intake saved successfully!")
-      } else if (hasFlowEntry) {
-        setSaveMessage("Flow entry saved successfully!")
+      if (hasUroLog && hasHydroLog) {
+        setSaveMessage("UroLog and HydroLog saved successfully!")
+      } else if (hasUroLog) {
+        setSaveMessage("UroLog saved successfully!")
       } else {
-        setSaveMessage("Fluid intake saved successfully!")
+        setSaveMessage("HydroLog saved successfully!")
       }
 
       // Clear success message after 3 seconds
@@ -370,7 +399,7 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({
 
   // Check if Save button should be enabled
   const isFlowDataValid = Number(volume) > 0 && (Number(duration) > 0 || isTimerRunning)
-  const isFluidDataValid = fluidType !== "" && (useCustomAmount ? Number(fluidAmount) > 0 : fluidAmount !== "")
+  const isFluidDataValid = hydroLogType !== "" && (useCustomAmount ? Number(hydroLogAmount) > 0 : hydroLogAmount !== "")
   const isSaveEnabled = isFlowDataValid || isFluidDataValid
 
   return (
@@ -416,7 +445,7 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({
             } transition-colors`}
             onClick={() => setActiveTab("basic")}
           >
-            Flow Entry
+            UroLog Entry
           </button>
           <button
             className={`px-4 py-3 font-medium text-lg flex items-center ${
@@ -427,7 +456,7 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({
             onClick={() => setActiveTab("fluid")}
           >
             <Coffee size={20} className="mr-2" />
-            Fluid Intake
+            HydroLog
           </button>
         </div>
       </div>
@@ -501,9 +530,9 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({
 
                       <div className="flex items-center justify-center gap-4 mt-1">
                         {/* Percentage comparison to last entry */}
-                        {flowEntries.length > 0 &&
+                        {dbUroLogs.length > 0 &&
                           (() => {
-                            const lastEntry = [...flowEntries].sort(
+                            const lastEntry = [...dbUroLogs].sort(
                               (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
                             )[0]
                             if (lastEntry) {
@@ -530,7 +559,7 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({
                           })()}
 
                         {/* Percentage comparison to overall average */}
-                        {flowEntries.length > 0 &&
+                        {dbUroLogs.length > 0 &&
                           (() => {
                             const percentChange = ((calculatedFlowRate - overallAverage) / overallAverage) * 100
                             const isIncrease = percentChange > 0
@@ -759,10 +788,10 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({
                 </label>
                 <select
                   id="fluid-type"
-                  value={fluidType}
+                  value={hydroLogType}
                   onChange={(e) => setFluidType(e.target.value as FluidType)}
                   className={`w-full p-2.5 border rounded-lg appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200 enhanced-select ${
-                    !fluidType ? "border-cyan-500 ring-2 ring-cyan-200 dark:ring-cyan-800 animate-pulse" : ""
+                    !hydroLogType ? "border-cyan-500 ring-2 ring-cyan-200 dark:ring-cyan-800 animate-pulse" : ""
                   }`}
                 >
                   {fluidTypeOptions.map((option) => (
@@ -773,7 +802,7 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({
                 </select>
               </div>
 
-              {fluidType === "Other" && (
+              {hydroLogType === "Other" && (
                 <div className="mb-4 animate-fade-in">
                   <label
                     htmlFor="custom-fluid-type"
@@ -788,7 +817,7 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({
                     onChange={(e) => setCustomFluidType(e.target.value)}
                     className="w-full p-2.5 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200"
                     placeholder="Enter beverage type"
-                    required={fluidType === "Other"}
+                    required={hydroLogType === "Other"}
                   />
                 </div>
               )}
@@ -796,7 +825,7 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({
               <div className="mb-4">
                 <label
                   className={`block mb-2 text-lg font-medium ${
-                    fluidType && (!fluidAmount || fluidAmount === "")
+                    hydroLogType && (!hydroLogAmount || hydroLogAmount === "")
                       ? "text-cyan-600 dark:text-cyan-400 animate-pulse"
                       : "text-gray-800 dark:text-gray-300"
                   }`}
@@ -808,9 +837,9 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({
                     <div
                       key={index}
                       className={`p-2 border rounded-lg cursor-pointer transition-all text-lg ${
-                        !useCustomAmount && fluidAmount === index.toString()
+                        !useCustomAmount && hydroLogAmount === index.toString()
                           ? "bg-cyan-100 border-cyan-300 dark:bg-cyan-900/30 dark:border-cyan-700 shadow-sm text-cyan-800 dark:text-cyan-200"
-                          : fluidType && (!fluidAmount || fluidAmount === "")
+                          : hydroLogType && (!hydroLogAmount || hydroLogAmount === "")
                             ? "bg-white dark:bg-gray-700 hover:bg-cyan-50 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 border-cyan-300 dark:border-cyan-700"
                             : "bg-white dark:bg-gray-700 hover:bg-cyan-50 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200"
                       }`}
@@ -838,7 +867,7 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({
                   <div className="flex items-center mt-3 animate-fade-in">
                     <input
                       type="number"
-                      value={fluidAmount}
+                      value={hydroLogAmount}
                       onChange={(e) => setFluidAmount(e.target.value)}
                       className="p-2.5 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 w-28 mr-3 text-lg text-gray-800 dark:text-gray-200"
                       placeholder="Amount"
@@ -846,7 +875,7 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({
                       min="1"
                     />
                     <select
-                      value={fluidUnit}
+                      value={hydroLogUnit}
                       onChange={(e) => setFluidUnit(e.target.value as "oz" | "mL")}
                       className="p-2.5 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200 enhanced-select"
                     >
@@ -868,14 +897,14 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({
                 </label>
                 <textarea
                   id="fluid-notes"
-                  value={fluidNotes}
+                  value={hydroLogNotes}
                   onChange={(e) => setFluidNotes(e.target.value.slice(0, 256))}
                   maxLength={256}
                   className="w-full p-2.5 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 min-h-[80px] text-lg text-gray-800 dark:text-gray-200"
                   rows={2}
                   placeholder="Add any additional notes about this fluid intake..."
                 ></textarea>
-                <div className="text-right text-lg text-gray-600 mt-1">{fluidNotes.length}/256 characters</div>
+                <div className="text-right text-lg text-gray-600 mt-1">{hydroLogNotes.length}/256 characters</div>
               </div>
             </div>
           </div>

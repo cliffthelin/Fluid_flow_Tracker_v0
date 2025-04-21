@@ -4,15 +4,15 @@ import "./globals.css"
 import { BuilderLogProvider } from "./context/BuilderLogContext"
 
 export const metadata: Metadata = {
-  title: "Fluid Flow Tracker",
-  description: "Track and monitor urinary flow metrics",
+  title: "My Uro Log",
+  description: "Track and monitor urological health metrics",
   manifest: "/manifest.json",
   themeColor: "#3b82f6",
   viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Flow Tracker",
+    title: "My Uro Log",
   },
   other: {
     "apple-mobile-web-app-capable": "yes",

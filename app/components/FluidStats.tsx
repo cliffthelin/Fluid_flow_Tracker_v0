@@ -21,13 +21,15 @@ import type { FlowEntry, FluidIntakeEntry } from "../types"
 import { isShareAvailable, fallbackShare } from "../services/share"
 
 interface FluidStatsProps {
-  flowEntries: FlowEntry[]
-  fluidIntakeEntries: FluidIntakeEntry[]
   title2?: React.ReactNode
 }
 
 // Update the component definition to use the title2 prop
-const FluidStats: React.FC<FluidStatsProps> = ({ flowEntries, fluidIntakeEntries, title2 }) => {
+const FluidStats: React.FC<FluidStatsProps> = ({ title2 }) => {
+  // Add these state variables at the top of the component
+  const [flowEntries, setFlowEntries] = useState<FlowEntry[]>([])
+  const [fluidIntakeEntries, setFluidIntakeEntries] = useState<FluidIntakeEntry[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<"table" | "line" | "heatmap" | "scatter">("table")
   const lineChartRef = useRef<HTMLCanvasElement>(null)
   const heatmapRef = useRef<HTMLCanvasElement>(null)
@@ -235,6 +237,46 @@ const FluidStats: React.FC<FluidStatsProps> = ({ flowEntries, fluidIntakeEntries
       fluidIntakeTrend = "down"
     }
   }
+
+  // Add this useEffect to fetch data from IndexedDB
+  useEffect(() => {
+    const fetchEntries = async () => {
+      setIsLoading(true)
+      try {
+        const { db } = await import("../services/db")
+
+        // Add error handling and fallbacks
+        let uroLogs = []
+        let hydroLogs = []
+
+        try {
+          // Check if the tables exist before calling toArray()
+          if (db.uroLogs) {
+            uroLogs = await db.uroLogs.toArray()
+          }
+        } catch (error) {
+          console.error("Error fetching uroLogs:", error)
+        }
+
+        try {
+          if (db.hydroLogs) {
+            hydroLogs = await db.hydroLogs.toArray()
+          }
+        } catch (error) {
+          console.error("Error fetching hydroLogs:", error)
+        }
+
+        setFlowEntries(uroLogs)
+        setFluidIntakeEntries(hydroLogs)
+      } catch (error) {
+        console.error("Error fetching entries from database:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchEntries()
+  }, [])
 
   // Draw line chart
   useEffect(() => {
@@ -951,6 +993,15 @@ const FluidStats: React.FC<FluidStatsProps> = ({ flowEntries, fluidIntakeEntries
         "Failed to share summary data. This text has been copied to your clipboard instead.",
       )
     }
+  }
+
+  // Add this right after the return statement
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    )
   }
 
   return (

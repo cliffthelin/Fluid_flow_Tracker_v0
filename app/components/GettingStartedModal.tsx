@@ -12,7 +12,7 @@ const GettingStartedModal: React.FC<GettingStartedModalProps> = ({ onClose }) =>
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center p-4 border-b">
-          <h2 className="text-xl font-bold">Getting Started with Flow Tracker</h2>
+          <h2 className="text-xl font-bold">Getting Started with My Uro Log</h2>
           <button
             onClick={onClose}
             className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
@@ -55,7 +55,7 @@ const GettingStartedModal: React.FC<GettingStartedModalProps> = ({ onClose }) =>
               <Clock className="mr-2" size={20} /> Recording Measurements
             </h3>
             <p>
-              Flow Tracker allows you to record both the volume of urine and the duration of flow. You can enter these
+              My Uro Log allows you to record both the volume of urine and the duration of flow. You can enter these
               values in two ways:
             </p>
             <ul className="list-disc pl-5 space-y-1">
@@ -83,12 +83,12 @@ const GettingStartedModal: React.FC<GettingStartedModalProps> = ({ onClose }) =>
               creator:
             </p>
             <a
-              href="https://github.com/yourusername/flow-tracker"
+              href="https://github.com/yourusername/my-uro-log"
               target="_blank"
               rel="noopener noreferrer"
               className="block bg-gray-100 dark:bg-gray-700 p-3 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
             >
-              github.com/yourusername/flow-tracker
+              github.com/yourusername/my-uro-log
             </a>
           </div>
         </div>

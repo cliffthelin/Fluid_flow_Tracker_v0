@@ -4,11 +4,11 @@ import type React from "react"
 
 import { useState } from "react"
 import { Save, Upload, Check, AlertCircle } from "lucide-react"
-import type { FlowEntry } from "../types"
+import type { UroLog } from "../types"
 
 interface BackupRestoreProps {
-  entries: FlowEntry[]
-  setEntries: (entries: FlowEntry[]) => void
+  entries: UroLog[]
+  setEntries: (entries: UroLog[]) => void
 }
 
 const BackupRestore: React.FC<BackupRestoreProps> = ({ entries, setEntries }) => {
@@ -26,7 +26,10 @@ const BackupRestore: React.FC<BackupRestoreProps> = ({ entries, setEntries }) =>
       const url = URL.createObjectURL(blob)
       const link = document.createElement("a")
       link.href = url
-      link.download = `flow-tracker-backup-${new Date().toISOString().split("T")[0]}.json`
+      const now = new Date()
+      const dateStr = now.toISOString().split("T")[0] // YYYY-MM-DD
+      const timeStr = now.toTimeString().substring(0, 5).replace(":", "-") // HH-MM
+      link.download = `my-uro-log-backup-${dateStr}-${timeStr}.json`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)

@@ -1,4 +1,4 @@
-const CACHE_NAME = "flow-tracker-v2"
+const CACHE_NAME = "my-uro-log-v1"
 const urlsToCache = ["/", "/icons/icon-192.png", "/icons/icon-512.png", "/manifest.json", "/globals.css"]
 
 // Install event - cache assets
@@ -83,15 +83,15 @@ self.addEventListener("fetch", (event) => {
 
 // Handle periodic sync for data backup
 self.addEventListener("periodicsync", (event) => {
-  if (event.tag === "backup-flow-data") {
-    event.waitUntil(backupFlowData())
+  if (event.tag === "backup-uro-log-data") {
+    event.waitUntil(backupUroLogData())
   }
 })
 
 // Function to backup data periodically
-async function backupFlowData() {
+async function backupUroLogData() {
   // This would be implemented if you had a backend to sync with
-  console.log("Performing periodic backup of flow data")
+  console.log("Performing periodic backup of UroLog data")
 
   // You could implement a mechanism to save data to the user's cloud storage
   // or create a local backup in a different storage mechanism

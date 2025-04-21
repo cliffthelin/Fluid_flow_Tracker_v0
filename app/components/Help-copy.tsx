@@ -30,7 +30,6 @@ import { TechnicalCompendium } from "./TechnicalCompendium"
 import { isShareAvailable, fallbackShare } from "../services/share"
 import { useState } from "react"
 import { StorageTests } from "./StorageTests"
-import { DatabaseReset } from "./DatabaseReset"
 
 const Help: React.FC = () => {
   const { logEntries } = useBuilderLog()
@@ -634,21 +633,6 @@ const Help: React.FC = () => {
                 localStorage, which could cause duplication issues during data restoration.
               </p>
               <StorageTests />
-            </div>
-          </CollapsibleSection>
-
-          {/* Database Reset Section */}
-          <CollapsibleSection
-            title="Database Reset"
-            defaultExpanded={false}
-            className="mb-0 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700"
-          >
-            <div className="space-y-4">
-              <p className="text-gray-800 dark:text-gray-100">
-                This section provides tools to reset the database if you're experiencing persistent issues.
-                <strong className="text-red-600 dark:text-red-400"> Warning: These actions cannot be undone!</strong>
-              </p>
-              <DatabaseReset />
             </div>
           </CollapsibleSection>
         </div>

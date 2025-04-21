@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Download,
   Upload,
@@ -17,57 +17,142 @@ import {
   Trash,
   Share2,
 } from "lucide-react"
-import type { FlowEntry, FluidIntakeEntry } from "../types"
-// Import the database functions at the top of the file
+import type { UroLog, HydroLog } from "../types"
 import {
-  deleteFlowEntry as dbDeleteFlowEntry,
-  deleteFluidIntakeEntry as dbDeleteFluidIntakeEntry,
-  deleteAllFlowEntries,
-  deleteAllFluidIntakeEntries,
-  bulkAddFlowEntries,
-  bulkAddFluidIntakeEntries,
+  bulkAddUroLogs,
+  bulkAddHydroLogs,
+  deleteAllUroLogs,
+  deleteAllHydroLogs,
+  deleteUroLog,
+  deleteHydroLog,
 } from "../services/db"
-// Import the share utilities at the top:
-import { shareContent, isShareAvailable } from "../services/share"
+import { shareContent } from "../services/share"
 
 // Add the title2 prop to the interface
 interface DataManagementProps {
-  flowEntries: FlowEntry[]
-  fluidIntakeEntries: FluidIntakeEntry[]
-  setFlowEntries: (entries: FlowEntry[]) => void
-  setFluidIntakeEntries: (entries: FluidIntakeEntry[]) => void
   title2?: React.ReactNode
 }
 
 interface MonthlyGroup {
   key: string
   label: string
-  flowEntries: FlowEntry[]
-  fluidIntakeEntries: FluidIntakeEntry[]
+  uroLogs: UroLog[]
+  hydroLogs: HydroLog[]
   averageFlowRate: number
   averageVolume: number
   averageDuration: number
   averageFluidIntake: number
 }
 
-// Update the component definition to use the title2 prop
-const DataManagement: React.FC<DataManagementProps> = ({
-  flowEntries,
-  fluidIntakeEntries,
-  setFlowEntries,
-  setFluidIntakeEntries,
-  title2,
-}) => {
+// Update the component definition
+const DataManagement: React.FC<DataManagementProps> = ({ title2 }) => {
   const [expandedMonths, setExpandedMonths] = useState<Record<string, boolean>>({})
   const [shareTestResults, setShareTestResults] = useState<string | null>(null)
+  const [dbCounts, setDbCounts] = useState<{
+    uroLogs: number
+    hydroLogs: number
+  }>({ uroLogs: 0, hydroLogs: 0 })
 
-  const generateMockData = () => {
+  // Add new state variables for entries fetched directly from IndexedDB
+  const [dbUroLogs, setDbUroLogs] = useState<UroLog[]>([])
+  const [dbHydroLogs, setDbHydroLogs] = useState<HydroLog[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Declare monthlyGroups, toggleMonthExpand, and calculateAverage
+  const [monthlyGroups, setMonthlyGroups] = useState<MonthlyGroup[]>([])
+
+  const toggleMonthExpand = (monthKey: string) => {
+    setExpandedMonths((prev) => ({
+      ...prev,
+      [monthKey]: !prev[monthKey],
+    }))
+  }
+
+  const calculateAverage = (values: number[]): number => {
+    if (values.length === 0) return 0
+    const sum = values.reduce((acc, val) => acc + val, 0)
+    return sum / values.length
+  }
+
+  // Update the fetchDbCounts function
+  const fetchDbCounts = async () => {
+    try {
+      const { db } = await import("../services/db")
+      const uroCount = await db.uroLogs.count()
+      const hydroCount = await db.hydroLogs.count()
+      setDbCounts({
+        uroLogs: uroCount,
+        hydroLogs: hydroCount,
+      })
+    } catch (error) {
+      console.error("Error fetching database counts:", error)
+    }
+  }
+
+  // Update the fetchEntriesFromDb function
+  const fetchEntriesFromDb = async () => {
+    setIsLoading(true)
+    try {
+      const { db } = await import("../services/db")
+
+      // Add error handling and fallbacks
+      let uroLogs = []
+      let hydroLogs = []
+
+      try {
+        // Check if the tables exist before calling toArray()
+        if (db.uroLogs) {
+          uroLogs = await db.uroLogs.toArray()
+        }
+      } catch (error) {
+        console.error("Error fetching uroLogs:", error)
+      }
+
+      try {
+        if (db.hydroLogs) {
+          hydroLogs = await db.hydroLogs.toArray()
+        }
+      } catch (error) {
+        console.error("Error fetching hydroLogs:", error)
+      }
+
+      setDbUroLogs(uroLogs)
+      setDbHydroLogs(hydroLogs)
+
+      // Update counts
+      setDbCounts({
+        uroLogs: uroLogs.length,
+        hydroLogs: hydroLogs.length,
+      })
+    } catch (error) {
+      console.error("Error fetching entries from database:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Fetch database counts when component mounts or entries change
+  useEffect(() => {
+    fetchDbCounts()
+  }, [])
+
+  // Call fetchEntriesFromDb when component mounts and after operations that modify the database
+  useEffect(() => {
+    fetchEntriesFromDb()
+  }, [])
+
+  useEffect(() => {
+    setMonthlyGroups(groupEntriesByMonth())
+  }, [dbUroLogs, dbHydroLogs])
+
+  // Update the generateDemoData function
+  const generateDemoData = () => {
     if (!confirm("This will generate 3 months of mock data (3 entries per day). Continue?")) {
       return
     }
 
-    const mockFlowEntries: FlowEntry[] = []
-    const mockFluidIntakeEntries: FluidIntakeEntry[] = []
+    const mockUroLogs: UroLog[] = []
+    const mockHydroLogs: HydroLog[] = []
     const today = new Date()
     const threeMonthsAgo = new Date()
     threeMonthsAgo.setMonth(today.getMonth() - 3)
@@ -164,8 +249,8 @@ const DataManagement: React.FC<DataManagementProps> = ({
           }
         }
 
-        // Create flow entry with additional fields
-        mockFlowEntries.push({
+        // Create UroLog entry with additional fields
+        mockUroLogs.push({
           timestamp: entryTime.toISOString(),
           volume,
           duration,
@@ -181,8 +266,8 @@ const DataManagement: React.FC<DataManagementProps> = ({
         const fluidType = fluidTypes[Math.floor(Math.random() * fluidTypes.length)]
         const fluidAmount = Math.floor(Math.random() * 300) + 200 // 200-500 mL
 
-        // Create fluid intake entry with same timestamp
-        mockFluidIntakeEntries.push({
+        // Create HydroLog entry with same timestamp
+        mockHydroLogs.push({
           timestamp: entryTime.toISOString(),
           type: fluidType,
           amount: fluidAmount,
@@ -193,124 +278,111 @@ const DataManagement: React.FC<DataManagementProps> = ({
     }
 
     // Update state and database
-    setFlowEntries([...flowEntries, ...mockFlowEntries])
-    setFluidIntakeEntries([...fluidIntakeEntries, ...mockFluidIntakeEntries])
-
-    // Add to database
     try {
-      bulkAddFlowEntries(mockFlowEntries)
-      bulkAddFluidIntakeEntries(mockFluidIntakeEntries)
+      bulkAddUroLogs(mockUroLogs)
+      bulkAddHydroLogs(mockHydroLogs)
+      // Refresh entries from DB
+      fetchEntriesFromDb()
     } catch (error) {
       console.error("Error adding mock data to database:", error)
     }
   }
 
-  // Then update the deleteEntry function in the component
-  const deleteFlowEntry = async (timestamp: string) => {
-    if (confirm("Are you sure you want to delete this flow entry?")) {
+  // Update the delete functions
+  const handleDeleteUroLog = async (timestamp: string) => {
+    if (confirm("Are you sure you want to delete this UroLog entry?")) {
       try {
         // Delete from IndexedDB
-        await dbDeleteFlowEntry(timestamp)
-        // Update state
-        setFlowEntries(flowEntries.filter((entry) => entry.timestamp !== timestamp))
+        await deleteUroLog(timestamp)
+        // Refresh entries from DB
+        fetchEntriesFromDb()
       } catch (error) {
-        console.error("Error deleting flow entry:", error)
-        // Still update state even if DB operation fails
-        setFlowEntries(flowEntries.filter((entry) => entry.timestamp !== timestamp))
+        console.error("Error deleting UroLog entry:", error)
       }
     }
   }
 
-  const deleteFluidIntakeEntry = async (timestamp: string) => {
-    if (confirm("Are you sure you want to delete this fluid intake entry?")) {
+  const handleDeleteHydroLog = async (timestamp: string) => {
+    if (confirm("Are you sure you want to delete this HydroLog entry?")) {
       try {
         // Delete from IndexedDB
-        await dbDeleteFluidIntakeEntry(timestamp)
-        // Update state
-        setFluidIntakeEntries(fluidIntakeEntries.filter((entry) => entry.timestamp !== timestamp))
+        await deleteHydroLog(timestamp)
+        // Refresh entries from DB
+        fetchEntriesFromDb()
       } catch (error) {
-        console.error("Error deleting fluid intake entry:", error)
-        // Still update state even if DB operation fails
-        setFluidIntakeEntries(fluidIntakeEntries.filter((entry) => entry.timestamp !== timestamp))
+        console.error("Error deleting HydroLog entry:", error)
       }
     }
   }
 
-  // Update the deleteMockData function
-  const deleteMockData = async () => {
+  // Update the deleteDemoData function
+  const deleteDemoData = async () => {
     if (!confirm("This will delete all mock data entries. Continue?")) {
       return
     }
 
-    const realFlowEntries = flowEntries.filter((entry) => entry.notes !== "Mock data to be removed")
-    const realFluidIntakeEntries = fluidIntakeEntries.filter((entry) => entry.notes !== "Mock data to be removed")
+    const realUroLogs = dbUroLogs.filter((entry) => entry.notes !== "Mock data to be removed")
+    const realHydroLogs = dbHydroLogs.filter((entry) => entry.notes !== "Mock data to be removed")
 
     try {
       // Delete all entries and re-add only the real ones
-      await deleteAllFlowEntries()
-      await deleteAllFluidIntakeEntries()
+      await deleteAllUroLogs()
+      await deleteAllHydroLogs()
 
-      if (realFlowEntries.length > 0) {
-        await bulkAddFlowEntries(realFlowEntries)
+      if (realUroLogs.length > 0) {
+        await bulkAddUroLogs(realUroLogs)
       }
 
-      if (realFluidIntakeEntries.length > 0) {
-        await bulkAddFluidIntakeEntries(realFluidIntakeEntries)
+      if (realHydroLogs.length > 0) {
+        await bulkAddHydroLogs(realHydroLogs)
       }
 
-      setFlowEntries(realFlowEntries)
-      setFluidIntakeEntries(realFluidIntakeEntries)
+      // Refresh entries from DB
+      fetchEntriesFromDb()
     } catch (error) {
       console.error("Error deleting mock data:", error)
-      // Still update state even if DB operation fails
-      setFlowEntries(realFlowEntries)
-      setFluidIntakeEntries(realFluidIntakeEntries)
     }
   }
 
-  // Check if we have any mock data
-  const hasMockData =
-    flowEntries.some((entry) => entry.notes === "Mock data to be removed") ||
-    fluidIntakeEntries.some((entry) => entry.notes === "Mock data to be removed")
-
+  // Update the exportData function
   const exportData = () => {
     // Create combined entries for export
-    const combinedEntries = flowEntries.map((flowEntry) => {
-      // Find matching fluid intake entry
-      const matchingFluidEntry = fluidIntakeEntries.find((fluidEntry) => fluidEntry.timestamp === flowEntry.timestamp)
+    const combinedEntries = dbUroLogs.map((uroLog) => {
+      // Find matching HydroLog entry
+      const matchingHydroLog = dbHydroLogs.find((hydroLog) => hydroLog.timestamp === uroLog.timestamp)
 
-      if (matchingFluidEntry) {
+      if (matchingHydroLog) {
         return {
-          ...flowEntry,
+          ...uroLog,
           fluidIntake: {
-            type: matchingFluidEntry.type,
-            customType: matchingFluidEntry.customType,
-            amount: matchingFluidEntry.amount,
-            unit: matchingFluidEntry.unit,
-            notes: matchingFluidEntry.notes,
+            type: matchingHydroLog.type,
+            customType: matchingHydroLog.customType,
+            amount: matchingHydroLog.amount,
+            unit: matchingHydroLog.unit,
+            notes: matchingHydroLog.notes,
           },
         }
       }
 
-      return flowEntry
+      return uroLog
     })
 
-    // Add fluid entries that don't have matching flow entries
-    fluidIntakeEntries.forEach((fluidEntry) => {
-      const hasMatchingFlowEntry = flowEntries.some((flowEntry) => flowEntry.timestamp === fluidEntry.timestamp)
+    // Add hydro entries that don't have matching uro entries
+    dbHydroLogs.forEach((hydroLog) => {
+      const hasMatchingUroLog = dbUroLogs.some((uroLog) => uroLog.timestamp === hydroLog.timestamp)
 
-      if (!hasMatchingFlowEntry) {
+      if (!hasMatchingUroLog) {
         combinedEntries.push({
-          timestamp: fluidEntry.timestamp,
+          timestamp: hydroLog.timestamp,
           volume: 0,
           duration: 0,
           flowRate: 0,
           fluidIntake: {
-            type: fluidEntry.type,
-            customType: fluidEntry.customType,
-            amount: fluidEntry.amount,
-            unit: fluidEntry.unit,
-            notes: fluidEntry.notes,
+            type: hydroLog.type,
+            customType: hydroLog.customType,
+            amount: hydroLog.amount,
+            unit: hydroLog.unit,
+            notes: hydroLog.notes,
           },
         })
       }
@@ -318,7 +390,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
 
     const csvContent =
       "data:text/csv;charset=utf-8," +
-      "Date,Time,Volume (mL),Duration (s),Flow Rate (mL/s),Color,Urgency,Concerns,Flow Notes,Fluid Type,Fluid Custom Type,Fluid Amount,Fluid Unit,Fluid Notes\n" +
+      "Original Timestamp,Date,Time,Volume (mL),Duration (s),Flow Rate (mL/s),Color,Urgency,Concerns,Flow Notes,Fluid Type,Fluid Custom Type,Fluid Amount,Fluid Unit,Fluid Notes\n" +
       combinedEntries
         .map((e) => {
           const date = new Date(e.timestamp)
@@ -332,7 +404,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
           const fluidUnit = e.fluidIntake?.unit || ""
           const fluidNotes = e.fluidIntake?.notes || ""
 
-          return `${dateStr},${timeStr},${e.volume},${e.duration},${e.flowRate},${e.color || ""},${
+          return `${e.timestamp},${dateStr},${timeStr},${e.volume},${e.duration},${e.flowRate},${e.color || ""},${
             e.urgency || ""
           },"${e.concerns ? e.concerns.join("; ") : ""}","${e.notes ? e.notes.replace(/"/g, '""') : ""}","${fluidType}","${fluidCustomType}","${fluidAmount}","${fluidUnit}","${
             fluidNotes ? fluidNotes.replace(/"/g, '""') : ""
@@ -343,17 +415,18 @@ const DataManagement: React.FC<DataManagementProps> = ({
     const encodedUri = encodeURI(csvContent)
     const link = document.createElement("a")
     link.setAttribute("href", encodedUri)
-    link.setAttribute("download", "flow_tracker_data.csv")
+    link.setAttribute("download", "my_uro_log_data.csv")
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
   }
 
+  // Update the importData function
   const importData = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
       const reader = new FileReader()
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         try {
           const content = e.target?.result as string
           const lines = content.split("\n")
@@ -389,10 +462,18 @@ const DataManagement: React.FC<DataManagementProps> = ({
 
           // Check the header to determine the format
           const header = lines[0].toLowerCase()
+          const hasOriginalTimestamp = header.includes("original timestamp")
           const isNewFormat = header.includes("date") && header.includes("time")
 
-          const newFlowEntries: FlowEntry[] = []
-          const newFluidIntakeEntries: FluidIntakeEntry[] = []
+          // Get all existing timestamps directly from the database for duplicate checking
+          const { db } = await import("../services/db")
+          const existingUroTimestamps = new Set((await db.uroLogs.toArray()).map((entry) => entry.timestamp))
+          const existingHydroTimestamps = new Set((await db.hydroLogs.toArray()).map((entry) => entry.timestamp))
+
+          const newUroLogs: UroLog[] = []
+          const newHydroLogs: HydroLog[] = []
+          const skippedUroEntries: string[] = []
+          const skippedHydroEntries: string[] = []
 
           for (let i = 1; i < lines.length; i++) {
             const line = lines[i].trim()
@@ -401,14 +482,21 @@ const DataManagement: React.FC<DataManagementProps> = ({
             try {
               const fields = parseCSVLine(line)
 
-              if (isNewFormat) {
-                // Handle the new format with separate flow and fluid intake data
-                // Parse date and time
-                const dateStr = fields[0].replace(/"/g, "").trim()
-                const timeStr = fields[1].replace(/"/g, "").trim()
+              // Determine timestamp based on format
+              let timestamp: string
 
-                // Create timestamp - handle various date formats
-                let timestamp
+              if (hasOriginalTimestamp && fields[0] && fields[0].trim()) {
+                // Use the original timestamp if available
+                timestamp = fields[0].trim()
+              } else if (isNewFormat) {
+                // Parse date and time from separate fields
+                const dateIndex = hasOriginalTimestamp ? 1 : 0
+                const timeIndex = hasOriginalTimestamp ? 2 : 1
+
+                const dateStr = fields[dateIndex].replace(/"/g, "").trim()
+                const timeStr = fields[timeIndex].replace(/"/g, "").trim()
+
+                // Create timestamp from date and time
                 try {
                   // Try to parse the date in MM/DD/YY format
                   const dateParts = dateStr.split("/")
@@ -451,19 +539,45 @@ const DataManagement: React.FC<DataManagementProps> = ({
                   // Use current timestamp as fallback
                   timestamp = new Date().toISOString()
                 }
+              } else {
+                // Old format - first field is the timestamp
+                timestamp = fields[0]
+              }
 
-                // Parse flow entry fields
-                const volume = Number.parseFloat(fields[2] || "0")
-                const duration = Number.parseFloat(fields[3] || "0")
-                const flowRate = Number.parseFloat(fields[4] || "0")
-                const color = fields[5] || undefined
-                const urgency = fields[6] || undefined
-                const concerns = fields[7] ? fields[7].split(";").map((c) => c.trim()) : undefined
-                const flowNotes = fields[8] || undefined
+              // Calculate field indices based on format
+              const offset = hasOriginalTimestamp ? 1 : 0
+              const volumeIndex = isNewFormat ? 2 + offset : 1
+              const durationIndex = isNewFormat ? 3 + offset : 2
+              const flowRateIndex = isNewFormat ? 4 + offset : 3
+              const colorIndex = isNewFormat ? 5 + offset : undefined
+              const urgencyIndex = isNewFormat ? 6 + offset : undefined
+              const concernsIndex = isNewFormat ? 7 + offset : undefined
+              const flowNotesIndex = isNewFormat ? 8 + offset : undefined
+              const fluidTypeIndex = isNewFormat ? 9 + offset : 4
+              const fluidCustomTypeIndex = isNewFormat ? 10 + offset : undefined
+              const fluidAmountIndex = isNewFormat ? 11 + offset : 5
+              const fluidUnitIndex = isNewFormat ? 12 + offset : 6
+              const fluidNotesIndex = isNewFormat ? 13 + offset : undefined
 
-                // Create flow entry if we have valid data
-                if (volume > 0 && duration > 0 && flowRate > 0) {
-                  newFlowEntries.push({
+              // Parse UroLog fields
+              const volume = Number.parseFloat(fields[volumeIndex] || "0")
+              const duration = Number.parseFloat(fields[durationIndex] || "0")
+              const flowRate = Number.parseFloat(fields[flowRateIndex] || "0")
+              const color = colorIndex !== undefined ? fields[colorIndex] : undefined
+              const urgency = urgencyIndex !== undefined ? fields[urgencyIndex] : undefined
+              const concerns =
+                concernsIndex !== undefined && fields[concernsIndex]
+                  ? fields[concernsIndex].split(";").map((c) => c.trim())
+                  : undefined
+              const flowNotes = flowNotesIndex !== undefined ? fields[flowNotesIndex] : undefined
+
+              // Create UroLog if we have valid data and it doesn't already exist
+              if (volume > 0 && duration > 0 && flowRate > 0) {
+                if (existingUroTimestamps.has(timestamp)) {
+                  // Skip this entry as it already exists
+                  skippedUroEntries.push(timestamp)
+                } else {
+                  newUroLogs.push({
                     timestamp,
                     volume,
                     duration,
@@ -473,18 +587,26 @@ const DataManagement: React.FC<DataManagementProps> = ({
                     concerns,
                     notes: flowNotes,
                   })
+                  // Add to set to prevent duplicates within the import
+                  existingUroTimestamps.add(timestamp)
                 }
+              }
 
-                // Parse fluid intake fields
-                const fluidType = fields[9] || ""
-                const fluidCustomType = fields[10] || undefined
-                const fluidAmount = Number.parseFloat(fields[11] || "0")
-                const fluidUnit = (fields[12] as "oz" | "mL") || "mL"
-                const fluidNotes = fields[13] || undefined
+              // Parse HydroLog fields
+              const fluidType = fluidTypeIndex !== undefined ? fields[fluidTypeIndex] : ""
+              const fluidCustomType = fluidCustomTypeIndex !== undefined ? fields[fluidCustomTypeIndex] : undefined
+              const fluidAmount =
+                fluidAmountIndex !== undefined ? Number.parseFloat(fields[fluidAmountIndex] || "0") : 0
+              const fluidUnit = fluidUnitIndex !== undefined ? (fields[fluidUnitIndex] as "oz" | "mL") || "mL" : "mL"
+              const fluidNotes = fluidNotesIndex !== undefined ? fields[fluidNotesIndex] : undefined
 
-                // Create fluid intake entry if we have valid data
-                if (fluidType && fluidAmount > 0) {
-                  newFluidIntakeEntries.push({
+              // Create HydroLog if we have valid data and it doesn't already exist
+              if (fluidType && fluidAmount > 0) {
+                if (existingHydroTimestamps.has(timestamp)) {
+                  // Skip this entry as it already exists
+                  skippedHydroEntries.push(timestamp)
+                } else {
+                  newHydroLogs.push({
                     timestamp,
                     type: fluidType as any,
                     customType: fluidCustomType,
@@ -492,38 +614,8 @@ const DataManagement: React.FC<DataManagementProps> = ({
                     unit: fluidUnit,
                     notes: fluidNotes,
                   })
-                }
-              } else {
-                // Handle the old format (combined entries)
-                const timestamp = fields[0]
-                const volume = Number.parseFloat(fields[1] || "0")
-                const duration = Number.parseFloat(fields[2] || "0")
-                const flowRate = Number.parseFloat(fields[3] || "0")
-
-                // Create flow entry
-                if (volume > 0 && duration > 0 && flowRate > 0) {
-                  newFlowEntries.push({
-                    timestamp,
-                    volume,
-                    duration,
-                    flowRate,
-                  })
-                }
-
-                // Check if there's fluid intake data
-                if (fields.length > 4 && fields[4]) {
-                  const fluidType = fields[4]
-                  const fluidAmount = Number.parseFloat(fields[5] || "0")
-                  const fluidUnit = (fields[6] as "oz" | "mL") || "mL"
-
-                  if (fluidType && fluidAmount > 0) {
-                    newFluidIntakeEntries.push({
-                      timestamp,
-                      type: fluidType as any,
-                      amount: fluidAmount,
-                      unit: fluidUnit,
-                    })
-                  }
+                  // Add to set to prevent duplicates within the import
+                  existingHydroTimestamps.add(timestamp)
                 }
               }
             } catch (error) {
@@ -532,31 +624,98 @@ const DataManagement: React.FC<DataManagementProps> = ({
             }
           }
 
-          // Add new entries to state and database
-          if (newFlowEntries.length > 0) {
-            setFlowEntries([...flowEntries, ...newFlowEntries])
+          // Add new entries to database
+          if (newUroLogs.length > 0) {
             try {
-              bulkAddFlowEntries(newFlowEntries)
+              await bulkAddUroLogs(newUroLogs)
             } catch (error) {
-              console.error("Error adding flow entries to database:", error)
+              console.error("Error adding UroLogs to database:", error)
             }
           }
 
-          if (newFluidIntakeEntries.length > 0) {
-            setFluidIntakeEntries([...fluidIntakeEntries, ...newFluidIntakeEntries])
+          if (newHydroLogs.length > 0) {
             try {
-              bulkAddFluidIntakeEntries(newFluidIntakeEntries)
+              await bulkAddHydroLogs(newHydroLogs)
             } catch (error) {
-              console.error("Error adding fluid intake entries to database:", error)
+              console.error("Error adding HydroLogs to database:", error)
             }
           }
 
-          alert(
-            `Imported ${newFlowEntries.length} flow entries and ${newFluidIntakeEntries.length} fluid intake entries.`,
-          )
+          // Refresh entries from database
+          await fetchEntriesFromDb()
+
+          // Create a detailed message about the restoration
+          let message = `Restoration complete!\n\n`
+
+          if (newUroLogs.length > 0 || newHydroLogs.length > 0) {
+            message += `✅ Successfully added ${newUroLogs.length + newHydroLogs.length} new entries to database:\n`
+            if (newUroLogs.length > 0) {
+              message += `   • ${newUroLogs.length} UroLogs\n`
+            }
+            if (newHydroLogs.length > 0) {
+              message += `   • ${newHydroLogs.length} HydroLogs\n`
+            }
+          } else {
+            message += "❌ No new entries were added to the database.\n"
+          }
+
+          if (skippedUroEntries.length > 0 || skippedHydroEntries.length > 0) {
+            message += `\n⚠️ Skipped ${skippedUroEntries.length + skippedHydroEntries.length} duplicate entries (already exist in database):\n`
+            if (skippedUroEntries.length > 0) {
+              message += `   • ${skippedUroEntries.length} UroLogs\n`
+            }
+            if (skippedHydroEntries.length > 0) {
+              message += `   • ${skippedHydroEntries.length} HydroLogs\n`
+            }
+          }
+
+          // Show alert with import results
+          alert(message)
+
+          // Add a confirmation to run storage tests
+          if (newUroLogs.length > 0 || newHydroLogs.length > 0) {
+            if (confirm("Would you like to run storage tests to verify no duplicates were created?")) {
+              // Scroll to the Help section and open the Storage Tests section
+              const helpButton = document.querySelector('button[aria-label="Help"]')
+              if (helpButton) {
+                ;(helpButton as HTMLButtonElement).click()
+
+                // Wait for the Help section to load
+                setTimeout(() => {
+                  // Find and click the Development section
+                  const developmentSection = Array.from(document.querySelectorAll("h2")).find((el) =>
+                    el.textContent?.includes("Development"),
+                  )
+                  if (developmentSection) {
+                    developmentSection.click()
+
+                    // Find and click the Storage Tests section
+                    setTimeout(() => {
+                      const storageTestsSection = Array.from(document.querySelectorAll("h3")).find((el) =>
+                        el.textContent?.includes("Storage Tests"),
+                      )
+                      if (storageTestsSection) {
+                        storageTestsSection.click()
+
+                        // Find and click the Run Tests button
+                        setTimeout(() => {
+                          const runTestsButton = Array.from(document.querySelectorAll("button")).find((el) =>
+                            el.textContent?.includes("Run Tests"),
+                          )
+                          if (runTestsButton) {
+                            ;(runTestsButton as HTMLButtonElement).click()
+                          }
+                        }, 300)
+                      }
+                    }, 300)
+                  }
+                }, 300)
+              }
+            }
+          }
         } catch (error) {
           console.error("Error processing CSV file:", error)
-          alert("Error processing CSV file. Please check the format.")
+          alert("Error processing your backup file. Please check that it's a valid backup file (CSV format).")
         }
       }
       reader.readAsText(file)
@@ -565,57 +724,50 @@ const DataManagement: React.FC<DataManagementProps> = ({
     }
   }
 
-  const toggleMonthExpand = (monthKey: string) => {
-    setExpandedMonths((prev) => ({
-      ...prev,
-      [monthKey]: !prev[monthKey],
-    }))
-  }
-
-  // Group entries by month and year
+  // Update the groupEntriesByMonth function
   const groupEntriesByMonth = (): MonthlyGroup[] => {
     const groups: Record<
       string,
       {
-        flowEntries: FlowEntry[]
-        fluidIntakeEntries: FluidIntakeEntry[]
+        uroLogs: UroLog[]
+        hydroLogs: HydroLog[]
       }
     > = {}
 
-    // Process flow entries
-    flowEntries.forEach((entry) => {
+    // Process UroLogs
+    dbUroLogs.forEach((entry) => {
       const date = new Date(entry.timestamp)
       const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
 
       if (!groups[monthYear]) {
         groups[monthYear] = {
-          flowEntries: [],
-          fluidIntakeEntries: [],
+          uroLogs: [],
+          hydroLogs: [],
         }
       }
 
-      groups[monthYear].flowEntries.push(entry)
+      groups[monthYear].uroLogs.push(entry)
     })
 
-    // Process fluid intake entries
-    fluidIntakeEntries.forEach((entry) => {
+    // Process HydroLogs
+    dbHydroLogs.forEach((entry) => {
       const date = new Date(entry.timestamp)
       const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
 
       if (!groups[monthYear]) {
         groups[monthYear] = {
-          flowEntries: [],
-          fluidIntakeEntries: [],
+          uroLogs: [],
+          hydroLogs: [],
         }
       }
 
-      groups[monthYear].fluidIntakeEntries.push(entry)
+      groups[monthYear].hydroLogs.push(entry)
     })
 
     // Calculate averages for each month
     return Object.entries(groups)
-      .map(([key, { flowEntries, fluidIntakeEntries }]) => {
-        const date = new Date(flowEntries.length > 0 ? flowEntries[0].timestamp : fluidIntakeEntries[0].timestamp)
+      .map(([key, { uroLogs, hydroLogs }]) => {
+        const date = new Date(uroLogs.length > 0 ? uroLogs[0].timestamp : hydroLogs[0].timestamp)
         const monthNames = [
           "January",
           "February",
@@ -635,16 +787,16 @@ const DataManagement: React.FC<DataManagementProps> = ({
 
         // Calculate flow averages
         const averageFlowRate =
-          flowEntries.length > 0 ? flowEntries.reduce((sum, entry) => sum + entry.flowRate, 0) / flowEntries.length : 0
+          uroLogs.length > 0 ? uroLogs.reduce((sum, entry) => sum + entry.flowRate, 0) / uroLogs.length : 0
 
         const averageVolume =
-          flowEntries.length > 0 ? flowEntries.reduce((sum, entry) => sum + entry.volume, 0) / flowEntries.length : 0
+          uroLogs.length > 0 ? uroLogs.reduce((sum, entry) => sum + entry.volume, 0) / uroLogs.length : 0
 
         const averageDuration =
-          flowEntries.length > 0 ? flowEntries.reduce((sum, entry) => sum + entry.duration, 0) / flowEntries.length : 0
+          uroLogs.length > 0 ? uroLogs.reduce((sum, entry) => sum + entry.duration, 0) / uroLogs.length : 0
 
         // Calculate fluid intake average
-        const fluidIntakeAmounts = fluidIntakeEntries.map((entry) =>
+        const fluidIntakeAmounts = hydroLogs.map((entry) =>
           entry.unit === "oz" ? entry.amount * 29.5735 : entry.amount,
         )
 
@@ -656,8 +808,8 @@ const DataManagement: React.FC<DataManagementProps> = ({
         return {
           key,
           label,
-          flowEntries,
-          fluidIntakeEntries,
+          uroLogs,
+          hydroLogs,
           averageFlowRate,
           averageVolume,
           averageDuration,
@@ -672,6 +824,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
       })
   }
 
+  // Restore the formatDate and formatTime functions
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleDateString(undefined, {
@@ -689,241 +842,8 @@ const DataManagement: React.FC<DataManagementProps> = ({
     })
   }
 
-  // Generate the data to be shared
-  const generateShareData = (monthKey?: string): { title: string; text: string } => {
-    // Determine which entries to share
-    let entriesToShare: FlowEntry[] = []
-    let fluidEntriesToShare: FluidIntakeEntry[] = []
-    let title = "Flow Tracker Data"
-    let monthsToInclude: MonthlyGroup[] = []
-
-    if (monthKey) {
-      // Share specific month
-      const monthGroup = monthlyGroups.find((group) => group.key === monthKey)
-      if (monthGroup) {
-        entriesToShare = monthGroup.flowEntries
-        fluidEntriesToShare = monthGroup.fluidIntakeEntries
-        title = `Flow Tracker Data - ${monthGroup.label}`
-        monthsToInclude = [monthGroup]
-      }
-    } else {
-      // Share all data - no limits
-      entriesToShare = flowEntries
-      fluidEntriesToShare = fluidIntakeEntries
-      monthsToInclude = monthlyGroups
-      title = `Flow Tracker Complete Data Summary`
-    }
-
-    // Create a summary text
-    let summary = ""
-    summary += "=".repeat(title.length) + "\n\n"
-
-    // Overall summary
-    if (entriesToShare.length > 0) {
-      summary += `Total Flow Entries: ${entriesToShare.length}\n`
-      const avgFlowRate = calculateAverage(entriesToShare.map((entry) => entry.flowRate))
-      const avgVolume = calculateAverage(entriesToShare.map((entry) => entry.volume))
-      const avgDuration = calculateAverage(entriesToShare.map((entry) => entry.duration))
-
-      summary += `Overall Average Flow Rate: ${avgFlowRate.toFixed(1)} mL/s\n`
-      summary += `Overall Average Volume: ${avgVolume.toFixed(0)} mL\n`
-      summary += `Overall Average Duration: ${avgDuration.toFixed(1)} sec\n\n`
-    }
-
-    if (fluidEntriesToShare.length > 0) {
-      summary += `Total Fluid Intake Entries: ${fluidEntriesToShare.length}\n`
-
-      // Calculate average fluid intake
-      const fluidIntakeAmounts = fluidEntriesToShare.map((entry) =>
-        entry.unit === "oz" ? entry.amount * 29.5735 : entry.amount,
-      )
-      const avgFluidIntake = calculateAverage(fluidIntakeAmounts)
-
-      summary += `Overall Average Fluid Intake: ${avgFluidIntake.toFixed(0)} mL (${(avgFluidIntake / 29.5735).toFixed(1)} oz)\n\n`
-    }
-
-    // Monthly summaries
-    if (monthsToInclude.length > 1) {
-      summary += "MONTHLY SUMMARIES\n"
-      summary += "----------------\n\n"
-
-      monthsToInclude.forEach((month) => {
-        summary += `${month.label}:\n`
-        if (month.flowEntries.length > 0) {
-          summary += `  Flow Entries: ${month.flowEntries.length}\n`
-          summary += `  Avg Flow Rate: ${month.averageFlowRate.toFixed(1)} mL/s\n`
-          summary += `  Avg Volume: ${month.averageVolume.toFixed(0)} mL\n`
-          summary += `  Avg Duration: ${month.averageDuration.toFixed(1)} sec\n`
-        }
-
-        if (month.fluidIntakeEntries.length > 0) {
-          summary += `  Fluid Entries: ${month.fluidIntakeEntries.length}\n`
-          summary += `  Avg Fluid Intake: ${month.averageFluidIntake.toFixed(0)} mL\n`
-        }
-        summary += "\n"
-      })
-    }
-
-    // Add detailed logs - include ALL entries regardless of count
-    if (entriesToShare.length > 0) {
-      summary += "DETAILED FLOW LOGS\n"
-      summary += "----------------\n\n"
-
-      // Sort entries by date (newest first)
-      const sortedEntries = [...entriesToShare].sort(
-        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
-      )
-
-      sortedEntries.forEach((entry, index) => {
-        const date = new Date(entry.timestamp)
-        summary += `${index + 1}. ${date.toLocaleDateString()} ${date.toLocaleTimeString()}\n`
-        summary += `   Volume: ${entry.volume} mL, Duration: ${entry.duration.toFixed(1)}s, Flow Rate: ${entry.flowRate.toFixed(1)} mL/s\n`
-
-        if (entry.color) {
-          summary += `   Color: ${entry.color}\n`
-        }
-
-        if (entry.urgency) {
-          summary += `   Urgency: ${entry.urgency}\n`
-        }
-
-        if (entry.concerns && entry.concerns.length > 0) {
-          summary += `   Concerns: ${entry.concerns.join(", ")}\n`
-        }
-
-        if (entry.notes) {
-          summary += `   Notes: ${entry.notes}\n`
-        }
-
-        summary += "\n"
-      })
-    }
-
-    // Add fluid intake logs - include ALL entries regardless of count
-    if (fluidEntriesToShare.length > 0) {
-      summary += "FLUID INTAKE LOGS\n"
-      summary += "----------------\n\n"
-
-      // Sort entries by date (newest first)
-      const sortedFluidEntries = [...fluidEntriesToShare].sort(
-        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
-      )
-
-      sortedFluidEntries.forEach((entry, index) => {
-        const date = new Date(entry.timestamp)
-        const fluidType = entry.type === "Other" && entry.customType ? entry.customType : entry.type
-        summary += `${index + 1}. ${date.toLocaleDateString()} ${date.toLocaleTimeString()}\n`
-        summary += `   Type: ${fluidType}, Amount: ${entry.amount} ${entry.unit}\n`
-
-        if (entry.notes) {
-          summary += `   Notes: ${entry.notes}\n`
-        }
-
-        summary += "\n"
-      })
-    }
-
-    // Add footer with count verification
-    summary += "\nSUMMARY VERIFICATION\n"
-    summary += "-------------------\n"
-    summary += `Total Flow Entries: ${entriesToShare.length}\n`
-    summary += `Total Fluid Intake Entries: ${fluidEntriesToShare.length}\n`
-    summary += `Total Combined Entries: ${entriesToShare.length + fluidEntriesToShare.length}\n\n`
-
-    summary += "Generated by Flow Tracker App\n"
-    summary += `Date: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}\n`
-
-    return { title, text: summary }
-  }
-
-  // Share data functionality - completely revised
-  const shareData = (monthKey?: string) => {
-    const { title, text } = generateShareData(monthKey)
-
-    // Use our improved sharing function that bypasses Web Share API in problematic environments
-    shareContent({
-      title,
-      text,
-    })
-  }
-
-  // Run a test to verify sharing works across platforms
-  const runShareTest = () => {
-    // Generate test data
-    const testData = generateShareData()
-
-    // Check if Web Share API is available
-    const shareApiAvailable = isShareAvailable()
-
-    // Verify data integrity
-    const totalEntries = flowEntries.length + fluidIntakeEntries.length
-    const dataIncludesAllEntries = testData.text.includes(`Total Combined Entries: ${totalEntries}`)
-
-    // Determine platform
-    const platform = detectPlatform()
-
-    // Create test results
-    let results = `Share Functionality Test Results:\n\n`
-    results += `Platform: ${platform}\n`
-    results += `Web Share API Available: ${shareApiAvailable ? "Yes" : "No"}\n`
-    results += `Data Includes All Entries: ${dataIncludesAllEntries ? "Yes" : "No"}\n`
-    results += `Total Entries: ${totalEntries}\n`
-    results += `Flow Entries: ${flowEntries.length}\n`
-    results += `Fluid Intake Entries: ${fluidIntakeEntries.length}\n\n`
-
-    if (shareApiAvailable) {
-      results += `Share Method: Native Web Share API\n`
-      results += `Fallback: Clipboard copy if sharing fails\n`
-    } else {
-      results += `Share Method: Clipboard copy\n`
-      results += `Reason: Web Share API not available on this platform/environment\n`
-    }
-
-    // Set test results to display
-    setShareTestResults(results)
-  }
-
-  // Helper function to detect platform
-  const detectPlatform = (): string => {
-    const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera
-
-    // iOS detection
-    if (/iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream) {
-      return "iOS"
-    }
-
-    // Android detection
-    if (/android/i.test(userAgent)) {
-      return "Android"
-    }
-
-    // Windows detection
-    if (/Win/.test(navigator.platform)) {
-      return "Windows"
-    }
-
-    // macOS detection
-    if (/Mac/.test(navigator.platform)) {
-      return "macOS"
-    }
-
-    // Linux detection
-    if (/Linux/.test(navigator.platform)) {
-      return "Linux"
-    }
-
-    return "Unknown"
-  }
-
-  // Helper function for calculating averages
-  const calculateAverage = (values: number[]) => {
-    return values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0
-  }
-
-  const monthlyGroups = groupEntriesByMonth()
-
-  // Add these helper functions for styling color and urgency values
-  const getColorClass = (color?: string): string => {
+  // Restore the getColorClass and getUrgencyClass functions
+  const getColorClassValue = (color?: string): string => {
     if (!color) return "text-gray-500 dark:text-gray-400"
 
     switch (color) {
@@ -952,7 +872,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
     }
   }
 
-  const getUrgencyClass = (urgency?: string): string => {
+  const getUrgencyClassValue = (urgency?: string): string => {
     if (!urgency) return "text-gray-500 dark:text-gray-400"
 
     switch (urgency) {
@@ -973,48 +893,131 @@ const DataManagement: React.FC<DataManagementProps> = ({
     }
   }
 
+  // Restore the shareData function and related functions
+  const shareData = (monthKey?: string) => {
+    const { title, text } = generateShareData(monthKey)
+
+    // Use our improved sharing function that bypasses Web Share API in problematic environments
+    shareContent({
+      title,
+      text,
+    })
+  }
+
+  // Update the generateShareData function
+  const generateShareData = (monthKey?: string): { title: string; text: string } => {
+    // Determine which entries to share
+    let entriesToShare: UroLog[] = []
+    let hydroLogsToShare: HydroLog[] = []
+    let title = "My Uro Log Data"
+    let monthsToInclude: MonthlyGroup[] = []
+
+    if (monthKey) {
+      // Share specific month
+      const monthGroup = monthlyGroups.find((group) => group.key === monthKey)
+      if (monthGroup) {
+        entriesToShare = monthGroup.uroLogs
+        hydroLogsToShare = monthGroup.hydroLogs
+        title = `My Uro Log Data - ${monthGroup.label}`
+        monthsToInclude = [monthGroup]
+      }
+    } else {
+      // Share all data - no limits
+      entriesToShare = dbUroLogs
+      hydroLogsToShare = dbHydroLogs
+      monthsToInclude = monthlyGroups
+      title = `My Uro Log Complete Data Summary`
+    }
+
+    // Create a summary text
+    let summary = ""
+    summary += "=".repeat(title.length) + "\n"
+
+    // Overall summary
+    if (entriesToShare.length > 0) {
+      summary += `Total UroLogs: ${entriesToShare.length}\n`
+      const avgFlowRate = calculateAverage(entriesToShare.map((entry) => entry.flowRate))
+      const avgVolume = calculateAverage(entriesToShare.map((entry) => entry.volume))
+      const avgDuration = calculateAverage(entriesToShare.map((entry) => entry.duration))
+
+      summary += `Overall Average Flow Rate: ${avgFlowRate.toFixed(1)} mL/s\n`
+      summary += `Overall Average Volume: ${avgVolume.toFixed(0)} mL\n`
+      summary += `Overall Average Duration: ${avgDuration.toFixed(1)} sec\n\n`
+    }
+
+    if (hydroLogsToShare.length > 0) {
+      summary += `Total HydroLogs: ${hydroLogsToShare.length}\n`
+
+      // Calculate average fluid intake
+      const fluidIntakeAmounts = hydroLogsToShare.map((entry) =>
+        entry.unit === "oz" ? entry.amount * 29.5735 : entry.amount,
+      )
+      const avgFluidIntake = calculateAverage(fluidIntakeAmounts)
+
+      summary += `Overall Average Fluid Intake: ${avgFluidIntake.toFixed(0)} mL (${(avgFluidIntake / 29.5735).toFixed(1)} oz)\n\n`
+    }
+
+    // Monthly summaries
+    if (monthsToInclude.length > 1) {
+      summary += "MONTHLY SUMMARIES\n"
+      summary += "----------------\n\n"
+
+      monthsToInclude.forEach((month) => {
+        summary += `${month.label}:\n`
+        if (month.uroLogs.length > 0) {
+          summary += `  UroLogs: ${month.uroLogs.length}\n`
+          summary += `  Avg Flow Rate: ${month.averageFlowRate.toFixed(1)} mL/s\n`
+          summary += `  Avg Volume: ${month.averageVolume.toFixed(0)} mL\n`
+          summary += `  Avg Duration: ${month.averageDuration.toFixed(1)} sec\n`
+        }
+
+        if (month.hydroLogs.length > 0) {
+          summary += `  HydroLogs: ${month.hydroLogs.length}\n`
+          summary += `  Avg Fluid Intake: ${month.averageFluidIntake.toFixed(0)} mL\n`
+        }
+        summary += "\n"
+      })
+    }
+
+    return { title, text: summary }
+  }
+
+  // Update the UI labels
   return (
     <>
       <div className="mb-4">
-        {flowEntries.length === 0 && fluidIntakeEntries.length === 0 ? (
+        {dbUroLogs.length === 0 && dbHydroLogs.length === 0 ? (
           <div className="text-center p-4">
             <p className="text-gray-500 dark:text-gray-400 mb-4">
-              No entries yet. Add your first flow entry or generate mock data.
+              No entries yet. Add your first UroLog entry or generate demo data.
             </p>
             <button
-              onClick={generateMockData}
+              onClick={generateDemoData}
               className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center mx-auto shadow-sm font-medium"
             >
-              <Database className="mr-2" size={18} /> Generate Mock Data
+              <Database className="mr-2" size={18} /> Generate Demo Data
             </button>
           </div>
         ) : (
           <div className="flex justify-end space-x-2">
-            {hasMockData && (
-              <button
-                onClick={deleteMockData}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center shadow-sm font-medium"
-              >
-                <Trash className="mr-2" size={18} /> Delete All Mock Data
-              </button>
-            )}
+            <button
+              onClick={deleteDemoData}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center shadow-sm font-medium"
+            >
+              <Trash className="mr-2" size={18} /> Delete All Demo Data
+            </button>
             <button
               onClick={() => shareData()}
               className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 flex items-center shadow-sm font-medium"
             >
               <Share2 size={18} className="mr-2" /> Share All Data
             </button>
+
             <button
-              onClick={runShareTest}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center shadow-sm font-medium"
-            >
-              Test Share
-            </button>
-            <button
-              onClick={generateMockData}
+              onClick={generateDemoData}
               className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center"
             >
-              <Database className="mr-2" size={18} /> Generate Mock Data
+              <Database className="mr-2" size={18} /> Generate Demo Data
             </button>
           </div>
         )}
@@ -1033,11 +1036,26 @@ const DataManagement: React.FC<DataManagementProps> = ({
         </div>
       )}
 
-      <h3 className="text-xl font-bold mb-4">Entry Logs</h3>
+      {/* Update the database counts display */}
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-xl font-bold">Entry Logs</h3>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={fetchEntriesFromDb}
+            className="px-3 py-1 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600 flex items-center"
+          >
+            <Database size={14} className="mr-1" /> Refresh from Database
+          </button>
+          <div className="text-sm bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-lg">
+            <span className="font-medium">Database:</span> {dbCounts.uroLogs + dbCounts.hydroLogs} entries
+          </div>
+        </div>
+      </div>
 
+      {/* Update the UroLog and HydroLog section titles */}
       {monthlyGroups.length === 0 ? (
         <div className="text-center p-4 text-gray-500 dark:text-gray-400 border rounded-lg">
-          No entries yet. Add your first flow entry above.
+          No entries yet. Add your first UroLog entry above.
         </div>
       ) : (
         <div className="space-y-4">
@@ -1049,10 +1067,10 @@ const DataManagement: React.FC<DataManagementProps> = ({
                   onClick={() => toggleMonthExpand(group.key)}
                 >
                   <Calendar size={16} className="mr-2" />
-                  {group.label} ({group.flowEntries.length + group.fluidIntakeEntries.length} entries)
+                  {group.label} ({group.uroLogs.length + group.hydroLogs.length} entries)
                 </div>
                 <div className="flex items-center">
-                  {group.flowEntries.length > 0 && (
+                  {group.uroLogs.length > 0 && (
                     <div className="text-blue-600 dark:text-blue-400 font-bold mr-4">
                       Avg: {group.averageFlowRate.toFixed(1)} mL/s
                     </div>
@@ -1076,7 +1094,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
               {expandedMonths[group.key] && (
                 <div>
                   <div className="p-3 grid grid-cols-1 md:grid-cols-4 gap-3 bg-gray-50 dark:bg-gray-800 border-b">
-                    {group.flowEntries.length > 0 && (
+                    {group.uroLogs.length > 0 && (
                       <>
                         <div className="flex items-center">
                           <BarChart className="mr-2 text-blue-500" size={18} />
@@ -1101,7 +1119,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
                         </div>
                       </>
                     )}
-                    {group.fluidIntakeEntries.length > 0 && (
+                    {group.hydroLogs.length > 0 && (
                       <div className="flex items-center">
                         <Coffee className="mr-2 text-cyan-500" size={18} />
                         <div>
@@ -1112,14 +1130,14 @@ const DataManagement: React.FC<DataManagementProps> = ({
                     )}
                   </div>
 
-                  {/* Flow Entries */}
-                  {group.flowEntries.length > 0 && (
+                  {/* UroLogs */}
+                  {group.uroLogs.length > 0 && (
                     <div className="mb-4">
                       <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border-b">
-                        <h4 className="font-medium">Flow Entries ({group.flowEntries.length})</h4>
+                        <h4 className="font-medium">UroLogs ({group.uroLogs.length})</h4>
                       </div>
                       <div className="divide-y">
-                        {group.flowEntries
+                        {group.uroLogs
                           .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
                           .map((entry) => (
                             <div key={entry.timestamp} className="p-3 hover:bg-gray-50 dark:hover:bg-gray-700">
@@ -1146,7 +1164,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation()
-                                      deleteFlowEntry(entry.timestamp)
+                                      handleDeleteUroLog(entry.timestamp)
                                     }}
                                     className="text-red-500 hover:text-red-700 p-1"
                                     aria-label="Delete entry"
@@ -1159,11 +1177,13 @@ const DataManagement: React.FC<DataManagementProps> = ({
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm mt-2">
                                 <div>
                                   <span className="text-gray-500 dark:text-gray-400 font-medium">Color:</span>{" "}
-                                  <span className={getColorClass(entry.color)}>{entry.color || "Not recorded"}</span>
+                                  <span className={getColorClassValue(entry.color)}>
+                                    {entry.color || "Not recorded"}
+                                  </span>
                                 </div>
                                 <div>
                                   <span className="text-gray-500 dark:text-gray-400 font-medium">Urgency:</span>{" "}
-                                  <span className={getUrgencyClass(entry.urgency)}>
+                                  <span className={getUrgencyClassValue(entry.urgency)}>
                                     {entry.urgency || "Not recorded"}
                                   </span>
                                 </div>
@@ -1199,14 +1219,14 @@ const DataManagement: React.FC<DataManagementProps> = ({
                     </div>
                   )}
 
-                  {/* Fluid Intake Entries */}
-                  {group.fluidIntakeEntries.length > 0 && (
+                  {/* HydroLogs */}
+                  {group.hydroLogs.length > 0 && (
                     <div>
                       <div className="p-3 bg-cyan-50 dark:bg-cyan-900/20 border-b">
-                        <h4 className="font-medium">Fluid Intake Entries ({group.fluidIntakeEntries.length})</h4>
+                        <h4 className="font-medium">HydroLogs ({group.hydroLogs.length})</h4>
                       </div>
                       <div className="divide-y">
-                        {group.fluidIntakeEntries
+                        {group.hydroLogs
                           .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
                           .map((entry) => (
                             <div key={entry.timestamp} className="p-3 hover:bg-gray-50 dark:hover:bg-gray-700">
@@ -1233,7 +1253,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation()
-                                      deleteFluidIntakeEntry(entry.timestamp)
+                                      handleDeleteHydroLog(entry.timestamp)
                                     }}
                                     className="text-red-500 hover:text-red-700 p-1"
                                     aria-label="Delete entry"
@@ -1261,35 +1281,39 @@ const DataManagement: React.FC<DataManagementProps> = ({
         </div>
       )}
 
-      <div className="mt-6 border-t pt-4">
-        <h3 className="text-lg font-semibold mb-3">Backup & Restore</h3>
+      <h3 className="text-lg font-semibold mb-3">Backup & Restore</h3>
 
-        <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-          <p>
-            <strong>Backup:</strong> Creates a file with all your data that you can save to your device.
-          </p>
-          <p className="mt-1">
-            <strong>Restore:</strong> Loads data from a previously created backup file.
-          </p>
+      <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+        <p>
+          <strong>Backup:</strong> Creates a file with all your data that you can save to your device.
+        </p>
+        <p className="mt-1">
+          <strong>Restore:</strong> Loads your data from a previously created backup file.
+        </p>
+      </div>
+
+      <div className="flex flex-wrap -mx-2">
+        <div className="w-full md:w-1/2 px-2 mb-4">
+          <button
+            onClick={exportData}
+            className="w-full p-3 bg-purple-500 text-white rounded hover:bg-purple-600 flex items-center justify-center"
+          >
+            <Download className="mr-2" /> Backup My Data
+          </button>
         </div>
-
-        <div className="flex flex-wrap -mx-2">
-          <div className="w-full md:w-1/2 px-2 mb-4">
-            <button
-              onClick={exportData}
-              className="w-full p-3 bg-purple-500 text-white rounded hover:bg-purple-600 flex items-center justify-center"
-            >
-              <Download className="mr-2" /> Export Data
-            </button>
-          </div>
-          <div className="w-full md:w-1/2 px-2 mb-4">
-            <label className="w-full p-3 bg-teal-500 text-white rounded hover:bg-teal-600 flex items-center justify-center cursor-pointer">
-              <Upload className="mr-2" /> Import Data
-              <input type="file" accept=".csv,.json" onChange={importData} className="hidden" />
-            </label>
-          </div>
+        <div className="w-full md:w-1/2 px-2 mb-4">
+          <label className="w-full p-3 bg-teal-500 text-white rounded hover:bg-teal-600 flex items-center justify-center cursor-pointer">
+            <Upload className="mr-2" /> Restore My Data
+            <input type="file" accept=".csv,.json" onChange={importData} className="hidden" />
+          </label>
         </div>
       </div>
+      {isLoading && (
+        <div className="text-center py-4">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+          <p className="mt-2 text-gray-500 dark:text-gray-400">Loading entries from database...</p>
+        </div>
+      )}
     </>
   )
 }

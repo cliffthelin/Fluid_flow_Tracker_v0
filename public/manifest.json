@@ -1,7 +1,7 @@
 {
-  "name": "Fluid Flow Tracker",
-  "short_name": "Flow Tracker",
-  "description": "Track and monitor urinary flow metrics",
+  "name": "My Uro Log",
+  "short_name": "My Uro Log",
+  "description": "Track and monitor urological health metrics",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -26,7 +26,7 @@
     {
       "name": "Add New Entry",
       "short_name": "Add Entry",
-      "description": "Add a new flow entry",
+      "description": "Add a new UroLog entry",
       "url": "/?action=add",
       "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
     }

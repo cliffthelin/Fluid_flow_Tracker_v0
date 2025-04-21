@@ -1,31 +1,95 @@
 "use client"
 
 import type React from "react"
-import { BarChart, Calendar, Clock, Droplet, AlertTriangle, Coffee, TrendingUp, TrendingDown } from "lucide-react"
-import type { FlowEntry } from "../types"
+import { useState, useEffect } from "react"
+import {
+  BarChart,
+  Calendar,
+  Clock,
+  Droplet,
+  AlertTriangle,
+  Coffee,
+  TrendingUp,
+  TrendingDown,
+  LineChart,
+  Grid,
+  ScatterChart,
+  BarChartIcon,
+} from "lucide-react"
+import type { UroLog, HydroLog } from "../types"
 import CollapsibleSection from "./CollapsibleSection"
 
-interface FlowStatsProps {
-  entries: FlowEntry[]
+interface FluidStatsProps {
+  title2?: React.ReactNode
 }
 
-const FlowStats: React.FC<FlowStatsProps> = ({ entries }) => {
+const FluidStats: React.FC<FluidStatsProps> = ({ title2 }) => {
+  const [uroLogs, setUroLogs] = useState<UroLog[]>([])
+  const [hydroLogs, setHydroLogs] = useState<HydroLog[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState("table")
+  const [timeFilter, setTimeFilter] = useState("all")
+  const [dataTypeFilter, setDataTypeFilter] = useState("both")
+
+  useEffect(() => {
+    const fetchEntries = async () => {
+      setIsLoading(true)
+      try {
+        const { db } = await import("../services/db")
+        const uroLogs = await db.uroLogs.toArray()
+        const hydroLogs = await db.hydroLogs.toArray()
+        setUroLogs(uroLogs)
+        setHydroLogs(hydroLogs)
+      } catch (error) {
+        console.error("Error fetching entries from database:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchEntries()
+  }, [])
+
+  const filterDataByTime = (entries: (UroLog | HydroLog)[]) => {
+    const now = new Date()
+    let cutoffDate: Date
+
+    switch (timeFilter) {
+      case "week":
+        cutoffDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+        break
+      case "month":
+        cutoffDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+        break
+      case "year":
+        cutoffDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000)
+        break
+      default:
+        return entries
+    }
+
+    return entries.filter((entry) => new Date(entry.timestamp) >= cutoffDate)
+  }
+
+  const filteredUroLogs = dataTypeFilter === "intake" ? [] : filterDataByTime(uroLogs)
+  const filteredHydroLogs = dataTypeFilter === "uroLog" ? [] : filterDataByTime(hydroLogs)
+
   const calculateAverage = (values: number[]) => {
     return values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0
   }
 
-  const averageFlowRate = calculateAverage(entries.map((entry) => entry.flowRate))
-  const averageVolume = calculateAverage(entries.map((entry) => entry.volume))
-  const averageDuration = calculateAverage(entries.map((entry) => entry.duration))
+  const averageFlowRate = calculateAverage(filteredUroLogs.map((entry) => entry.flowRate))
+  const averageVolume = calculateAverage(filteredUroLogs.map((entry) => entry.volume))
+  const averageDuration = calculateAverage(filteredUroLogs.map((entry) => entry.duration))
 
   // Get recent entries (last 7 days)
   const oneWeekAgo = new Date()
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
-  const recentEntries = entries.filter((entry) => new Date(entry.timestamp) >= oneWeekAgo)
-  const recentAverageFlowRate = calculateAverage(recentEntries.map((entry) => entry.flowRate))
+  const recentUroLogs = filteredUroLogs.filter((entry) => new Date(entry.timestamp) >= oneWeekAgo)
+  const recentAverageFlowRate = calculateAverage(recentUroLogs.map((entry) => entry.flowRate))
 
   // Get color distribution
-  const entriesWithColor = entries.filter((entry) => entry.color)
+  const entriesWithColor = filteredUroLogs.filter((entry) => entry.color)
   const colorCounts: Record<string, number> = {}
   entriesWithColor.forEach((entry) => {
     if (entry.color) {
@@ -44,7 +108,7 @@ const FlowStats: React.FC<FlowStatsProps> = ({ entries }) => {
   })
 
   // Get urgency distribution
-  const entriesWithUrgency = entries.filter((entry) => entry.urgency)
+  const entriesWithUrgency = filteredUroLogs.filter((entry) => entry.urgency)
   const urgencyCounts: Record<string, number> = {}
   entriesWithUrgency.forEach((entry) => {
     if (entry.urgency) {
@@ -64,7 +128,7 @@ const FlowStats: React.FC<FlowStatsProps> = ({ entries }) => {
 
   // Get concern distribution
   const concernCounts: Record<string, number> = {}
-  entries.forEach((entry) => {
+  filteredUroLogs.forEach((entry) => {
     if (entry.concerns && entry.concerns.length > 0) {
       entry.concerns.forEach((concern) => {
         concernCounts[concern] = (concernCounts[concern] || 0) + 1
@@ -82,28 +146,26 @@ const FlowStats: React.FC<FlowStatsProps> = ({ entries }) => {
     }
   })
 
-  // Fluid intake statistics
-  const entriesWithFluidIntake = entries.filter((entry) => entry.fluidIntake)
+  // HydroLog statistics
+  const entriesWithHydroLog = filteredHydroLogs.filter((entry) => entry.hydroLog)
 
-  // Calculate average fluid intake
-  const fluidIntakeAmounts = entriesWithFluidIntake.map((entry) => {
-    const { fluidIntake } = entry
-    if (!fluidIntake) return 0
+  // Calculate average hydroLog
+  const hydroLogAmounts = entriesWithHydroLog.map((entry) => {
+    const { hydroLog } = entry
+    if (!hydroLog) return 0
 
     // Convert all to mL for consistency
-    return fluidIntake.unit === "oz" ? fluidIntake.amount * 29.5735 : fluidIntake.amount
+    return hydroLog.unit === "oz" ? hydroLog.amount * 29.5735 : hydroLog.amount
   })
 
-  const averageFluidIntake = calculateAverage(fluidIntakeAmounts)
+  const averageHydroLog = calculateAverage(hydroLogAmounts)
 
   // Get fluid type distribution
   const fluidTypeCounts: Record<string, number> = {}
-  entriesWithFluidIntake.forEach((entry) => {
-    if (entry.fluidIntake?.type) {
+  entriesWithHydroLog.forEach((entry) => {
+    if (entry.hydroLog?.type) {
       const type =
-        entry.fluidIntake.type === "Other" && entry.fluidIntake.customType
-          ? entry.fluidIntake.customType
-          : entry.fluidIntake.type
+        entry.hydroLog.type === "Other" && entry.hydroLog.customType ? entry.hydroLog.customType : entry.hydroLog.type
 
       fluidTypeCounts[type] = (fluidTypeCounts[type] || 0) + 1
     }
@@ -119,10 +181,10 @@ const FlowStats: React.FC<FlowStatsProps> = ({ entries }) => {
     }
   })
 
-  // Check if fluid intake is trending up or down
-  let fluidIntakeTrend: "up" | "down" | "stable" = "stable"
-  if (entriesWithFluidIntake.length >= 4) {
-    const sortedEntries = [...entriesWithFluidIntake].sort(
+  // Check if hydrolog is trending up or down
+  let hydroLogTrend: "up" | "down" | "stable" = "stable"
+  if (entriesWithHydroLog.length >= 4) {
+    const sortedEntries = [...entriesWithHydroLog].sort(
       (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
     )
 
@@ -132,94 +194,150 @@ const FlowStats: React.FC<FlowStatsProps> = ({ entries }) => {
 
     const firstHalfAvg = calculateAverage(
       firstHalf.map((entry) => {
-        if (!entry.fluidIntake) return 0
-        return entry.fluidIntake.unit === "oz" ? entry.fluidIntake.amount * 29.5735 : entry.fluidIntake.amount
+        if (!entry.hydroLog) return 0
+        return entry.hydroLog.unit === "oz" ? entry.hydroLog.amount * 29.5735 : entry.hydroLog.amount
       }),
     )
 
     const secondHalfAvg = calculateAverage(
       secondHalf.map((entry) => {
-        if (!entry.fluidIntake) return 0
-        return entry.fluidIntake.unit === "oz" ? entry.fluidIntake.amount * 29.5735 : entry.fluidIntake.amount
+        if (!entry.hydroLog) return 0
+        return entry.hydroLog.unit === "oz" ? entry.hydroLog.amount * 29.5735 : entry.hydroLog.amount
       }),
     )
 
     const percentChange = ((secondHalfAvg - firstHalfAvg) / firstHalfAvg) * 100
 
     if (percentChange > 5) {
-      fluidIntakeTrend = "up"
+      hydroLogTrend = "up"
     } else if (percentChange < -5) {
-      fluidIntakeTrend = "down"
+      hydroLogTrend = "down"
     }
   }
 
   return (
-    <CollapsibleSection title="Flow Stats" defaultExpanded={true}>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="flex items-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-          <BarChart className="mr-3 text-blue-500" size={24} />
-          <div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Average Flow Rate</p>
-            <p className="text-xl font-bold">{averageFlowRate.toFixed(2)} mL/s</p>
-            {recentEntries.length > 0 && (
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                Last 7 days: {recentAverageFlowRate.toFixed(2)} mL/s
-              </p>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-          <Droplet className="mr-3 text-green-500" size={24} />
-          <div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Average Volume</p>
-            <p className="text-xl font-bold">{averageVolume.toFixed(0)} mL</p>
-          </div>
-        </div>
-        <div className="flex items-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-          <Clock className="mr-3 text-purple-500" size={24} />
-          <div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Average Duration</p>
-            <p className="text-xl font-bold">{averageDuration.toFixed(1)} sec</p>
-          </div>
-        </div>
-        <div className="flex items-center p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
-          <Calendar className="mr-3 text-amber-500" size={24} />
-          <div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Total Entries</p>
-            <p className="text-xl font-bold">{entries.length}</p>
-            {recentEntries.length > 0 && (
-              <p className="text-xs text-gray-500 dark:text-gray-400">Last 7 days: {recentEntries.length}</p>
-            )}
+    <>
+      <div className="mb-4">
+        <div className="flex justify-between items-center">
+          <div className="flex border-b">
+            <button
+              className={`px-4 py-3 font-medium flex items-center ${
+                activeTab === "table"
+                  ? "border-b-2 border-blue-600 text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-t-lg"
+                  : "text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
+              }`}
+              onClick={() => setActiveTab("table")}
+              aria-selected={activeTab === "table"}
+              role="tab"
+              aria-controls="table-panel"
+            >
+              <BarChartIcon size={18} className="mr-2" />
+              Summary
+            </button>
+            <button
+              className={`px-4 py-2 font-medium flex items-center ${
+                activeTab === "line"
+                  ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-t-lg"
+                  : "text-gray-500 dark:text-gray-400"
+              }`}
+              onClick={() => setActiveTab("line")}
+            >
+              <LineChart size={16} className="mr-2" />
+              Line Chart
+            </button>
+            <button
+              className={`px-4 py-2 font-medium flex items-center ${
+                activeTab === "heatmap"
+                  ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-t-lg"
+                  : "text-gray-500 dark:text-gray-400"
+              }`}
+              onClick={() => setActiveTab("heatmap")}
+            >
+              <Grid size={16} className="mr-2" />
+              Heat Map
+            </button>
+            <button
+              className={`px-4 py-2 font-medium flex items-center ${
+                activeTab === "scatter"
+                  ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-t-lg"
+                  : "text-gray-500 dark:text-gray-400"
+              }`}
+              onClick={() => setActiveTab("scatter")}
+            >
+              <ScatterChart size={16} className="mr-2" />
+              Scatter Plot
+            </button>
           </div>
         </div>
       </div>
 
-      {entriesWithFluidIntake.length > 0 && (
+      <CollapsibleSection title="UroLog Stats" defaultExpanded={true}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex items-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+            <BarChart className="mr-3 text-blue-500" size={24} />
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Average Flow Rate</p>
+              <p className="text-xl font-bold">{averageFlowRate.toFixed(2)} mL/s</p>
+              {recentUroLogs.length > 0 && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Last 7 days: {recentAverageFlowRate.toFixed(2)} mL/s
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+            <Droplet className="mr-3 text-green-500" size={24} />
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Average Volume</p>
+              <p className="text-xl font-bold">{averageVolume.toFixed(0)} mL</p>
+            </div>
+          </div>
+          <div className="flex items-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+            <Clock className="mr-3 text-purple-500" size={24} />
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Average Duration</p>
+              <p className="text-xl font-bold">{averageDuration.toFixed(1)} sec</p>
+            </div>
+          </div>
+          <div className="flex items-center p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+            <Calendar className="mr-3 text-amber-500" size={24} />
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Total Entries</p>
+              <p className="text-xl font-bold">{filteredUroLogs.length}</p>
+              {recentUroLogs.length > 0 && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">Last 7 days: {recentUroLogs.length}</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </CollapsibleSection>
+
+      {(dataTypeFilter === "intake" || dataTypeFilter === "both") && filteredHydroLogs.length > 0 && (
         <div className="mt-4">
-          <h3 className="text-lg font-semibold mb-2">Fluid Intake Stats</h3>
+          <h3 className="text-lg font-semibold mb-2">HydroLog Stats</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-center p-3 bg-cyan-50 dark:bg-cyan-900/20 rounded-lg">
               <Coffee className="mr-3 text-cyan-500" size={24} />
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Average Fluid Intake</p>
-                <p className="text-xl font-bold">{averageFluidIntake.toFixed(0)} mL</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Average HydroLog</p>
+                <p className="text-xl font-bold">{averageHydroLog.toFixed(0)} mL</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  ({(averageFluidIntake / 29.5735).toFixed(1)} oz)
+                  ({(averageHydroLog / 29.5735).toFixed(1)} oz)
                 </p>
               </div>
             </div>
             <div className="flex items-center p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
-              {fluidIntakeTrend === "up" ? (
+              {hydroLogTrend === "up" ? (
                 <TrendingUp className="mr-3 text-green-500" size={24} />
-              ) : fluidIntakeTrend === "down" ? (
+              ) : hydroLogTrend === "down" ? (
                 <TrendingDown className="mr-3 text-red-500" size={24} />
               ) : (
                 <Coffee className="mr-3 text-indigo-500" size={24} />
               )}
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Fluid Intake Trend</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">HydroLog Trend</p>
                 <p className="text-xl font-bold">
-                  {fluidIntakeTrend === "up" ? "Increasing" : fluidIntakeTrend === "down" ? "Decreasing" : "Stable"}
+                  {hydroLogTrend === "up" ? "Increasing" : hydroLogTrend === "down" ? "Decreasing" : "Stable"}
                 </p>
                 {mostCommonFluidType && (
                   <p className="text-xs text-gray-500 dark:text-gray-400">Most common: {mostCommonFluidType}</p>
@@ -306,7 +424,7 @@ const FlowStats: React.FC<FlowStatsProps> = ({ entries }) => {
             </div>
           )}
 
-          {entriesWithFluidIntake.length > 0 && (
+          {filteredHydroLogs.length > 0 && (
             <div>
               <h3 className="text-lg font-semibold mb-2">Fluid Type Distribution</h3>
               <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border">
@@ -331,8 +449,8 @@ const FlowStats: React.FC<FlowStatsProps> = ({ entries }) => {
           )}
         </div>
       )}
-    </CollapsibleSection>
+    </>
   )
 }
 
-export default FlowStats
+export default FluidStats
