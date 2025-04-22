@@ -807,7 +807,8 @@ const Stats: React.FC<FluidStatsProps> = ({ title2 }) => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Today's Stats */}
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800/30">
-                  <h3 className="text-xl font-bold mb-3 text-center">Today</h3>
+                  <h3 className="text-xl font-bold mb-2 text-center">Today</h3>
+                  <hr className="border-gray-200 dark:border-gray-700 mb-3" />
                   <div className="space-y-0">
                     <div className="flex justify-between py-2">
                       <span className="text-gray-600 dark:text-gray-400">Flow Rate:</span>
@@ -862,7 +863,8 @@ const Stats: React.FC<FluidStatsProps> = ({ title2 }) => {
 
                 {/* Week Stats */}
                 <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-100 dark:border-green-800/30">
-                  <h3 className="text-xl font-bold mb-3 text-center">Week</h3>
+                  <h3 className="text-xl font-bold mb-2 text-center">Week</h3>
+                  <hr className="border-gray-200 dark:border-gray-700 mb-3" />
                   <div className="space-y-0">
                     <div className="flex justify-between py-2">
                       <span className="text-gray-600 dark:text-gray-400">Flow Rate:</span>
@@ -917,7 +919,8 @@ const Stats: React.FC<FluidStatsProps> = ({ title2 }) => {
 
                 {/* Month Stats */}
                 <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-100 dark:border-purple-800/30">
-                  <h3 className="text-xl font-bold mb-3 text-center">Month</h3>
+                  <h3 className="text-xl font-bold mb-2 text-center">Month</h3>
+                  <hr className="border-gray-200 dark:border-gray-700 mb-3" />
                   <div className="space-y-0">
                     <div className="flex justify-between py-2">
                       <span className="text-gray-600 dark:text-gray-400">Flow Rate:</span>
@@ -972,7 +975,8 @@ const Stats: React.FC<FluidStatsProps> = ({ title2 }) => {
 
                 {/* Year Stats */}
                 <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-100 dark:border-amber-800/30">
-                  <h3 className="text-xl font-bold mb-3 text-center">Year</h3>
+                  <h3 className="text-xl font-bold mb-2 text-center">Year</h3>
+                  <hr className="border-gray-200 dark:border-gray-700 mb-3" />
                   <div className="space-y-0">
                     <div className="flex justify-between py-2">
                       <span className="text-gray-600 dark:text-gray-400">Flow Rate:</span>
@@ -1038,7 +1042,8 @@ const Stats: React.FC<FluidStatsProps> = ({ title2 }) => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Today's Stats */}
                 <div className="bg-cyan-50 dark:bg-cyan-900/20 p-4 rounded-lg border border-cyan-100 dark:border-cyan-800/30">
-                  <h3 className="text-xl font-bold mb-3 text-center">Today</h3>
+                  <h3 className="text-xl font-bold mb-2 text-center">Today</h3>
+                  <hr className="border-gray-200 dark:border-gray-700 mb-3" />
                   <div className="space-y-0">
                     <div className="flex justify-between py-2">
                       <span className="text-gray-600 dark:text-gray-400">Intake:</span>
@@ -1058,7 +1063,8 @@ const Stats: React.FC<FluidStatsProps> = ({ title2 }) => {
 
                 {/* Week Stats */}
                 <div className="bg-teal-50 dark:bg-teal-900/20 p-4 rounded-lg border border-teal-100 dark:border-teal-800/30">
-                  <h3 className="text-xl font-bold mb-3 text-center">Week</h3>
+                  <h3 className="text-xl font-bold mb-2 text-center">Week</h3>
+                  <hr className="border-gray-200 dark:border-gray-700 mb-3" />
                   <div className="space-y-0">
                     <div className="flex justify-between py-2">
                       <span className="text-gray-600 dark:text-gray-400">Intake:</span>
@@ -1078,7 +1084,8 @@ const Stats: React.FC<FluidStatsProps> = ({ title2 }) => {
 
                 {/* Month Stats */}
                 <div className="bg-sky-50 dark:bg-sky-900/20 p-4 rounded-lg border border-sky-100 dark:border-sky-800/30">
-                  <h3 className="text-xl font-bold mb-3 text-center">Month</h3>
+                  <h3 className="text-xl font-bold mb-2 text-center">Month</h3>
+                  <hr className="border-gray-200 dark:border-gray-700 mb-3" />
                   <div className="space-y-0">
                     <div className="flex justify-between py-2">
                       <span className="text-gray-600 dark:text-gray-400">Intake:</span>
@@ -1098,7 +1105,8 @@ const Stats: React.FC<FluidStatsProps> = ({ title2 }) => {
 
                 {/* Year Stats */}
                 <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg border border-indigo-100 dark:border-indigo-800/30">
-                  <h3 className="text-xl font-bold mb-3 text-center">Year</h3>
+                  <h3 className="text-xl font-bold mb-2 text-center">Year</h3>
+                  <hr className="border-gray-200 dark:border-gray-700 mb-3" />
                   <div className="space-y-0">
                     <div className="flex justify-between py-2">
                       <span className="text-gray-600 dark:text-gray-400">Intake:</span>
@@ -1165,7 +1173,8 @@ const Stats: React.FC<FluidStatsProps> = ({ title2 }) => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Today's Stats */}
                 <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-100 dark:border-purple-800/30">
-                  <h3 className="text-xl font-bold mb-3 text-center">Today</h3>
+                  <h3 className="text-xl font-bold mb-2 text-center">Today</h3>
+                  <hr className="border-gray-200 dark:border-gray-700 mb-3" />
                   <div className="space-y-0">
                     <div className="flex justify-between py-2">
                       <span className="text-gray-600 dark:text-gray-400">Reps:</span>
@@ -1185,7 +1194,8 @@ const Stats: React.FC<FluidStatsProps> = ({ title2 }) => {
 
                 {/* Week Stats */}
                 <div className="bg-fuchsia-50 dark:bg-fuchsia-900/20 p-4 rounded-lg border border-fuchsia-100 dark:border-fuchsia-800/30">
-                  <h3 className="text-xl font-bold mb-3 text-center">Week</h3>
+                  <h3 className="text-xl font-bold mb-2 text-center">Week</h3>
+                  <hr className="border-gray-200 dark:border-gray-700 mb-3" />
                   <div className="space-y-0">
                     <div className="flex justify-between py-2">
                       <span className="text-gray-600 dark:text-gray-400">Reps:</span>
@@ -1205,7 +1215,8 @@ const Stats: React.FC<FluidStatsProps> = ({ title2 }) => {
 
                 {/* Month Stats */}
                 <div className="bg-pink-50 dark:bg-pink-900/20 p-4 rounded-lg border border-pink-100 dark:border-pink-800/30">
-                  <h3 className="text-xl font-bold mb-3 text-center">Month</h3>
+                  <h3 className="text-xl font-bold mb-2 text-center">Month</h3>
+                  <hr className="border-gray-200 dark:border-gray-700 mb-3" />
                   <div className="space-y-0">
                     <div className="flex justify-between py-2">
                       <span className="text-gray-600 dark:text-gray-400">Reps:</span>
@@ -1225,7 +1236,8 @@ const Stats: React.FC<FluidStatsProps> = ({ title2 }) => {
 
                 {/* Year Stats */}
                 <div className="bg-rose-50 dark:bg-rose-900/20 p-4 rounded-lg border border-rose-100 dark:border-rose-800/30">
-                  <h3 className="text-xl font-bold mb-3 text-center">Year</h3>
+                  <h3 className="text-xl font-bold mb-2 text-center">Year</h3>
+                  <hr className="border-gray-200 dark:border-gray-700 mb-3" />
                   <div className="space-y-0">
                     <div className="flex justify-between py-2">
                       <span className="text-gray-600 dark:text-gray-400">Reps:</span>

@@ -1144,6 +1144,16 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({ addUroLog, addHydroLog, a
                   placeholder="Add any additional notes about this exercise..."
                 ></textarea>
                 <div className="text-right text-lg text-gray-600 mt-1">{kegelNotes.length}/256 characters</div>
+                <div className="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-100 dark:border-yellow-800">
+                  <h4 className="font-medium text-amber-800 dark:text-amber-300 mb-2">
+                    How to Perform Kegel Exercises:
+                  </h4>
+                  <p className="text-gray-800 dark:text-gray-200">
+                    "To do Kegels, imagine you're sitting on a marble. Tighten your pelvic muscles as if you're lifting
+                    the marble upward, toward your head. Try it for three seconds at a time. Then relax for a count of
+                    three."
+                  </p>
+                </div>
               </div>
             </div>
           </div>
