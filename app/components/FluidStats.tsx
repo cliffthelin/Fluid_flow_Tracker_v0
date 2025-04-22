@@ -2,8 +2,8 @@
 
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
-import { Clock, Droplet, AlertTriangle, Coffee, TrendingUp, TrendingDown, Filter, Share2 } from "lucide-react"
-import type { UroLog, HydroLog } from "../types"
+import { Droplet, Coffee, TrendingUp, TrendingDown, Dumbbell } from "lucide-react"
+import type { UroLog, HydroLog, KegelLog } from "../types"
 import { isShareAvailable } from "../services/share"
 
 interface FluidStatsProps {
@@ -15,6 +15,7 @@ const Stats: React.FC<FluidStatsProps> = ({ title2 }) => {
   // Add these state variables at the top of the component
   const [flowEntries, setFlowEntries] = useState<UroLog[]>([])
   const [fluidIntakeEntries, setFluidIntakeEntries] = useState<HydroLog[]>([])
+  const [kegelEntries, setKegelEntries] = useState<KegelLog[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<"table" | "line" | "heatmap" | "bar" | "pie">("table")
   const lineChartRef = useRef<HTMLCanvasElement>(null)
@@ -25,9 +26,19 @@ const Stats: React.FC<FluidStatsProps> = ({ title2 }) => {
 
   // Add filter state
   const [timeFilter, setTimeFilter] = useState<"week" | "month" | "year" | "all">("all")
-  const [dataTypeFilter, setDataTypeFilter] = useState<"flow" | "intake" | "both">("both")
+  const [dataTypeFilter, setDataTypeFilter] = useState<"flow" | "intake" | "kegel" | "both">("both")
   const [metricFilter, setMetricFilter] = useState<
-    "volume" | "rate" | "color" | "urgency" | "concerns" | "beverage" | "duration"
+    | "volume"
+    | "rate"
+    | "color"
+    | "urgency"
+    | "concerns"
+    | "beverage"
+    | "duration"
+    | "reps"
+    | "holdTime"
+    | "sets"
+    | "totalTime"
   >("rate")
   const [showFilterPanel, setShowFilterPanel] = useState(false)
   const [darkMode, setDarkMode] = useState(false)
@@ -52,7 +63,7 @@ const Stats: React.FC<FluidStatsProps> = ({ title2 }) => {
   }, [])
 
   // Filter data based on selected time period
-  const filterDataByTime = (entries: (UroLog | HydroLog)[]) => {
+  const filterDataByTime = (entries: (UroLog | HydroLog | KegelLog)[]) => {
     const now = new Date()
     let cutoffDate: Date
 
@@ -74,13 +85,17 @@ const Stats: React.FC<FluidStatsProps> = ({ title2 }) => {
   }
 
   // Get filtered data
-  const filteredFlowEntries = dataTypeFilter === "intake" ? [] : filterDataByTime(flowEntries)
-  const filteredFluidIntakeEntries = dataTypeFilter === "flow" ? [] : filterDataByTime(fluidIntakeEntries)
+  const filteredFlowEntries =
+    dataTypeFilter === "intake" || dataTypeFilter === "kegel" ? [] : filterDataByTime(flowEntries)
+  const filteredFluidIntakeEntries =
+    dataTypeFilter === "flow" || dataTypeFilter === "kegel" ? [] : filterDataByTime(fluidIntakeEntries)
+  const filteredKegelEntries =
+    dataTypeFilter === "flow" || dataTypeFilter === "intake" ? [] : filterDataByTime(kegelEntries)
 
   // Determine appropriate time filter based on data span
   useEffect(() => {
     // Combine all entries to find the oldest
-    const allEntries = [...flowEntries, ...fluidIntakeEntries]
+    const allEntries = [...flowEntries, ...fluidIntakeEntries, ...kegelEntries]
     if (allEntries.length === 0) return
 
     // Sort by timestamp
@@ -100,7 +115,7 @@ const Stats: React.FC<FluidStatsProps> = ({ title2 }) => {
     } else {
       setTimeFilter("all")
     }
-  }, [flowEntries, fluidIntakeEntries])
+  }, [flowEntries, fluidIntakeEntries, kegelEntries])
 
   // Update metric filter when data type changes
   useEffect(() => {
@@ -111,6 +126,15 @@ const Stats: React.FC<FluidStatsProps> = ({ title2 }) => {
       setMetricFilter("volume")
     } else if (dataTypeFilter === "flow" && metricFilter === "beverage") {
       setMetricFilter("rate")
+    } else if (
+      dataTypeFilter === "kegel" &&
+      (metricFilter === "rate" ||
+        metricFilter === "color" ||
+        metricFilter === "urgency" ||
+        metricFilter === "concerns" ||
+        metricFilter === "beverage")
+    ) {
+      setMetricFilter("reps")
     }
   }, [dataTypeFilter, metricFilter])
 
@@ -246,33 +270,168 @@ const Stats: React.FC<FluidStatsProps> = ({ title2 }) => {
     }
   }
 
+  // Kegel statistics
+  const averageKegelReps = calculateAverage(filteredKegelEntries.map((entry) => entry.reps))
+  const averageKegelHoldTime = calculateAverage(filteredKegelEntries.map((entry) => entry.holdTime))
+  const averageKegelSets = calculateAverage(filteredKegelEntries.map((entry) => entry.sets))
+  const averageKegelTotalTime = calculateAverage(filteredKegelEntries.map((entry) => entry.totalTime))
+
   // Add these helper functions to filter data by time periods
   // Add these functions after the existing filter functions but before the useEffect hooks
 
   // Helper functions to get data for specific time periods
-  const getTodayData = (entries: (UroLog | HydroLog)[]) => {
+  const getTodayData = (entries: (UroLog | HydroLog | KegelLog)[]) => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     return entries.filter((entry) => new Date(entry.timestamp) >= today)
   }
 
-  const getWeekData = (entries: (UroLog | HydroLog)[]) => {
+  const getWeekData = (entries: (UroLog | HydroLog | KegelLog)[]) => {
     const weekAgo = new Date()
     weekAgo.setDate(weekAgo.getDate() - 7)
     return entries.filter((entry) => new Date(entry.timestamp) >= weekAgo)
   }
 
-  const getMonthData = (entries: (UroLog | HydroLog)[]) => {
+  const getMonthData = (entries: (UroLog | HydroLog | KegelLog)[]) => {
     const monthAgo = new Date()
     monthAgo.setMonth(monthAgo.getMonth() - 1)
     return entries.filter((entry) => new Date(entry.timestamp) >= monthAgo)
   }
 
-  const getYearData = (entries: (UroLog | HydroLog)[]) => {
+  const getYearData = (entries: (UroLog | HydroLog | KegelLog)[]) => {
     const yearAgo = new Date()
     yearAgo.setFullYear(yearAgo.getFullYear() - 1)
     return entries.filter((entry) => new Date(entry.timestamp) >= yearAgo)
   }
+
+  // Add these functions to get data for previous time periods after the existing time period functions
+
+  // Functions to get data for previous time periods
+  const getYesterdayData = (entries: (UroLog | HydroLog | KegelLog)[]) => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+    const dayBefore = new Date(yesterday)
+    dayBefore.setDate(dayBefore.getDate() - 1)
+    return entries.filter((entry) => new Date(entry.timestamp) >= dayBefore && new Date(entry.timestamp) < today)
+  }
+
+  const getPreviousWeekData = (entries: (UroLog | HydroLog | KegelLog)[]) => {
+    const weekAgo = new Date()
+    weekAgo.setDate(weekAgo.getDate() - 7)
+    const twoWeeksAgo = new Date()
+    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14)
+    return entries.filter((entry) => new Date(entry.timestamp) >= twoWeeksAgo && new Date(entry.timestamp) < weekAgo)
+  }
+
+  const getPreviousMonthData = (entries: (UroLog | HydroLog | KegelLog)[]) => {
+    const monthAgo = new Date()
+    monthAgo.setMonth(monthAgo.getMonth() - 1)
+    const twoMonthsAgo = new Date()
+    twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2)
+    return entries.filter((entry) => new Date(entry.timestamp) >= twoMonthsAgo && new Date(entry.timestamp) < monthAgo)
+  }
+
+  const getPreviousYearData = (entries: (UroLog | HydroLog | KegelLog)[]) => {
+    const yearAgo = new Date()
+    yearAgo.setFullYear(yearAgo.getFullYear() - 1)
+    const twoYearsAgo = new Date()
+    twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2)
+    return entries.filter((entry) => new Date(entry.timestamp) >= twoYearsAgo && new Date(entry.timestamp) < yearAgo)
+  }
+
+  // Add these functions to calculate most common color for different time periods
+  // Add these after the existing time period functions
+
+  const getMostCommonColorForPeriod = (entries: UroLog[]) => {
+    const entriesWithColor = entries.filter((entry) => entry.color)
+    const colorCounts: Record<string, number> = {}
+
+    entriesWithColor.forEach((entry) => {
+      if (entry.color) {
+        colorCounts[entry.color] = (colorCounts[entry.color] || 0) + 1
+      }
+    })
+
+    let mostCommonColor = ""
+    let maxColorCount = 0
+
+    Object.entries(colorCounts).forEach(([color, count]) => {
+      if (count > maxColorCount) {
+        mostCommonColor = color
+        maxColorCount = count
+      }
+    })
+
+    return { mostCommonColor, count: entriesWithColor.length }
+  }
+
+  const getTodayMostCommonColor = () => {
+    const todayEntries = getTodayData(flowEntries) as UroLog[]
+    return getMostCommonColorForPeriod(todayEntries)
+  }
+
+  const getWeekMostCommonColor = () => {
+    const weekEntries = getWeekData(flowEntries) as UroLog[]
+    return getMostCommonColorForPeriod(weekEntries)
+  }
+
+  const getMonthMostCommonColor = () => {
+    const monthEntries = getMonthData(flowEntries) as UroLog[]
+    return getMostCommonColorForPeriod(monthEntries)
+  }
+
+  const getYearMostCommonColor = () => {
+    const yearEntries = getYearData(flowEntries) as UroLog[]
+    return getMostCommonColorForPeriod(yearEntries)
+  }
+
+  // Function to get top colors for a period
+  const getTopColorsForPeriod = (entries: UroLog[], limit = 3) => {
+    const entriesWithColor = entries.filter((entry) => entry.color)
+    const colorCounts: Record<string, number> = {}
+
+    entriesWithColor.forEach((entry) => {
+      if (entry.color) {
+        colorCounts[entry.color] = (colorCounts[entry.color] || 0) + 1
+      }
+    })
+
+    return Object.entries(colorCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit)
+      .map(([color, count]) => ({ color, count }))
+  }
+
+  // Function to get top concerns for a period
+  const getTopConcernsForPeriod = (entries: UroLog[], limit = 3) => {
+    const concernCounts: Record<string, number> = {}
+
+    entries.forEach((entry) => {
+      if (entry.concerns && entry.concerns.length > 0) {
+        entry.concerns.forEach((concern) => {
+          concernCounts[concern] = (concernCounts[concern] || 0) + 1
+        })
+      }
+    })
+
+    return Object.entries(concernCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit)
+      .map(([concern, count]) => ({ concern, count }))
+  }
+
+  // Get top colors and concerns for each time period
+  const getTodayTopColors = () => getTopColorsForPeriod(getTodayData(flowEntries) as UroLog[])
+  const getWeekTopColors = () => getTopColorsForPeriod(getWeekData(flowEntries) as UroLog[])
+  const getMonthTopColors = () => getTopColorsForPeriod(getMonthData(flowEntries) as UroLog[])
+  const getYearTopColors = () => getTopColorsForPeriod(getYearData(flowEntries) as UroLog[])
+
+  const getTodayTopConcerns = () => getTopConcernsForPeriod(getTodayData(flowEntries) as UroLog[])
+  const getWeekTopConcerns = () => getTopConcernsForPeriod(getWeekData(flowEntries) as UroLog[])
+  const getMonthTopConcerns = () => getTopConcernsForPeriod(getMonthData(flowEntries) as UroLog[])
+  const getYearTopConcerns = () => getTopConcernsForPeriod(getYearData(flowEntries) as UroLog[])
 
   // Functions to calculate flow rate statistics for different time periods
   const getTodayFlowRate = () => {
@@ -293,6 +452,27 @@ const Stats: React.FC<FluidStatsProps> = ({ title2 }) => {
   const getYearFlowRate = () => {
     const yearEntries = getYearData(flowEntries)
     return calculateAverage(yearEntries.map((entry) => (entry as UroLog).flowRate)) || 0
+  }
+
+  // Functions to calculate flow rate statistics for previous time periods
+  const getYesterdayFlowRate = () => {
+    const yesterdayEntries = getYesterdayData(flowEntries)
+    return calculateAverage(yesterdayEntries.map((entry) => (entry as UroLog).flowRate)) || 0
+  }
+
+  const getPreviousWeekFlowRate = () => {
+    const prevWeekEntries = getPreviousWeekData(flowEntries)
+    return calculateAverage(prevWeekEntries.map((entry) => (entry as UroLog).flowRate)) || 0
+  }
+
+  const getPreviousMonthFlowRate = () => {
+    const prevMonthEntries = getPreviousMonthData(flowEntries)
+    return calculateAverage(prevMonthEntries.map((entry) => (entry as UroLog).flowRate)) || 0
+  }
+
+  const getPreviousYearFlowRate = () => {
+    const prevYearEntries = getPreviousYearData(flowEntries)
+    return calculateAverage(prevYearEntries.map((entry) => (entry as UroLog).flowRate)) || 0
   }
 
   // Functions to get entry counts for different time periods
@@ -338,45 +518,131 @@ const Stats: React.FC<FluidStatsProps> = ({ title2 }) => {
     return calculateAverage(amounts) || 0
   }
 
+  // Functions to calculate fluid intake for previous time periods
+  const getYesterdayFluidIntake = () => {
+    const yesterdayEntries = getYesterdayData(fluidIntakeEntries)
+    const amounts = yesterdayEntries.map((entry) => {
+      const hydroEntry = entry as HydroLog
+      return hydroEntry.unit === "oz" ? hydroEntry.amount * 29.5735 : hydroEntry.amount
+    })
+    return calculateAverage(amounts) || 0
+  }
+
+  const getPreviousWeekFluidIntake = () => {
+    const prevWeekEntries = getPreviousWeekData(fluidIntakeEntries)
+    const amounts = prevWeekEntries.map((entry) => {
+      const hydroEntry = entry as HydroLog
+      return hydroEntry.unit === "oz" ? hydroEntry.amount * 29.5735 : hydroEntry.amount
+    })
+    return calculateAverage(amounts) || 0
+  }
+
+  const getPreviousMonthFluidIntake = () => {
+    const prevMonthEntries = getPreviousMonthData(fluidIntakeEntries)
+    const amounts = prevMonthEntries.map((entry) => {
+      const hydroEntry = entry as HydroLog
+      return hydroEntry.unit === "oz" ? hydroEntry.amount * 29.5735 : hydroEntry.amount
+    })
+    return calculateAverage(amounts) || 0
+  }
+
+  const getPreviousYearFluidIntake = () => {
+    const prevYearEntries = getPreviousYearData(fluidIntakeEntries)
+    const amounts = prevYearEntries.map((entry) => {
+      const hydroEntry = entry as HydroLog
+      return hydroEntry.unit === "oz" ? hydroEntry.amount * 29.5735 : hydroEntry.amount
+    })
+    return calculateAverage(amounts) || 0
+  }
+
   // Functions to get fluid entry counts for different time periods
   const getTodayFluidCount = () => getTodayData(fluidIntakeEntries).length
   const getWeekFluidCount = () => getWeekData(fluidIntakeEntries).length
   const getMonthFluidCount = () => getMonthData(fluidIntakeEntries).length
   const getYearFluidCount = () => getYearData(fluidIntakeEntries).length
 
-  // Add this useEffect to fetch data from IndexedDB
+  // Functions to calculate kegel statistics for different time periods
+  const getTodayKegelReps = () => {
+    const todayEntries = getTodayData(kegelEntries)
+    return calculateAverage(todayEntries.map((entry) => (entry as KegelLog).reps)) || 0
+  }
+
+  const getWeekKegelReps = () => {
+    const weekEntries = getWeekData(kegelEntries)
+    return calculateAverage(weekEntries.map((entry) => (entry as KegelLog).reps)) || 0
+  }
+
+  const getMonthKegelReps = () => {
+    const monthEntries = getMonthData(kegelEntries)
+    return calculateAverage(monthEntries.map((entry) => (entry as KegelLog).reps)) || 0
+  }
+
+  const getYearKegelReps = () => {
+    const yearEntries = getYearData(kegelEntries)
+    return calculateAverage(yearEntries.map((entry) => (entry as KegelLog).reps)) || 0
+  }
+
+  // Functions to calculate kegel statistics for previous time periods
+  const getYesterdayKegelReps = () => {
+    const yesterdayEntries = getYesterdayData(kegelEntries)
+    return calculateAverage(yesterdayEntries.map((entry) => (entry as KegelLog).reps)) || 0
+  }
+
+  const getPreviousWeekKegelReps = () => {
+    const prevWeekEntries = getPreviousWeekData(kegelEntries)
+    return calculateAverage(prevWeekEntries.map((entry) => (entry as KegelLog).reps)) || 0
+  }
+
+  const getPreviousMonthKegelReps = () => {
+    const prevMonthEntries = getPreviousMonthData(kegelEntries)
+    return calculateAverage(prevMonthEntries.map((entry) => (entry as KegelLog).reps)) || 0
+  }
+
+  const getPreviousYearKegelReps = () => {
+    const prevYearEntries = getPreviousYearData(kegelEntries)
+    return calculateAverage(prevYearEntries.map((entry) => (entry as KegelLog).reps)) || 0
+  }
+
+  // Functions to get kegel entry counts for different time periods
+  const getTodayKegelCount = () => getTodayData(kegelEntries).length
+  const getWeekKegelCount = () => getWeekData(kegelEntries).length
+  const getMonthKegelCount = () => getMonthData(kegelEntries).length
+  const getYearKegelCount = () => getYearData(kegelEntries).length
+
+  // Add these functions to calculate volume statistics for different time periods
+  const getTodayVolume = () => {
+    const todayEntries = getTodayData(flowEntries)
+    return calculateAverage(todayEntries.map((entry) => (entry as UroLog).volume)) || 0
+  }
+
+  const getWeekVolume = () => {
+    const weekEntries = getWeekData(flowEntries)
+    return calculateAverage(weekEntries.map((entry) => (entry as UroLog).volume)) || 0
+  }
+
+  const getMonthVolume = () => {
+    const monthEntries = getMonthData(flowEntries)
+    return calculateAverage(monthEntries.map((entry) => (entry as UroLog).volume)) || 0
+  }
+
+  const getYearVolume = () => {
+    const yearEntries = getYearData(flowEntries)
+    return calculateAverage(yearEntries.map((entry) => (entry as UroLog).volume)) || 0
+  }
+
+  // Add this useEffect to handle the initial data load
   useEffect(() => {
-    const fetchEntries = async () => {
+    const fetchData = async () => {
       setIsLoading(true)
       try {
-        const { db } = await import("../services/db")
-        console.log("Fetching data from IndexedDB...")
+        const { getAllUroLogs, getAllHydroLogs, getAllKegelLogs } = await import("../services/db")
+        const uroLogsData = await getAllUroLogs()
+        const hydroLogsData = await getAllHydroLogs()
+        const kegelLogsData = await getAllKegelLogs()
 
-        // Add error handling and fallbacks
-        let uroLogs = []
-        let hydroLogs = []
-
-        try {
-          // Check if the tables exist before calling toArray()
-          if (db.uroLogs) {
-            uroLogs = await db.uroLogs.toArray()
-            console.log(`Fetched ${uroLogs.length} UroLogs from IndexedDB`)
-          }
-        } catch (error) {
-          console.error("Error fetching uroLogs:", error)
-        }
-
-        try {
-          if (db.hydroLogs) {
-            hydroLogs = await db.hydroLogs.toArray()
-            console.log(`Fetched ${hydroLogs.length} HydroLogs from IndexedDB`)
-          }
-        } catch (error) {
-          console.error("Error fetching hydroLogs:", error)
-        }
-
-        setFlowEntries(uroLogs)
-        setFluidIntakeEntries(hydroLogs)
+        setFlowEntries(uroLogsData)
+        setFluidIntakeEntries(hydroLogsData)
+        setKegelEntries(kegelLogsData)
       } catch (error) {
         console.error("Error fetching entries from database:", error)
       } finally {
@@ -384,994 +650,8 @@ const Stats: React.FC<FluidStatsProps> = ({ title2 }) => {
       }
     }
 
-    fetchEntries()
+    fetchData()
   }, [])
-
-  // Draw line chart
-  useEffect(() => {
-    if (activeTab === "line" && lineChartRef.current) {
-      const canvas = lineChartRef.current
-      const ctx = canvas.getContext("2d")
-      if (!ctx) return
-
-      // Clear canvas
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
-
-      // Sort entries by date
-      const sortedFlowEntries = [...filteredFlowEntries].sort(
-        (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
-      )
-
-      const sortedFluidEntries = [...filteredFluidIntakeEntries].sort(
-        (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
-      )
-
-      // Check if we have data to display
-      if (sortedFlowEntries.length === 0 && sortedFluidEntries.length === 0) {
-        ctx.fillStyle = darkMode ? "#e5e7eb" : "#374151" // High contrast text
-        ctx.font = "14px Arial"
-        ctx.textAlign = "center"
-        ctx.fillText("No data available for the selected time period", canvas.width / 2, canvas.height / 2)
-        return
-      }
-
-      // Prepare data based on metric filter
-      let dataPoints: { timestamp: string; value: number }[] = []
-      let metricLabel = ""
-      let maxYValue = 0
-      let defaultMaxY = 30 // Default max for flow rate
-
-      // Determine which data to show based on filters
-      if (dataTypeFilter === "flow" || dataTypeFilter === "both") {
-        switch (metricFilter) {
-          case "volume":
-            dataPoints = sortedFlowEntries.map((entry) => ({
-              timestamp: entry.timestamp,
-              value: entry.volume,
-            }))
-            metricLabel = "Volume (mL)"
-            defaultMaxY = 500 // Default max for volume
-            break
-          case "duration":
-            dataPoints = sortedFlowEntries.map((entry) => ({
-              timestamp: entry.timestamp,
-              value: entry.duration,
-            }))
-            metricLabel = "Duration (sec)"
-            defaultMaxY = 60 // Default max for duration
-            break
-          case "rate":
-          default:
-            dataPoints = sortedFlowEntries.map((entry) => ({
-              timestamp: entry.timestamp,
-              value: entry.flowRate,
-            }))
-            metricLabel = "Flow Rate (mL/s)"
-            defaultMaxY = 30 // Default max for flow rate
-            break
-        }
-      } else if (dataTypeFilter === "intake") {
-        dataPoints = sortedFluidEntries.map((entry) => ({
-          timestamp: entry.timestamp,
-          value: entry.unit === "oz" ? entry.amount * 29.5735 : entry.amount,
-        }))
-        metricLabel = "Fluid Intake (mL)"
-        defaultMaxY = 1000 // Default max for fluid intake
-      }
-
-      // Find max value for scaling, ensuring it's at least the default
-      if (dataPoints.length > 0) {
-        const dataMax = Math.max(...dataPoints.map((point) => point.value))
-        // Set maxYValue to 1.5 times the maximum data value, but cap it at reasonable defaults
-        if (metricFilter === "rate") {
-          // For flow rate, if max is around 8, set max to 12
-          maxYValue = Math.min(Math.max(12, Math.ceil(dataMax * 1.5)), 30)
-        } else if (metricFilter === "volume") {
-          // For volume, set a reasonable scale
-          maxYValue = Math.min(Math.max(500, Math.ceil(dataMax * 1.5)), 1000)
-        } else if (metricFilter === "duration") {
-          // For duration, set a reasonable scale
-          maxYValue = Math.min(Math.max(60, Math.ceil(dataMax * 1.5)), 120)
-        } else {
-          // For other metrics, use 1.5x scaling
-          maxYValue = Math.ceil(dataMax * 1.5)
-        }
-
-        // Find highest and lowest values in the dataset
-        const highestValue = dataMax
-        const lowestValue = Math.min(...dataPoints.map((point) => point.value))
-      } else {
-        maxYValue = defaultMaxY
-      }
-
-      // Set chart dimensions
-      const padding = 40
-      const canvasWidth = canvas.width
-      const canvasHeight = canvas.height
-      const width = canvasWidth - padding * 2
-      const height = canvasHeight - padding * 2
-
-      // Draw axes with high contrast colors
-      ctx.beginPath()
-      ctx.strokeStyle = darkMode ? "#e5e7eb" : "#374151" // High contrast
-      ctx.lineWidth = 1
-      ctx.moveTo(padding, padding)
-      ctx.lineTo(padding, canvas.height - padding)
-      ctx.lineTo(canvas.width - padding, canvas.height - padding)
-      ctx.stroke()
-
-      // Draw zero baseline (if not at bottom)
-      ctx.beginPath()
-      ctx.strokeStyle = darkMode ? "rgba(229, 231, 235, 0.2)" : "rgba(55, 65, 81, 0.2)" // Subtle line
-      ctx.setLineDash([5, 3])
-      ctx.moveTo(padding, canvas.height - padding)
-      ctx.lineTo(canvas.width - padding, canvas.height - padding)
-      ctx.stroke()
-      ctx.setLineDash([])
-
-      // Get time period indicators
-      const allDates = dataPoints.map((point) => new Date(point.timestamp))
-      allDates.sort((a, b) => a.getTime() - b.getTime())
-
-      if (allDates.length > 0) {
-        const firstDate = allDates[0]
-        const lastDate = allDates[allDates.length - 1]
-
-        // Calculate week, month, and year markers
-        const weekDate = new Date(lastDate)
-        weekDate.setDate(weekDate.getDate() - 7)
-
-        const monthDate = new Date(lastDate)
-        monthDate.setMonth(monthDate.getMonth() - 1)
-
-        const yearDate = new Date(lastDate)
-        yearDate.setFullYear(yearDate.getFullYear() - 1)
-
-        // Only show markers that fall within the data range
-        const markers = []
-
-        if (weekDate >= firstDate) {
-          const weekPosition = (weekDate.getTime() - firstDate.getTime()) / (lastDate.getTime() - firstDate.getTime())
-          markers.push({
-            position: padding + weekPosition * width,
-            label: "Week",
-            color: darkMode ? "rgba(147, 197, 253, 0.5)" : "rgba(59, 130, 246, 0.5)",
-            highlight: timeFilter === "week",
-          })
-        }
-
-        if (monthDate >= firstDate) {
-          const monthPosition = (monthDate.getTime() - firstDate.getTime()) / (lastDate.getTime() - firstDate.getTime())
-          markers.push({
-            position: padding + monthPosition * width,
-            label: "Month",
-            color: darkMode ? "rgba(192, 132, 252, 0.5)" : "rgba(139, 92, 246, 0.5)",
-            highlight: timeFilter === "month",
-          })
-        }
-
-        if (yearDate >= firstDate) {
-          const yearPosition = (yearDate.getTime() - firstDate.getTime()) / (lastDate.getTime() - firstDate.getTime())
-          markers.push({
-            position: padding + yearPosition * width,
-            label: "Year",
-            color: darkMode ? "rgba(252, 165, 165, 0.5)" : "rgba(239, 68, 68, 0.5)",
-            highlight: timeFilter === "year",
-          })
-        }
-
-        // Draw time period markers
-        markers.forEach((marker) => {
-          ctx.beginPath()
-          ctx.strokeStyle = marker.color
-          ctx.lineWidth = marker.highlight ? 3 : 2
-          ctx.setLineDash([5, 3])
-          ctx.moveTo(marker.position, padding)
-          ctx.lineTo(marker.position, canvas.height - padding)
-          ctx.stroke()
-          ctx.setLineDash([])
-
-          // Draw label with high contrast
-          ctx.fillStyle = marker.color
-          ctx.font = marker.highlight ? "bold 12px Arial" : "12px Arial"
-          ctx.textAlign = "center"
-          ctx.fillText(marker.label, marker.position, padding - 10)
-        })
-      }
-
-      // Draw data line if data exists
-      if (dataPoints.length > 0) {
-        // Draw the line
-        ctx.beginPath()
-        ctx.strokeStyle = darkMode ? "#3b82f6" : "#1d4ed8" // Blue with good contrast in both modes
-        ctx.lineWidth = 2
-
-        dataPoints.forEach((point, i) => {
-          const x = padding + (i / (dataPoints.length - 1 || 1)) * width
-          const y = canvas.height - padding - (point.value / maxYValue) * height
-          if (i === 0) {
-            ctx.moveTo(x, y)
-          } else {
-            ctx.lineTo(x, y)
-          }
-        })
-        ctx.stroke()
-
-        // Draw data points
-        dataPoints.forEach((point, i) => {
-          const x = padding + (i / (dataPoints.length - 1 || 1)) * width
-          const y = canvas.height - padding - (point.value / maxYValue) * height
-          ctx.beginPath()
-          ctx.fillStyle = darkMode ? "#60a5fa" : "#2563eb" // Blue with good contrast
-          ctx.arc(x, y, 4, 0, Math.PI * 2)
-          ctx.fill()
-        })
-
-        // Find highest and lowest values in the dataset
-        const highestValue = Math.max(...dataPoints.map((point) => point.value))
-        const lowestValue = Math.min(...dataPoints.map((point) => point.value))
-
-        // Draw highest value line
-        const highestY = canvas.height - padding - (highestValue / maxYValue) * height
-        ctx.beginPath()
-        ctx.strokeStyle = darkMode ? "rgba(239, 68, 68, 0.7)" : "rgba(220, 38, 38, 0.7)" // Red with good contrast
-        ctx.lineWidth = 1
-        ctx.setLineDash([5, 3])
-        ctx.moveTo(padding, highestY)
-        ctx.lineTo(canvas.width - padding, highestY)
-        ctx.stroke()
-
-        // Draw highest value label
-        ctx.fillStyle = darkMode ? "rgba(239, 68, 68, 0.9)" : "rgba(220, 38, 38, 0.9)"
-        ctx.font = "12px Arial"
-        ctx.textAlign = "left"
-        ctx.fillText(`Highest: ${highestValue.toFixed(1)}`, padding + 5, highestY - 5)
-
-        // Draw lowest value line
-        const lowestY = canvas.height - padding - (lowestValue / maxYValue) * height
-        ctx.beginPath()
-        ctx.strokeStyle = darkMode ? "rgba(59, 130, 246, 0.7)" : "rgba(37, 99, 235, 0.7)" // Blue with good contrast
-        ctx.lineWidth = 1
-        ctx.setLineDash([5, 3])
-        ctx.moveTo(padding, lowestY)
-        ctx.lineTo(canvas.width - padding, lowestY)
-        ctx.stroke()
-
-        // Draw lowest value label
-        ctx.fillStyle = darkMode ? "rgba(59, 130, 246, 0.9)" : "rgba(37, 99, 235, 0.9)"
-        ctx.font = "12px Arial"
-        ctx.textAlign = "left"
-        ctx.fillText(`Lowest: ${lowestValue.toFixed(1)}`, padding + 5, lowestY + 15)
-
-        // Reset line dash
-        ctx.setLineDash([])
-      }
-
-      // Draw labels with high contrast colors
-      ctx.fillStyle = darkMode ? "#e5e7eb" : "#374151" // High contrast text
-      ctx.font = "12px Arial"
-      ctx.textAlign = "center"
-
-      // X-axis labels (dates)
-      if (dataPoints.length > 0) {
-        const dateLabels = dataPoints.map((point) => new Date(point.timestamp).toLocaleDateString())
-
-        if (dateLabels.length > 10) {
-          // If too many dates, show fewer labels
-          const step = Math.ceil(dateLabels.length / 10)
-          for (let i = 0; i < dateLabels.length; i += step) {
-            const x = padding + (i / (dateLabels.length - 1 || 1)) * width
-            ctx.fillText(dateLabels[i], x, canvas.height - padding + 15)
-          }
-        } else {
-          dateLabels.forEach((date, i) => {
-            const x = padding + (i / (dateLabels.length - 1 || 1)) * width
-            ctx.fillText(date, x, canvas.height - padding + 15)
-          })
-        }
-      }
-
-      // Y-axis labels
-      ctx.textAlign = "right"
-      for (let i = 0; i <= 5; i++) {
-        const value = (maxYValue * i) / 5
-        const y = canvas.height - padding - (value / maxYValue) * height
-        ctx.fillText(value.toFixed(1), padding - 5, y + 4)
-      }
-
-      // Chart title and Y-axis label
-      ctx.textAlign = "center"
-      ctx.font = "16px Arial"
-      ctx.fillText(metricLabel, canvas.width / 2, 20)
-
-      // Time period indicator
-      ctx.textAlign = "right"
-      ctx.fillStyle = darkMode ? "#e5e7eb" : "#374151" // High contrast
-      ctx.font = "12px Arial"
-      ctx.fillText(
-        `Showing: ${
-          timeFilter === "all"
-            ? "All Time"
-            : timeFilter === "week"
-              ? "Last Week"
-              : timeFilter === "month"
-                ? "Last Month"
-                : "Last Year"
-        }`,
-        canvas.width - padding,
-        40,
-      )
-    }
-  }, [activeTab, filteredFlowEntries, filteredFluidIntakeEntries, timeFilter, dataTypeFilter, metricFilter, darkMode])
-
-  // Draw heatmap
-  useEffect(() => {
-    if (activeTab === "heatmap" && heatmapRef.current && filteredFlowEntries.length > 0) {
-      const canvas = heatmapRef.current
-      const ctx = canvas.getContext("2d")
-      if (!ctx) return
-
-      // Clear canvas
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
-
-      // Group entries by day and hour
-      const heatmapData: Record<string, Record<number, number[]>> = {}
-
-      filteredFlowEntries.forEach((entry) => {
-        const date = new Date(entry.timestamp)
-        const day = date.getDay() // 0-6 (Sunday-Saturday)
-        const hour = date.getHours() // 0-23
-
-        if (!heatmapData[day]) {
-          heatmapData[day] = {}
-        }
-
-        if (!heatmapData[day][hour]) {
-          heatmapData[day][hour] = []
-        }
-
-        // Add data based on metric filter
-        switch (metricFilter) {
-          case "volume":
-            heatmapData[day][hour].push(entry.volume)
-            break
-          case "rate":
-          default:
-            heatmapData[day][hour].push(entry.flowRate)
-            break
-        }
-      })
-
-      // Set chart dimensions
-      const padding = 40
-      const canvasWidth = canvas.width
-      const canvasHeight = canvas.height
-      const cellWidth = (canvasWidth - padding * 2) / 24 // 24 hours
-      const cellHeight = (canvasHeight - padding * 2) / 7 // 7 days
-
-      // Draw grid
-      ctx.strokeStyle = darkMode ? "#e5e7eb" : "#374151"
-      ctx.lineWidth = 1
-
-      // Vertical lines (hours)
-      for (let i = 0; i <= 24; i++) {
-        const x = padding + i * cellWidth
-        ctx.beginPath()
-        ctx.moveTo(x, padding)
-        ctx.lineTo(x, canvas.height - padding)
-        ctx.stroke()
-      }
-
-      // Horizontal lines (days)
-      for (let i = 0; i <= 7; i++) {
-        const y = padding + i * cellHeight
-        ctx.beginPath()
-        ctx.moveTo(padding, y)
-        ctx.lineTo(canvas.width - padding, y)
-        ctx.stroke()
-      }
-
-      // Draw heatmap cells
-      for (let day = 0; day < 7; day++) {
-        for (let hour = 0; hour < 24; hour++) {
-          const values = heatmapData[day]?.[hour] || []
-          if (values.length > 0) {
-            const avgValue = calculateAverage(values)
-
-            // Color based on value (blue to red gradient)
-            const maxValue = metricFilter === "volume" ? 300 : 20 // Adjust based on metric
-            const intensity = Math.min(1, avgValue / maxValue) // Normalize to 0-1 range
-            const r = Math.floor(intensity * 255)
-            const g = Math.floor((1 - intensity) * 100)
-            const b = Math.floor((1 - intensity) * 255)
-
-            ctx.fillStyle = `rgb(${r}, ${g}, ${b})`
-
-            const x = padding + hour * cellWidth
-            const y = padding + day * cellHeight
-            ctx.fillRect(x, y, cellWidth, cellHeight)
-
-            // Add text for average value
-            ctx.fillStyle = intensity > 0.5 ? "white" : "black"
-            ctx.font = "10px Arial"
-            ctx.textAlign = "center"
-            ctx.textBaseline = "middle"
-            ctx.fillText(avgValue.toFixed(1), x + cellWidth / 2, y + cellHeight / 2)
-          }
-        }
-      }
-
-      // Draw labels
-      ctx.fillStyle = darkMode ? "#e5e7eb" : "#374151"
-      ctx.font = "12px Arial"
-      ctx.textAlign = "center"
-
-      // Hour labels
-      for (let i = 0; i < 24; i += 3) {
-        const x = padding + (i + 0.5) * cellWidth
-        ctx.fillText(`${i}:00`, x, canvas.height - padding + 15)
-      }
-
-      // Day labels
-      const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-      for (let i = 0; i < 7; i++) {
-        const y = padding + (i + 0.5) * cellHeight
-        ctx.textAlign = "right"
-        ctx.fillText(days[i], padding - 5, y)
-      }
-
-      // Title
-      ctx.textAlign = "center"
-      ctx.font = "14px Arial"
-      const metricLabel = metricFilter === "volume" ? "Volume (mL)" : "Flow Rate (mL/s)"
-      ctx.fillText(`${metricLabel} by Day and Hour`, canvas.width / 2, 20)
-
-      // Time period indicator
-      ctx.textAlign = "right"
-      ctx.fillStyle = darkMode ? "#cccccc" : "#666666"
-      ctx.font = "12px Arial"
-      ctx.fillText(
-        `Showing: ${timeFilter === "all" ? "All Time" : timeFilter === "week" ? "Last Week" : timeFilter === "month" ? "Last Month" : "Last Year"}`,
-        canvas.width - padding,
-        40,
-      )
-    }
-  }, [activeTab, filteredFlowEntries, timeFilter, metricFilter, darkMode])
-
-  // Draw bar chart
-  useEffect(() => {
-    if (activeTab === "bar" && barChartRef.current) {
-      const canvas = barChartRef.current
-      const ctx = canvas.getContext("2d")
-      if (!ctx) return
-
-      // Clear canvas
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
-
-      // Set chart dimensions
-      const padding = 60
-      const canvasWidth = canvas.width
-      const canvasHeight = canvas.height
-      const width = canvasWidth - padding * 2
-      const height = canvasHeight - padding * 2
-
-      // Prepare data based on the selected metric and filter
-      let data: { label: string; value: number; color: string }[] = []
-      let chartTitle = ""
-
-      if (dataTypeFilter === "flow" || dataTypeFilter === "both") {
-        // For flow data, group by different metrics
-        switch (metricFilter) {
-          case "color":
-            // Group by color
-            chartTitle = "Distribution by Urine Color"
-            const colorGroups: Record<string, number> = {}
-            filteredFlowEntries.forEach((entry) => {
-              if (entry.color) {
-                colorGroups[entry.color] = (colorGroups[entry.color] || 0) + 1
-              }
-            })
-
-            // Generate colors for each group
-            const colorPalette = [
-              "#3b82f6",
-              "#ef4444",
-              "#10b981",
-              "#f59e0b",
-              "#8b5cf6",
-              "#ec4899",
-              "#6366f1",
-              "#14b8a6",
-            ]
-
-            data = Object.entries(colorGroups).map(([color, count], index) => ({
-              label: color,
-              value: count,
-              color: colorPalette[index % colorPalette.length],
-            }))
-            break
-
-          case "urgency":
-            // Group by urgency
-            chartTitle = "Distribution by Urgency Rating"
-            const urgencyGroups: Record<string, number> = {}
-            filteredFlowEntries.forEach((entry) => {
-              if (entry.urgency) {
-                urgencyGroups[entry.urgency] = (urgencyGroups[entry.urgency] || 0) + 1
-              }
-            })
-
-            data = Object.entries(urgencyGroups).map(([urgency, count], index) => ({
-              label: urgency,
-              value: count,
-              color: `hsl(${index * 30}, 70%, 60%)`,
-            }))
-            break
-
-          case "concerns":
-            // Group by concerns
-            chartTitle = "Distribution by Reported Concerns"
-            const concernGroups: Record<string, number> = {}
-            filteredFlowEntries.forEach((entry) => {
-              if (entry.concerns && entry.concerns.length > 0) {
-                entry.concerns.forEach((concern) => {
-                  concernGroups[concern] = (concernGroups[concern] || 0) + 1
-                })
-              }
-            })
-
-            data = Object.entries(concernGroups).map(([concern, count], index) => ({
-              label: concern,
-              value: count,
-              color: `hsl(${index * 40}, 80%, 60%)`,
-            }))
-            break
-
-          default:
-            // Group by time periods (e.g., days of week)
-            chartTitle = `Average ${
-              metricFilter === "rate" ? "Flow Rate" : metricFilter === "volume" ? "Volume" : "Duration"
-            } by Day of Week`
-
-            // Group by day of week
-            const dayGroups: Record<number, number[]> = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] }
-            filteredFlowEntries.forEach((entry) => {
-              const date = new Date(entry.timestamp)
-              const day = date.getDay() // 0-6 (Sunday-Saturday)
-
-              if (!dayGroups[day]) {
-                dayGroups[day] = []
-              }
-
-              // Add value based on metric
-              if (metricFilter === "volume") {
-                dayGroups[day].push(entry.volume)
-              } else if (metricFilter === "duration") {
-                dayGroups[day].push(entry.duration)
-              } else {
-                dayGroups[day].push(entry.flowRate)
-              }
-            })
-
-            // Calculate averages for each day
-            const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-            const dayColors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#6366f1"]
-
-            data = Object.entries(dayGroups).map(([day, values], index) => ({
-              label: dayNames[Number.parseInt(day)],
-              value: values.length > 0 ? calculateAverage(values) : 0,
-              color: dayColors[index % dayColors.length],
-            }))
-            break
-        }
-      } else if (dataTypeFilter === "intake") {
-        // For intake data, group by fluid type
-        chartTitle =
-          metricFilter === "beverage" ? "Distribution by Beverage Type" : "Average Fluid Intake by Beverage Type"
-
-        const fluidGroups: Record<string, number[]> = {}
-        filteredFluidIntakeEntries.forEach((entry) => {
-          const type = entry.type === "Other" && entry.customType ? entry.customType : entry.type
-
-          if (!fluidGroups[type]) {
-            fluidGroups[type] = []
-          }
-
-          // Convert to mL for consistency
-          const amount = entry.unit === "oz" ? entry.amount * 29.5735 : entry.amount
-          fluidGroups[type].push(amount)
-        })
-
-        // Generate colors for each group
-        const fluidColors = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#6366f1", "#14b8a6"]
-
-        if (metricFilter === "beverage") {
-          // Count occurrences of each type
-          data = Object.entries(fluidGroups).map(([type, values], index) => ({
-            label: type,
-            value: values.length,
-            color: fluidColors[index % fluidColors.length],
-          }))
-        } else {
-          // Calculate average intake for each type
-          data = Object.entries(fluidGroups).map(([type, values], index) => ({
-            label: type,
-            value: values.length > 0 ? calculateAverage(values) : 0,
-            color: fluidColors[index % fluidColors.length],
-          }))
-        }
-      }
-
-      // Sort data by value (descending)
-      data.sort((a, b) => b.value - a.value)
-
-      // If no data, show message
-      if (data.length === 0) {
-        ctx.fillStyle = darkMode ? "#e5e7eb" : "#374151"
-        ctx.font = "14px Arial"
-        ctx.textAlign = "center"
-        ctx.fillText("No data available for the selected filters", canvas.width / 2, canvas.height / 2)
-        return
-      }
-
-      // Calculate max value for scaling
-      const maxValue = Math.max(...data.map((item) => item.value))
-
-      // Draw axes
-      ctx.beginPath()
-      ctx.strokeStyle = darkMode ? "#e5e7eb" : "#374151"
-      ctx.lineWidth = 1
-      ctx.moveTo(padding, padding)
-      ctx.lineTo(padding, canvas.height - padding)
-      ctx.lineTo(canvas.width - padding, canvas.height - padding)
-      ctx.stroke()
-
-      // Draw bars
-      const barWidth = Math.min(50, (width / data.length) * 0.8)
-      const barSpacing = width / data.length
-
-      data.forEach((item, index) => {
-        const barHeight = (item.value / maxValue) * height
-        const x = padding + index * barSpacing + (barSpacing - barWidth) / 2
-        const y = canvas.height - padding - barHeight
-
-        // Draw bar
-        ctx.fillStyle = item.color
-        ctx.fillRect(x, y, barWidth, barHeight)
-
-        // Draw value on top of bar
-        ctx.fillStyle = darkMode ? "#ffffff" : "#000000"
-        ctx.font = "12px Arial"
-        ctx.textAlign = "center"
-        ctx.fillText(item.value.toFixed(metricFilter === "rate" ? 1 : 0), x + barWidth / 2, y - 5)
-
-        // Draw label below bar
-        ctx.fillStyle = darkMode ? "#e5e7eb" : "#374151"
-        ctx.font = "10px Arial"
-        ctx.textAlign = "center"
-
-        // Handle long labels
-        let label = item.label
-        if (label.length > 10) {
-          label = label.substring(0, 8) + "..."
-        }
-
-        // Rotate labels if there are many
-        if (data.length > 5) {
-          ctx.save()
-          ctx.translate(x + barWidth / 2, canvas.height - padding + 10)
-          ctx.rotate(-Math.PI / 4)
-          ctx.fillText(label, 0, 0)
-          ctx.restore()
-        } else {
-          ctx.fillText(label, x + barWidth / 2, canvas.height - padding + 15)
-        }
-      })
-
-      // Draw title
-      ctx.fillStyle = darkMode ? "#ffffff" : "#000000"
-      ctx.font = "16px Arial"
-      ctx.textAlign = "center"
-      ctx.fillText(chartTitle, canvas.width / 2, 20)
-
-      // Draw time period
-      ctx.textAlign = "right"
-      ctx.fillStyle = darkMode ? "#cccccc" : "#666666"
-      ctx.font = "12px Arial"
-      ctx.fillText(
-        `Showing: ${timeFilter === "all" ? "All Time" : timeFilter === "week" ? "Last Week" : timeFilter === "month" ? "Last Month" : "Last Year"}`,
-        canvas.width - padding,
-        40,
-      )
-    }
-  }, [activeTab, filteredFlowEntries, filteredFluidIntakeEntries, timeFilter, dataTypeFilter, metricFilter, darkMode])
-
-  // Draw pie chart
-  useEffect(() => {
-    if (activeTab === "pie" && pieChartRef.current) {
-      const canvas = pieChartRef.current
-      const ctx = canvas.getContext("2d")
-      if (!ctx) return
-
-      // Clear canvas
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
-
-      // Prepare data based on the selected metric and filter
-      let data: { label: string; value: number; color: string }[] = []
-      let chartTitle = ""
-
-      if (dataTypeFilter === "flow" || dataTypeFilter === "both") {
-        // For flow data, group by different metrics
-        switch (metricFilter) {
-          case "color":
-            // Group by color
-            chartTitle = "Distribution by Urine Color"
-            const colorGroups: Record<string, number> = {}
-            filteredFlowEntries.forEach((entry) => {
-              if (entry.color) {
-                colorGroups[entry.color] = (colorGroups[entry.color] || 0) + 1
-              } else {
-                colorGroups["Not Recorded"] = (colorGroups["Not Recorded"] || 0) + 1
-              }
-            })
-
-            // Generate colors for each group
-            const colorPalette = [
-              "#3b82f6",
-              "#ef4444",
-              "#10b981",
-              "#f59e0b",
-              "#8b5cf6",
-              "#ec4899",
-              "#6366f1",
-              "#14b8a6",
-            ]
-
-            data = Object.entries(colorGroups).map(([color, count], index) => ({
-              label: color,
-              value: count,
-              color: colorPalette[index % colorPalette.length],
-            }))
-            break
-
-          case "urgency":
-            // Group by urgency
-            chartTitle = "Distribution by Urgency Rating"
-            const urgencyGroups: Record<string, number> = {}
-            filteredFlowEntries.forEach((entry) => {
-              if (entry.urgency) {
-                urgencyGroups[entry.urgency] = (urgencyGroups[entry.urgency] || 0) + 1
-              } else {
-                urgencyGroups["Not Recorded"] = (urgencyGroups["Not Recorded"] || 0) + 1
-              }
-            })
-
-            data = Object.entries(urgencyGroups).map(([urgency, count], index) => ({
-              label: urgency,
-              value: count,
-              color: `hsl(${index * 30}, 70%, 60%)`,
-            }))
-            break
-
-          case "concerns":
-            // Group by concerns
-            chartTitle = "Distribution by Reported Concerns"
-            const concernGroups: Record<string, number> = {}
-            let noConcernsCount = 0
-
-            filteredFlowEntries.forEach((entry) => {
-              if (entry.concerns && entry.concerns.length > 0) {
-                entry.concerns.forEach((concern) => {
-                  concernGroups[concern] = (concernGroups[concern] || 0) + 1
-                })
-              } else {
-                noConcernsCount++
-              }
-            })
-
-            if (noConcernsCount > 0) {
-              concernGroups["No Concerns"] = noConcernsCount
-            }
-
-            data = Object.entries(concernGroups).map(([concern, count], index) => ({
-              label: concern,
-              value: count,
-              color: `hsl(${index * 40}, 80%, 60%)`,
-            }))
-            break
-
-          default:
-            // For other metrics, group by ranges
-            const metricName = metricFilter === "rate" ? "Flow Rate" : metricFilter === "volume" ? "Volume" : "Duration"
-            chartTitle = `${metricName} Distribution`
-
-            // Determine ranges based on metric
-            let ranges: { min: number; max: number; label: string }[] = []
-
-            if (metricFilter === "rate") {
-              ranges = [
-                { min: 0, max: 5, label: "0-5 mL/s" },
-                { min: 5, max: 10, label: "5-10 mL/s" },
-                { min: 10, max: 15, label: "10-15 mL/s" },
-                { min: 15, max: 20, label: "15-20 mL/s" },
-                { min: 20, max: Number.POSITIVE_INFINITY, label: "20+ mL/s" },
-              ]
-            } else if (metricFilter === "volume") {
-              ranges = [
-                { min: 0, max: 100, label: "0-100 mL" },
-                { min: 100, max: 200, label: "100-200 mL" },
-                { min: 200, max: 300, label: "200-300 mL" },
-                { min: 300, max: 400, label: "300-400 mL" },
-                { min: 400, max: Number.POSITIVE_INFINITY, label: "400+ mL" },
-              ]
-            } else {
-              // duration
-              ranges = [
-                { min: 0, max: 15, label: "0-15 sec" },
-                { min: 15, max: 30, label: "15-30 sec" },
-                { min: 30, max: 45, label: "30-45 sec" },
-                { min: 45, max: 60, label: "45-60 sec" },
-                { min: 60, max: Number.POSITIVE_INFINITY, label: "60+ sec" },
-              ]
-            }
-
-            // Count entries in each range
-            const rangeCounts = ranges.map((range) => ({
-              label: range.label,
-              value: 0,
-              color: "",
-            }))
-
-            filteredFlowEntries.forEach((entry) => {
-              const value =
-                metricFilter === "rate" ? entry.flowRate : metricFilter === "volume" ? entry.volume : entry.duration
-
-              for (let i = 0; i < ranges.length; i++) {
-                if (value >= ranges[i].min && value < ranges[i].max) {
-                  rangeCounts[i].value++
-                  break
-                }
-              }
-            })
-
-            // Assign colors
-            const rangeColors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"]
-
-            data = rangeCounts
-              .map((item, index) => ({
-                ...item,
-                color: rangeColors[index % rangeColors.length],
-              }))
-              .filter((item) => item.value > 0) // Remove empty ranges
-            break
-        }
-      } else if (dataTypeFilter === "intake") {
-        // For intake data, group by fluid type
-        chartTitle = "Distribution by Beverage Type"
-
-        const fluidGroups: Record<string, number> = {}
-        filteredFluidIntakeEntries.forEach((entry) => {
-          const type = entry.type === "Other" && entry.customType ? entry.customType : entry.type
-          fluidGroups[type] = (fluidGroups[type] || 0) + 1
-        })
-
-        // Generate colors for each group
-        const fluidColors = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#6366f1", "#14b8a6"]
-
-        data = Object.entries(fluidGroups).map(([type, count], index) => ({
-          label: type,
-          value: count,
-          color: fluidColors[index % fluidColors.length],
-        }))
-      }
-
-      // Sort data by value (descending)
-      data.sort((a, b) => b.value - a.value)
-
-      // If no data, show message
-      if (data.length === 0) {
-        ctx.fillStyle = darkMode ? "#e5e7eb" : "#374151"
-        ctx.font = "14px Arial"
-        ctx.textAlign = "center"
-        ctx.fillText("No data available for the selected filters", canvas.width / 2, canvas.height / 2)
-        return
-      }
-
-      // Calculate total for percentages
-      const total = data.reduce((sum, item) => sum + item.value, 0)
-
-      // Draw pie chart
-      const centerX = canvas.width / 2
-      const centerY = canvas.height / 2
-      const radius = Math.min(canvas.width, canvas.height) / 2.5
-
-      let startAngle = 0
-
-      data.forEach((item) => {
-        const sliceAngle = (item.value / total) * 2 * Math.PI
-
-        // Draw slice
-        ctx.beginPath()
-        ctx.moveTo(centerX, centerY)
-        ctx.arc(centerX, centerY, radius, startAngle, startAngle + sliceAngle)
-        ctx.closePath()
-        ctx.fillStyle = item.color
-        ctx.fill()
-
-        // Draw slice border
-        ctx.strokeStyle = darkMode ? "#1f2937" : "#ffffff"
-        ctx.lineWidth = 2
-        ctx.stroke()
-
-        // Calculate position for label
-        const middleAngle = startAngle + sliceAngle / 2
-        const labelRadius = radius * 0.7
-        const labelX = centerX + Math.cos(middleAngle) * labelRadius
-        const labelY = centerY + Math.sin(middleAngle) * labelRadius
-
-        // Draw percentage if slice is big enough
-        if (sliceAngle > 0.15) {
-          ctx.fillStyle = "#ffffff"
-          ctx.font = "bold 12px Arial"
-          ctx.textAlign = "center"
-          ctx.textBaseline = "middle"
-          const percentage = Math.round((item.value / total) * 100)
-          ctx.fillText(`${percentage}%`, labelX, labelY)
-        }
-
-        startAngle += sliceAngle
-      })
-
-      // Draw legend
-      const legendX = canvas.width - 150
-      const legendY = 60
-      const legendItemHeight = 20
-
-      data.forEach((item, index) => {
-        const y = legendY + index * legendItemHeight
-
-        // Draw color box
-        ctx.fillStyle = item.color
-        ctx.fillRect(legendX, y, 15, 15)
-
-        // Draw border
-        ctx.strokeStyle = darkMode ? "#e5e7eb" : "#374151"
-        ctx.lineWidth = 1
-        ctx.strokeRect(legendX, y, 15, 15)
-
-        // Draw label
-        ctx.fillStyle = darkMode ? "#e5e7eb" : "#374151"
-        ctx.font = "12px Arial"
-        ctx.textAlign = "left"
-        ctx.textBaseline = "middle"
-
-        // Truncate long labels
-        let label = item.label
-        if (label.length > 15) {
-          label = label.substring(0, 12) + "..."
-        }
-
-        ctx.fillText(`${label} (${item.value})`, legendX + 20, y + 7.5)
-      })
-
-      // Draw title
-      ctx.fillStyle = darkMode ? "#ffffff" : "#000000"
-      ctx.font = "16px Arial"
-      ctx.textAlign = "center"
-      ctx.textBaseline = "top"
-      ctx.fillText(chartTitle, canvas.width / 2, 20)
-
-      // Draw time period
-      ctx.textAlign = "left"
-      ctx.fillStyle = darkMode ? "#cccccc" : "#666666"
-      ctx.font = "12px Arial"
-      ctx.fillText(
-        `Showing: ${timeFilter === "all" ? "All Time" : timeFilter === "week" ? "Last Week" : timeFilter === "month" ? "Last Month" : "Last Year"}`,
-        20,
-        20,
-      )
-    }
-  }, [activeTab, filteredFlowEntries, filteredFluidIntakeEntries, timeFilter, dataTypeFilter, metricFilter, darkMode])
 
   const shareChart = async (chartType: string, chartRef: React.RefObject<HTMLCanvasElement>) => {
     if (!isShareAvailable()) {
@@ -1429,347 +709,565 @@ const Stats: React.FC<FluidStatsProps> = ({ title2 }) => {
     }
   }
 
+  // Add a helper function to calculate percentage difference and determine if it's higher or lower
+  const getComparisonInfo = (value: number, average: number) => {
+    if (average === 0) return { isHigher: false, percentDiff: 0 }
+    const percentDiff = ((value - average) / average) * 100
+    return {
+      isHigher: percentDiff > 0,
+      percentDiff: Math.abs(percentDiff),
+    }
+  }
+
+  // Add a helper function to render comparison with previous period
+  const renderPreviousPeriodComparison = (current: number, previous: number, unit = "mL/s") => {
+    if (previous === 0 || isNaN(current) || isNaN(previous)) return null
+    const percentDiff = ((current - previous) / previous) * 100
+    const isHigher = percentDiff > 0
+
+    return (
+      <div className="mt-1 text-sm flex items-center">
+        <span className="text-gray-600 dark:text-gray-400 mr-1">Prev:</span>
+        <span className="font-medium">
+          {previous.toFixed(1)} {unit}
+        </span>
+        <span className={`ml-2 flex items-center ${isHigher ? "text-green-500" : "text-red-500"}`}>
+          {isHigher ? <TrendingUp size={14} className="mr-1" /> : <TrendingDown size={14} className="mr-1" />}
+          {Math.abs(percentDiff).toFixed(1)}%
+        </span>
+      </div>
+    )
+  }
+
+  // Add a helper function to render comparison indicators
+  const renderComparisonIndicator = (value: number, average: number) => {
+    if (average === 0 || isNaN(value)) return null
+    const { isHigher, percentDiff } = getComparisonInfo(value, average)
+
+    return (
+      <span className={`ml-2 text-sm flex items-center ${isHigher ? "text-green-500" : "text-red-500"}`}>
+        {isHigher ? <TrendingUp size={14} className="mr-1" /> : <TrendingDown size={14} className="mr-1" />}
+        {percentDiff.toFixed(1)}%
+      </span>
+    )
+  }
+
+  // Replace the return statement with this improved version that shows statistics for different time periods
   return (
     <div className="flex flex-col h-full">
       {title2 && <div className="pb-4">{title2}</div>}
 
-      {/* Tab navigation */}
-      <div className="flex border-b">
+      {/* Filter controls */}
+      <div className="mb-6 flex flex-wrap gap-3">
         <button
-          className={`px-4 py-2 rounded-t-lg ${
-            activeTab === "table"
-              ? "bg-blue-500 text-white"
-              : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+          className={`px-4 py-2 rounded-lg ${
+            dataTypeFilter === "flow" || dataTypeFilter === "both"
+              ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-700"
+              : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600"
           }`}
-          onClick={() => setActiveTab("table")}
+          onClick={() => setDataTypeFilter(dataTypeFilter === "flow" ? "both" : "flow")}
         >
-          Detail
+          <Droplet className="inline-block mr-1" size={16} /> UroLog
         </button>
         <button
-          className={`px-4 py-2 rounded-t-lg ${
-            activeTab === "line"
-              ? "bg-blue-500 text-white"
-              : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+          className={`px-4 py-2 rounded-lg ${
+            dataTypeFilter === "intake" || dataTypeFilter === "both"
+              ? "bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-700"
+              : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600"
           }`}
-          onClick={() => setActiveTab("line")}
+          onClick={() => setDataTypeFilter(dataTypeFilter === "intake" ? "both" : "intake")}
         >
-          Line Chart
+          <Coffee className="inline-block mr-1" size={16} /> HydroLog
         </button>
         <button
-          className={`px-4 py-2 rounded-t-lg ${
-            activeTab === "heatmap"
-              ? "bg-blue-500 text-white"
-              : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+          className={`px-4 py-2 rounded-lg ${
+            dataTypeFilter === "kegel"
+              ? "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-700"
+              : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600"
           }`}
-          onClick={() => setActiveTab("heatmap")}
+          onClick={() => setDataTypeFilter(dataTypeFilter === "kegel" ? "both" : "kegel")}
         >
-          Heatmap
+          <Dumbbell className="inline-block mr-1" size={16} /> KegelLog
         </button>
-        <button
-          className={`px-4 py-2 rounded-t-lg ${
-            activeTab === "bar"
-              ? "bg-blue-500 text-white"
-              : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-          }`}
-          onClick={() => setActiveTab("bar")}
-        >
-          Bar Chart
-        </button>
-        <button
-          className={`px-4 py-2 rounded-t-lg ${
-            activeTab === "pie"
-              ? "bg-blue-500 text-white"
-              : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-          }`}
-          onClick={() => setActiveTab("pie")}
-        >
-          Pie Chart
-        </button>
-        <button
-          className="ml-auto px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-          onClick={() => setShowFilterPanel(!showFilterPanel)}
-        >
-          <Filter className="h-5 w-5" />
-        </button>
-        {activeTab === "line" && (
-          <button
-            className="ml-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-            onClick={() => shareChart("line", lineChartRef)}
-          >
-            <Share2 className="h-5 w-5" />
-          </button>
-        )}
-        {activeTab === "heatmap" && (
-          <button
-            className="ml-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-            onClick={() => shareChart("heatmap", heatmapRef)}
-          >
-            <Share2 className="h-5 w-5" />
-          </button>
-        )}
-        {activeTab === "bar" && (
-          <button
-            className="ml-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-            onClick={() => shareChart("bar", barChartRef)}
-          >
-            <Share2 className="h-5 w-5" />
-          </button>
-        )}
-        {activeTab === "pie" && (
-          <button
-            className="ml-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-            onClick={() => shareChart("pie", pieChartRef)}
-          >
-            <Share2 className="h-5 w-5" />
-          </button>
-        )}
       </div>
 
-      {/* Filter panel */}
-      {showFilterPanel && (
-        <div className="p-4 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-          <div className="mb-2">
-            <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Time Period:</label>
-            <select
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-gray-300 dark:bg-gray-700 dark:border-gray-600 leading-tight focus:outline-none focus:shadow-outline"
-              value={timeFilter}
-              onChange={(e) => setTimeFilter(e.target.value as "week" | "month" | "year" | "all")}
-            >
-              <option value="week">Last Week</option>
-              <option value="month">Last Month</option>
-              <option value="year">Last Year</option>
-              <option value="all">All Time</option>
-            </select>
-          </div>
+      {isLoading ? (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      ) : (
+        <div className="space-y-8">
+          {/* UroLog Statistics */}
+          {(dataTypeFilter === "flow" || dataTypeFilter === "both") && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-100 dark:border-gray-700 p-4">
+              <h2 className="text-xl font-semibold mb-4 flex items-center">
+                <Droplet className="mr-2 text-blue-500" size={22} /> UroLog Statistics
+              </h2>
 
-          <div className="mb-2">
-            <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Data Type:</label>
-            <select
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-gray-300 dark:bg-gray-700 dark:border-gray-600 leading-tight focus:outline-none focus:shadow-outline"
-              value={dataTypeFilter}
-              onChange={(e) => setDataTypeFilter(e.target.value as "flow" | "intake" | "both")}
-            >
-              <option value="flow">Flow</option>
-              <option value="intake">Intake</option>
-              <option value="both">Both</option>
-            </select>
-          </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Today's Stats */}
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800/30">
+                  <h3 className="text-xl font-bold mb-3 text-center">Today</h3>
+                  <div className="space-y-0">
+                    <div className="flex justify-between py-2">
+                      <span className="text-gray-600 dark:text-gray-400">Flow Rate:</span>
+                      <span className="font-medium flex items-center">
+                        {getTodayFlowRate().toFixed(1)} mL/s
+                        {renderComparisonIndicator(getTodayFlowRate(), averageFlowRate)}
+                      </span>
+                    </div>
+                    {renderPreviousPeriodComparison(getTodayFlowRate(), getYesterdayFlowRate())}
+                    <hr className="border-gray-200 dark:border-gray-700 my-2" />
 
-          {dataTypeFilter !== "intake" && (
-            <div className="mb-2">
-              <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Flow Metric:</label>
-              <select
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-gray-300 dark:bg-gray-700 dark:border-gray-600 leading-tight focus:outline-none focus:shadow-outline"
-                value={metricFilter}
-                onChange={(e) =>
-                  setMetricFilter(
-                    e.target.value as "volume" | "rate" | "color" | "urgency" | "concerns" | "beverage" | "duration",
-                  )
-                }
-                disabled={dataTypeFilter === "intake"}
-              >
-                <option value="rate">Flow Rate</option>
-                <option value="volume">Volume</option>
-                <option value="duration">Duration</option>
-                <option value="color">Color</option>
-                <option value="urgency">Urgency</option>
-                <option value="concerns">Concerns</option>
-              </select>
+                    {/* Top Colors */}
+                    {getTodayTopColors().length > 0 && (
+                      <div className="py-2">
+                        <span className="text-gray-600 dark:text-gray-400 text-sm">Top Colors:</span>
+                        <div className="mt-1 space-y-1">
+                          {getTodayTopColors().map(({ color, count }) => (
+                            <div key={color} className="flex justify-between text-sm">
+                              <span>{color}</span>
+                              <span className="font-medium">{count}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {getTodayTopColors().length > 0 && <hr className="border-gray-200 dark:border-gray-700 my-2" />}
+
+                    {/* Top Concerns */}
+                    {getTodayTopConcerns().length > 0 && (
+                      <div className="py-2">
+                        <span className="text-gray-600 dark:text-gray-400 text-sm">Top Concerns:</span>
+                        <div className="mt-1 space-y-1">
+                          {getTodayTopConcerns().map(({ concern, count }) => (
+                            <div key={concern} className="flex justify-between text-sm">
+                              <span>{concern}</span>
+                              <span className="font-medium">{count}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {getTodayTopConcerns().length > 0 && <hr className="border-gray-200 dark:border-gray-700 my-2" />}
+
+                    <div className="flex justify-between pt-2">
+                      <span className="text-gray-600 dark:text-gray-400">Entries:</span>
+                      <span className="font-medium">{getTodayFlowCount()}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Week Stats */}
+                <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-100 dark:border-green-800/30">
+                  <h3 className="text-xl font-bold mb-3 text-center">Week</h3>
+                  <div className="space-y-0">
+                    <div className="flex justify-between py-2">
+                      <span className="text-gray-600 dark:text-gray-400">Flow Rate:</span>
+                      <span className="font-medium flex items-center">
+                        {getWeekFlowRate().toFixed(1)} mL/s
+                        {renderComparisonIndicator(getWeekFlowRate(), averageFlowRate)}
+                      </span>
+                    </div>
+                    {renderPreviousPeriodComparison(getWeekFlowRate(), getPreviousWeekFlowRate())}
+                    <hr className="border-gray-200 dark:border-gray-700 my-2" />
+
+                    {/* Top Colors */}
+                    {getWeekTopColors().length > 0 && (
+                      <div className="py-2">
+                        <span className="text-gray-600 dark:text-gray-400 text-sm">Top Colors:</span>
+                        <div className="mt-1 space-y-1">
+                          {getWeekTopColors().map(({ color, count }) => (
+                            <div key={color} className="flex justify-between text-sm">
+                              <span>{color}</span>
+                              <span className="font-medium">{count}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {getWeekTopColors().length > 0 && <hr className="border-gray-200 dark:border-gray-700 my-2" />}
+
+                    {/* Top Concerns */}
+                    {getWeekTopConcerns().length > 0 && (
+                      <div className="py-2">
+                        <span className="text-gray-600 dark:text-gray-400 text-sm">Top Concerns:</span>
+                        <div className="mt-1 space-y-1">
+                          {getWeekTopConcerns().map(({ concern, count }) => (
+                            <div key={concern} className="flex justify-between text-sm">
+                              <span>{concern}</span>
+                              <span className="font-medium">{count}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {getWeekTopConcerns().length > 0 && <hr className="border-gray-200 dark:border-gray-700 my-2" />}
+
+                    <div className="flex justify-between pt-2">
+                      <span className="text-gray-600 dark:text-gray-400">Entries:</span>
+                      <span className="font-medium">{getWeekFlowCount()}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Month Stats */}
+                <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-100 dark:border-purple-800/30">
+                  <h3 className="text-xl font-bold mb-3 text-center">Month</h3>
+                  <div className="space-y-0">
+                    <div className="flex justify-between py-2">
+                      <span className="text-gray-600 dark:text-gray-400">Flow Rate:</span>
+                      <span className="font-medium flex items-center">
+                        {getMonthFlowRate().toFixed(1)} mL/s
+                        {renderComparisonIndicator(getMonthFlowRate(), averageFlowRate)}
+                      </span>
+                    </div>
+                    {renderPreviousPeriodComparison(getMonthFlowRate(), getPreviousMonthFlowRate())}
+                    <hr className="border-gray-200 dark:border-gray-700 my-2" />
+
+                    {/* Top Colors */}
+                    {getMonthTopColors().length > 0 && (
+                      <div className="py-2">
+                        <span className="text-gray-600 dark:text-gray-400 text-sm">Top Colors:</span>
+                        <div className="mt-1 space-y-1">
+                          {getMonthTopColors().map(({ color, count }) => (
+                            <div key={color} className="flex justify-between text-sm">
+                              <span>{color}</span>
+                              <span className="font-medium">{count}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {getMonthTopColors().length > 0 && <hr className="border-gray-200 dark:border-gray-700 my-2" />}
+
+                    {/* Top Concerns */}
+                    {getMonthTopConcerns().length > 0 && (
+                      <div className="py-2">
+                        <span className="text-gray-600 dark:text-gray-400 text-sm">Top Concerns:</span>
+                        <div className="mt-1 space-y-1">
+                          {getMonthTopConcerns().map(({ concern, count }) => (
+                            <div key={concern} className="flex justify-between text-sm">
+                              <span>{concern}</span>
+                              <span className="font-medium">{count}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {getMonthTopConcerns().length > 0 && <hr className="border-gray-200 dark:border-gray-700 my-2" />}
+
+                    <div className="flex justify-between pt-2">
+                      <span className="text-gray-600 dark:text-gray-400">Entries:</span>
+                      <span className="font-medium">{getMonthFlowCount()}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Year Stats */}
+                <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-100 dark:border-amber-800/30">
+                  <h3 className="text-xl font-bold mb-3 text-center">Year</h3>
+                  <div className="space-y-0">
+                    <div className="flex justify-between py-2">
+                      <span className="text-gray-600 dark:text-gray-400">Flow Rate:</span>
+                      <span className="font-medium flex items-center">
+                        {getYearFlowRate().toFixed(1)} mL/s
+                        {renderComparisonIndicator(getYearFlowRate(), averageFlowRate)}
+                      </span>
+                    </div>
+                    {renderPreviousPeriodComparison(getYearFlowRate(), getPreviousYearFlowRate())}
+                    <hr className="border-gray-200 dark:border-gray-700 my-2" />
+
+                    {/* Top Colors */}
+                    {getYearTopColors().length > 0 && (
+                      <div className="py-2">
+                        <span className="text-gray-600 dark:text-gray-400 text-sm">Top Colors:</span>
+                        <div className="mt-1 space-y-1">
+                          {getYearTopColors().map(({ color, count }) => (
+                            <div key={color} className="flex justify-between text-sm">
+                              <span>{color}</span>
+                              <span className="font-medium">{count}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {getYearTopColors().length > 0 && <hr className="border-gray-200 dark:border-gray-700 my-2" />}
+
+                    {/* Top Concerns */}
+                    {getYearTopConcerns().length > 0 && (
+                      <div className="py-2">
+                        <span className="text-gray-600 dark:text-gray-400 text-sm">Top Concerns:</span>
+                        <div className="mt-1 space-y-1">
+                          {getYearTopConcerns().map(({ concern, count }) => (
+                            <div key={concern} className="flex justify-between text-sm">
+                              <span>{concern}</span>
+                              <span className="font-medium">{count}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {getYearTopConcerns().length > 0 && <hr className="border-gray-200 dark:border-gray-700 my-2" />}
+
+                    <div className="flex justify-between pt-2">
+                      <span className="text-gray-600 dark:text-gray-400">Entries:</span>
+                      <span className="font-medium">{getYearFlowCount()}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
-          {dataTypeFilter === "intake" && (
-            <div className="mb-2">
-              <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Intake Metric:</label>
-              <select
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-gray-300 dark:bg-gray-700 dark:border-gray-600 leading-tight focus:outline-none focus:shadow-outline"
-                value={metricFilter}
-                onChange={(e) =>
-                  setMetricFilter(
-                    e.target.value as "volume" | "rate" | "color" | "urgency" | "concerns" | "beverage" | "duration",
-                  )
-                }
-              >
-                <option value="volume">Volume</option>
-                <option value="beverage">Beverage Type</option>
-              </select>
+          {/* HydroLog Statistics */}
+          {(dataTypeFilter === "intake" || dataTypeFilter === "both") && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-100 dark:border-gray-700 p-4">
+              <h2 className="text-xl font-semibold mb-4 flex items-center">
+                <Coffee className="mr-2 text-cyan-500" size={22} /> HydroLog Statistics
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Today's Stats */}
+                <div className="bg-cyan-50 dark:bg-cyan-900/20 p-4 rounded-lg border border-cyan-100 dark:border-cyan-800/30">
+                  <h3 className="text-xl font-bold mb-3 text-center">Today</h3>
+                  <div className="space-y-0">
+                    <div className="flex justify-between py-2">
+                      <span className="text-gray-600 dark:text-gray-400">Intake:</span>
+                      <span className="font-medium flex items-center">
+                        {getTodayFluidIntake().toFixed(0)} mL
+                        {renderComparisonIndicator(getTodayFluidIntake(), averageFluidIntake)}
+                      </span>
+                    </div>
+                    {renderPreviousPeriodComparison(getTodayFluidIntake(), getYesterdayFluidIntake(), "mL")}
+                    <hr className="border-gray-200 dark:border-gray-700 my-2" />
+                    <div className="flex justify-between pt-2">
+                      <span className="text-gray-600 dark:text-gray-400">Entries:</span>
+                      <span className="font-medium">{getTodayFluidCount()}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Week Stats */}
+                <div className="bg-teal-50 dark:bg-teal-900/20 p-4 rounded-lg border border-teal-100 dark:border-teal-800/30">
+                  <h3 className="text-xl font-bold mb-3 text-center">Week</h3>
+                  <div className="space-y-0">
+                    <div className="flex justify-between py-2">
+                      <span className="text-gray-600 dark:text-gray-400">Intake:</span>
+                      <span className="font-medium flex items-center">
+                        {getWeekFluidIntake().toFixed(0)} mL
+                        {renderComparisonIndicator(getWeekFluidIntake(), averageFluidIntake)}
+                      </span>
+                    </div>
+                    {renderPreviousPeriodComparison(getWeekFluidIntake(), getPreviousWeekFluidIntake(), "mL")}
+                    <hr className="border-gray-200 dark:border-gray-700 my-2" />
+                    <div className="flex justify-between pt-2">
+                      <span className="text-gray-600 dark:text-gray-400">Entries:</span>
+                      <span className="font-medium">{getWeekFluidCount()}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Month Stats */}
+                <div className="bg-sky-50 dark:bg-sky-900/20 p-4 rounded-lg border border-sky-100 dark:border-sky-800/30">
+                  <h3 className="text-xl font-bold mb-3 text-center">Month</h3>
+                  <div className="space-y-0">
+                    <div className="flex justify-between py-2">
+                      <span className="text-gray-600 dark:text-gray-400">Intake:</span>
+                      <span className="font-medium flex items-center">
+                        {getMonthFluidIntake().toFixed(0)} mL
+                        {renderComparisonIndicator(getMonthFluidIntake(), averageFluidIntake)}
+                      </span>
+                    </div>
+                    {renderPreviousPeriodComparison(getMonthFluidIntake(), getPreviousMonthFluidIntake(), "mL")}
+                    <hr className="border-gray-200 dark:border-gray-700 my-2" />
+                    <div className="flex justify-between pt-2">
+                      <span className="text-gray-600 dark:text-gray-400">Entries:</span>
+                      <span className="font-medium">{getMonthFluidCount()}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Year Stats */}
+                <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg border border-indigo-100 dark:border-indigo-800/30">
+                  <h3 className="text-xl font-bold mb-3 text-center">Year</h3>
+                  <div className="space-y-0">
+                    <div className="flex justify-between py-2">
+                      <span className="text-gray-600 dark:text-gray-400">Intake:</span>
+                      <span className="font-medium flex items-center">
+                        {getYearFluidIntake().toFixed(0)} mL
+                        {renderComparisonIndicator(getYearFluidIntake(), averageFluidIntake)}
+                      </span>
+                    </div>
+                    {renderPreviousPeriodComparison(getYearFluidIntake(), getPreviousYearFluidIntake(), "mL")}
+                    <hr className="border-gray-200 dark:border-gray-700 my-2" />
+                    <div className="flex justify-between pt-2">
+                      <span className="text-gray-600 dark:text-gray-400">Entries:</span>
+                      <span className="font-medium">{getYearFluidCount()}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Additional HydroLog Stats */}
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                  <h4 className="font-medium mb-2">Average Intake</h4>
+                  <p className="text-2xl font-bold">{averageFluidIntake.toFixed(0)} mL</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    ({(averageFluidIntake / 29.5735).toFixed(1)} oz)
+                  </p>
+                </div>
+
+                <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                  <h4 className="font-medium mb-2">Trend</h4>
+                  <div className="flex items-center">
+                    {fluidIntakeTrend === "up" ? (
+                      <TrendingUp className="mr-2 text-green-500" size={20} />
+                    ) : fluidIntakeTrend === "down" ? (
+                      <TrendingDown className="mr-2 text-red-500" size={20} />
+                    ) : (
+                      <span className="mr-2">→</span>
+                    )}
+                    <p className="text-xl font-bold">
+                      {fluidIntakeTrend === "up" ? "Increasing" : fluidIntakeTrend === "down" ? "Decreasing" : "Stable"}
+                    </p>
+                  </div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Based on recent entries</p>
+                </div>
+
+                <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                  <h4 className="font-medium mb-2">Most Common Type</h4>
+                  <p className="text-xl font-bold">{mostCommonFluidType || "N/A"}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Based on {Object.keys(fluidTypeCounts).length} types
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* KegelLog Statistics */}
+          {(dataTypeFilter === "kegel" || dataTypeFilter === "both") && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-100 dark:border-gray-700 p-4">
+              <h2 className="text-xl font-semibold mb-4 flex items-center">
+                <Dumbbell className="mr-2 text-purple-500" size={22} /> KegelLog Statistics
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Today's Stats */}
+                <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-100 dark:border-purple-800/30">
+                  <h3 className="text-xl font-bold mb-3 text-center">Today</h3>
+                  <div className="space-y-0">
+                    <div className="flex justify-between py-2">
+                      <span className="text-gray-600 dark:text-gray-400">Reps:</span>
+                      <span className="font-medium flex items-center">
+                        {getTodayKegelReps().toFixed(0)}
+                        {renderComparisonIndicator(getTodayKegelReps(), averageKegelReps)}
+                      </span>
+                    </div>
+                    {renderPreviousPeriodComparison(getTodayKegelReps(), getYesterdayKegelReps(), "")}
+                    <hr className="border-gray-200 dark:border-gray-700 my-2" />
+                    <div className="flex justify-between pt-2">
+                      <span className="text-gray-600 dark:text-gray-400">Entries:</span>
+                      <span className="font-medium">{getTodayKegelCount()}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Week Stats */}
+                <div className="bg-fuchsia-50 dark:bg-fuchsia-900/20 p-4 rounded-lg border border-fuchsia-100 dark:border-fuchsia-800/30">
+                  <h3 className="text-xl font-bold mb-3 text-center">Week</h3>
+                  <div className="space-y-0">
+                    <div className="flex justify-between py-2">
+                      <span className="text-gray-600 dark:text-gray-400">Reps:</span>
+                      <span className="font-medium flex items-center">
+                        {getWeekKegelReps().toFixed(0)}
+                        {renderComparisonIndicator(getWeekKegelReps(), averageKegelReps)}
+                      </span>
+                    </div>
+                    {renderPreviousPeriodComparison(getWeekKegelReps(), getPreviousWeekKegelReps(), "")}
+                    <hr className="border-gray-200 dark:border-gray-700 my-2" />
+                    <div className="flex justify-between pt-2">
+                      <span className="text-gray-600 dark:text-gray-400">Entries:</span>
+                      <span className="font-medium">{getWeekKegelCount()}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Month Stats */}
+                <div className="bg-pink-50 dark:bg-pink-900/20 p-4 rounded-lg border border-pink-100 dark:border-pink-800/30">
+                  <h3 className="text-xl font-bold mb-3 text-center">Month</h3>
+                  <div className="space-y-0">
+                    <div className="flex justify-between py-2">
+                      <span className="text-gray-600 dark:text-gray-400">Reps:</span>
+                      <span className="font-medium flex items-center">
+                        {getMonthKegelReps().toFixed(0)}
+                        {renderComparisonIndicator(getMonthKegelReps(), averageKegelReps)}
+                      </span>
+                    </div>
+                    {renderPreviousPeriodComparison(getMonthKegelReps(), getPreviousMonthKegelReps(), "")}
+                    <hr className="border-gray-200 dark:border-gray-700 my-2" />
+                    <div className="flex justify-between pt-2">
+                      <span className="text-gray-600 dark:text-gray-400">Entries:</span>
+                      <span className="font-medium">{getMonthKegelCount()}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Year Stats */}
+                <div className="bg-rose-50 dark:bg-rose-900/20 p-4 rounded-lg border border-rose-100 dark:border-rose-800/30">
+                  <h3 className="text-xl font-bold mb-3 text-center">Year</h3>
+                  <div className="space-y-0">
+                    <div className="flex justify-between py-2">
+                      <span className="text-gray-600 dark:text-gray-400">Reps:</span>
+                      <span className="font-medium flex items-center">
+                        {getYearKegelReps().toFixed(0)}
+                        {renderComparisonIndicator(getYearKegelReps(), averageKegelReps)}
+                      </span>
+                    </div>
+                    {renderPreviousPeriodComparison(getYearKegelReps(), getPreviousYearKegelReps(), "")}
+                    <hr className="border-gray-200 dark:border-gray-700 my-2" />
+                    <div className="flex justify-between pt-2">
+                      <span className="text-gray-600 dark:text-gray-400">Entries:</span>
+                      <span className="font-medium">{getYearKegelCount()}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Additional KegelLog Stats */}
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                  <h4 className="font-medium mb-2">Hold Time</h4>
+                  <p className="text-2xl font-bold">{averageKegelHoldTime.toFixed(1)} sec</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Average hold time</p>
+                </div>
+
+                <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                  <h4 className="font-medium mb-2">Sets</h4>
+                  <p className="text-2xl font-bold">{averageKegelSets.toFixed(1)}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Average sets per session</p>
+                </div>
+
+                <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                  <h4 className="font-medium mb-2">Total Time</h4>
+                  <p className="text-2xl font-bold">{averageKegelTotalTime.toFixed(0)} sec</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Average total exercise time</p>
+                </div>
+              </div>
             </div>
           )}
         </div>
       )}
-
-      {/* Main content */}
-      <div className="p-4 flex-grow">
-        {isLoading ? (
-          <div className="flex items-center justify-center h-full">
-            <p>Loading...</p>
-          </div>
-        ) : activeTab === "table" ? (
-          <div>
-            {/* Flow Statistics - changed to UroLog */}
-            {dataTypeFilter !== "intake" && (
-              <>
-                <h3 className="text-lg font-semibold mt-4 mb-2 text-gray-900 dark:text-gray-100">UroLog</h3>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                  <div className="bg-white dark:bg-gray-800 shadow rounded p-3 border border-gray-200 dark:border-gray-700">
-                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Today</h4>
-                    <p className="text-lg font-semibold">{getTodayFlowRate().toFixed(2)} mL/s</p>
-                    <p className="text-xs text-gray-500">{getTodayFlowCount()} entries</p>
-                  </div>
-                  <div className="bg-white dark:bg-gray-800 shadow rounded p-3 border border-gray-200 dark:border-gray-700">
-                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Week</h4>
-                    <p className="text-lg font-semibold">{getWeekFlowRate().toFixed(2)} mL/s</p>
-                    <p className="text-xs text-gray-500">{getWeekFlowCount()} entries</p>
-                  </div>
-                  <div className="bg-white dark:bg-gray-800 shadow rounded p-3 border border-gray-200 dark:border-gray-700">
-                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Month</h4>
-                    <p className="text-lg font-semibold">{getMonthFlowRate().toFixed(2)} mL/s</p>
-                    <p className="text-xs text-gray-500">{getMonthFlowCount()} entries</p>
-                  </div>
-                  <div className="bg-white dark:bg-gray-800 shadow rounded p-3 border border-gray-200 dark:border-gray-700">
-                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Year</h4>
-                    <p className="text-lg font-semibold">{getYearFlowRate().toFixed(2)} mL/s</p>
-                    <p className="text-xs text-gray-500">{getYearFlowCount()} entries</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div className="bg-white dark:bg-gray-800 shadow rounded p-4 border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center mb-2">
-                      <Droplet className="text-blue-500 mr-2" />
-                      <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100">Average Flow Rate</h4>
-                    </div>
-                    <p className="text-gray-700 dark:text-gray-300">{averageFlowRate.toFixed(2)} mL/s</p>
-                  </div>
-
-                  <div className="bg-white dark:bg-gray-800 shadow rounded p-4 border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center mb-2">
-                      <Droplet className="text-blue-500 mr-2" />
-                      <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100">Average Volume</h4>
-                    </div>
-                    <p className="text-gray-700 dark:text-gray-300">{averageVolume.toFixed(2)} mL</p>
-                  </div>
-
-                  <div className="bg-white dark:bg-gray-800 shadow rounded p-4 border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center mb-2">
-                      <Clock className="text-blue-500 mr-2" />
-                      <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100">Average Duration</h4>
-                    </div>
-                    <p className="text-gray-700 dark:text-gray-300">{averageDuration.toFixed(2)} seconds</p>
-                  </div>
-
-                  <div className="bg-white dark:bg-gray-800 shadow rounded p-4 border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center mb-2">
-                      <TrendingUp className="text-green-500 mr-2" />
-                      <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100">
-                        Recent Average Flow Rate
-                      </h4>
-                    </div>
-                    <p className="text-gray-700 dark:text-gray-300">{recentAverageFlowRate.toFixed(2)} mL/s</p>
-                  </div>
-
-                  <div className="bg-white dark:bg-gray-800 shadow rounded p-4 border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center mb-2">
-                      <AlertTriangle className="text-yellow-500 mr-2" />
-                      <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100">Most Common Color</h4>
-                    </div>
-                    <p className={`text-gray-700 dark:text-gray-300 ${getColorClassValue(mostCommonColor)}`}>
-                      {mostCommonColor || "N/A"}
-                    </p>
-                  </div>
-
-                  <div className="bg-white dark:bg-gray-800 shadow rounded p-4 border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center mb-2">
-                      <AlertTriangle className="text-red-500 mr-2" />
-                      <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100">Most Common Urgency</h4>
-                    </div>
-                    <p className={`text-gray-700 dark:text-gray-300 ${getUrgencyClassValue(mostCommonUrgency)}`}>
-                      {mostCommonUrgency || "N/A"}
-                    </p>
-                  </div>
-
-                  <div className="bg-white dark:bg-gray-800 shadow rounded p-4 border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center mb-2">
-                      <AlertTriangle className="text-red-500 mr-2" />
-                      <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100">Most Common Concern</h4>
-                    </div>
-                    <p className="text-gray-700 dark:text-gray-300">{mostCommonConcern || "N/A"}</p>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* Fluid Intake Statistics - changed to HydroLog */}
-            {dataTypeFilter !== "flow" && (
-              <>
-                <h3 className="text-lg font-semibold mt-4 mb-2 text-gray-900 dark:text-gray-100">HydroLog</h3>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                  <div className="bg-white dark:bg-gray-800 shadow rounded p-3 border border-gray-200 dark:border-gray-700">
-                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Today</h4>
-                    <p className="text-lg font-semibold">{getTodayFluidIntake().toFixed(0)} mL</p>
-                    <p className="text-xs text-gray-500">{getTodayFluidCount()} entries</p>
-                  </div>
-                  <div className="bg-white dark:bg-gray-800 shadow rounded p-3 border border-gray-200 dark:border-gray-700">
-                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Week</h4>
-                    <p className="text-lg font-semibold">{getWeekFluidIntake().toFixed(0)} mL</p>
-                    <p className="text-xs text-gray-500">{getWeekFluidCount()} entries</p>
-                  </div>
-                  <div className="bg-white dark:bg-gray-800 shadow rounded p-3 border border-gray-200 dark:border-gray-700">
-                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Month</h4>
-                    <p className="text-lg font-semibold">{getMonthFluidIntake().toFixed(0)} mL</p>
-                    <p className="text-xs text-gray-500">{getMonthFluidCount()} entries</p>
-                  </div>
-                  <div className="bg-white dark:bg-gray-800 shadow rounded p-3 border border-gray-200 dark:border-gray-700">
-                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Year</h4>
-                    <p className="text-lg font-semibold">{getYearFluidIntake().toFixed(0)} mL</p>
-                    <p className="text-xs text-gray-500">{getYearFluidCount()} entries</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div className="bg-white dark:bg-gray-800 shadow rounded p-4 border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center mb-2">
-                      <Droplet className="text-blue-500 mr-2" />
-                      <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100">Average Fluid Intake</h4>
-                    </div>
-                    <p className="text-gray-700 dark:text-gray-300">{averageFluidIntake.toFixed(2)} mL</p>
-                  </div>
-
-                  <div className="bg-white dark:bg-gray-800 shadow rounded p-4 border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center mb-2">
-                      <Coffee className="text-orange-500 mr-2" />
-                      <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100">Most Common Fluid Type</h4>
-                    </div>
-                    <p className="text-gray-700 dark:text-gray-300">{mostCommonFluidType || "N/A"}</p>
-                  </div>
-
-                  <div className="bg-white dark:bg-gray-800 shadow rounded p-4 border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center mb-2">
-                      {fluidIntakeTrend === "up" ? (
-                        <TrendingUp className="text-green-500 mr-2" />
-                      ) : fluidIntakeTrend === "down" ? (
-                        <TrendingDown className="text-red-500 mr-2" />
-                      ) : (
-                        <TrendingUp className="text-gray-500 mr-2" />
-                      )}
-                      <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100">Fluid Intake Trend</h4>
-                    </div>
-                    <p className="text-gray-700 dark:text-gray-300">{fluidIntakeTrend}</p>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        ) : activeTab === "line" ? (
-          <canvas ref={lineChartRef} width={800} height={400} />
-        ) : activeTab === "heatmap" ? (
-          <canvas ref={heatmapRef} width={800} height={400} />
-        ) : activeTab === "bar" ? (
-          <canvas ref={barChartRef} width={800} height={400} />
-        ) : activeTab === "pie" ? (
-          <canvas ref={pieChartRef} width={800} height={400} />
-        ) : (
-          <p>Select a tab to view data.</p>
-        )}
-      </div>
     </div>
   )
 }

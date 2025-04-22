@@ -7,7 +7,7 @@ export interface UroLog {
   urgency?: string
   concerns?: string[]
   notes?: string
-  isDemo?: boolean // Add isDemo field
+  isDemo?: boolean
 }
 
 export interface HydroLogEntry {
@@ -17,7 +17,18 @@ export interface HydroLogEntry {
   amount: number
   unit: "oz" | "mL"
   notes?: string
-  isDemo?: boolean // Add isDemo field
+  isDemo?: boolean
+}
+
+export interface KegelLog {
+  timestamp: string
+  reps: number
+  holdTime: number
+  sets: number
+  totalTime: number
+  completed: boolean
+  notes?: string
+  isDemo?: boolean
 }
 
 export type HydroLogType = "Water" | "Juice" | "Tea" | "Soda" | "Coffee" | "Alcohol" | "Other" | ""

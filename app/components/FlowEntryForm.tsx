@@ -15,19 +15,22 @@ import {
   TrendingUp,
   TrendingDown,
   Check,
+  Dumbbell,
 } from "lucide-react"
-import type { UroLog, UrineColor, UrgencyRating, ConcernType, FluidType, HydroLog } from "../types"
+import type { UroLog, UrineColor, UrgencyRating, ConcernType, FluidType, HydroLog, KegelLog } from "../types"
 
 interface FlowEntryFormProps {
   addUroLog: (entry: UroLog) => void
   addHydroLog: (entry: HydroLog) => void
+  addKegelLog: (entry: KegelLog) => void
   title2?: React.ReactNode
 }
 
-const FlowEntryForm: React.FC<FlowEntryFormProps> = ({ addUroLog, addHydroLog, title2 }) => {
+const FlowEntryForm: React.FC<FlowEntryFormProps> = ({ addUroLog, addHydroLog, addKegelLog, title2 }) => {
   // Add this near the top of the component
   const [dbUroLogs, setDbUroLogs] = useState<UroLog[]>([])
   const [dbHydroLogs, setDbHydroLogs] = useState<HydroLog[]>([])
+  const [dbKegelLogs, setDbKegelLogs] = useState<KegelLog[]>([])
 
   // UroLog Entry state
   const [volume, setVolume] = useState("")
@@ -49,8 +52,21 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({ addUroLog, addHydroLog, t
   const [useCustomAmount, setUseCustomAmount] = useState(false)
   const [hydroLogNotes, setFluidNotes] = useState("")
 
+  // KegelLog state
+  const [kegelReps, setKegelReps] = useState("")
+  const [kegelHoldTime, setKegelHoldTime] = useState("")
+  const [kegelSets, setKegelSets] = useState("")
+  const [kegelTotalTime, setKegelTotalTime] = useState(0)
+  const [kegelCompleted, setKegelCompleted] = useState(false)
+  const [kegelNotes, setKegelNotes] = useState("")
+  const [isKegelTimerRunning, setIsKegelTimerRunning] = useState(false)
+  const [kegelTimerStart, setKegelTimerStart] = useState<number | null>(null)
+  const [kegelElapsedTime, setKegelElapsedTime] = useState(0)
+  const [kegelGuidedTimer, setKegelGuidedTimer] = useState(false)
+  const [kegelRepsCompleted, setKegelRepsCompleted] = useState("")
+
   // Shared state
-  const [activeTab, setActiveTab] = useState<"basic" | "fluid">("basic")
+  const [activeTab, setActiveTab] = useState<"basic" | "fluid" | "kegel">("basic")
   const [isExpanded, setIsExpanded] = useState(true)
   const [entryDate, setEntryDate] = useState("")
   const [entryTime, setEntryTime] = useState("")
@@ -146,11 +162,20 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({ addUroLog, addHydroLog, t
           console.warn("hydroLogs table not found or not properly initialized")
           setDbHydroLogs([])
         }
+
+        if (db.kegelLogs && typeof db.kegelLogs.toArray === "function") {
+          const kegelLogs = await db.kegelLogs.toArray()
+          setDbKegelLogs(kegelLogs)
+        } else {
+          console.warn("kegelLogs table not found or not properly initialized")
+          setDbKegelLogs([])
+        }
       } catch (error) {
         console.error("Error fetching entries from database:", error)
         // Set empty arrays to prevent further errors
         setDbUroLogs([])
         setDbHydroLogs([])
+        setDbKegelLogs([])
       }
     }
 
@@ -257,6 +282,7 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({ addUroLog, addHydroLog, t
 
     let hasUroLog = false
     let hasHydroLog = false
+    let hasKegelLog = false
 
     // Save UroLog if data is provided
     if (volume && (duration || isTimerRunning)) {
@@ -323,6 +349,33 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({ addUroLog, addHydroLog, t
       setFluidNotes("")
     }
 
+    // Save KegelLog if data is provided
+    if (kegelReps && kegelHoldTime && kegelSets) {
+      const totalTime = Number(kegelHoldTime) * Number(kegelReps) * Number(kegelSets)
+
+      const kegelLog: KegelLog = {
+        timestamp,
+        reps: Number(kegelReps),
+        holdTime: Number(kegelHoldTime),
+        sets: Number(kegelSets),
+        totalTime: totalTime,
+        completed: kegelCompleted,
+        notes: kegelNotes || undefined,
+      }
+
+      addKegelLog(kegelLog)
+      hasKegelLog = true
+
+      // Reset kegel entry form
+      setKegelReps("")
+      setKegelHoldTime("")
+      setKegelSets("")
+      setKegelTotalTime(0)
+      setKegelCompleted(false)
+      setKegelNotes("")
+      setKegelRepsCompleted("")
+    }
+
     // Reset shared form elements
     // Reset date and time to current
     const now = new Date()
@@ -331,15 +384,23 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({ addUroLog, addHydroLog, t
     setUseCustomDateTime(false)
 
     // Show success message
-    if (hasUroLog || hasHydroLog) {
+    if (hasUroLog || hasHydroLog || hasKegelLog) {
       setSaveSuccess(true)
 
-      if (hasUroLog && hasHydroLog) {
+      if (hasUroLog && hasHydroLog && hasKegelLog) {
+        setSaveMessage("UroLog, HydroLog, and KegelLog saved successfully!")
+      } else if (hasUroLog && hasHydroLog) {
         setSaveMessage("UroLog and HydroLog saved successfully!")
+      } else if (hasUroLog && hasKegelLog) {
+        setSaveMessage("UroLog and KegelLog saved successfully!")
+      } else if (hasHydroLog && hasKegelLog) {
+        setSaveMessage("HydroLog and KegelLog saved successfully!")
       } else if (hasUroLog) {
         setSaveMessage("UroLog saved successfully!")
-      } else {
+      } else if (hasHydroLog) {
         setSaveMessage("HydroLog saved successfully!")
+      } else {
+        setSaveMessage("KegelLog saved successfully!")
       }
 
       // Clear success message after 3 seconds
@@ -400,7 +461,8 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({ addUroLog, addHydroLog, t
   // Check if Save button should be enabled
   const isFlowDataValid = Number(volume) > 0 && (Number(duration) > 0 || isTimerRunning)
   const isFluidDataValid = hydroLogType !== "" && (useCustomAmount ? Number(hydroLogAmount) > 0 : hydroLogAmount !== "")
-  const isSaveEnabled = isFlowDataValid || isFluidDataValid
+  const isKegelDataValid = Number(kegelReps) > 0 && Number(kegelHoldTime) > 0 && Number(kegelSets) > 0
+  const isSaveEnabled = isFlowDataValid || isFluidDataValid || isKegelDataValid
 
   return (
     <>
@@ -457,6 +519,17 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({ addUroLog, addHydroLog, t
           >
             <Coffee size={20} className="mr-2" />
             HydroLog
+          </button>
+          <button
+            className={`px-4 py-3 font-medium text-lg flex items-center ${
+              activeTab === "kegel"
+                ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-t-lg"
+                : "text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
+            } transition-colors`}
+            onClick={() => setActiveTab("kegel")}
+          >
+            <Dumbbell size={20} className="mr-2" />
+            KegelLog
           </button>
         </div>
       </div>
@@ -905,6 +978,172 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({ addUroLog, addHydroLog, t
                   placeholder="Add any additional notes about this fluid intake..."
                 ></textarea>
                 <div className="text-right text-lg text-gray-600 mt-1">{hydroLogNotes.length}/256 characters</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "kegel" && (
+          <div className="max-w-[414px] mx-auto">
+            <div className="form-group bg-gradient-to-br from-orange-50 to-yellow-50 dark:from-gray-800 dark:to-gray-700">
+              {/* Reps Field */}
+              <div className="mb-4">
+                <label htmlFor="kegel-reps" className="block mb-2 text-lg font-medium text-gray-800 dark:text-gray-300">
+                  Reps (Number of Squeezes)
+                </label>
+                <input
+                  type="number"
+                  id="kegel-reps"
+                  value={kegelReps}
+                  onChange={(e) => setKegelReps(e.target.value)}
+                  className="w-full p-2.5 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200"
+                  placeholder="Enter number of squeezes"
+                />
+              </div>
+
+              {/* Hold Time Field */}
+              <div className="mb-4">
+                <label
+                  htmlFor="kegel-hold-time"
+                  className="block mb-2 text-lg font-medium text-gray-800 dark:text-gray-300"
+                >
+                  Hold Time (seconds)
+                </label>
+                <input
+                  type="number"
+                  id="kegel-hold-time"
+                  value={kegelHoldTime}
+                  onChange={(e) => setKegelHoldTime(e.target.value)}
+                  className="w-full p-2.5 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200"
+                  placeholder="Enter duration of each squeeze"
+                />
+              </div>
+
+              {/* Sets Field */}
+              <div className="mb-4">
+                <label htmlFor="kegel-sets" className="block mb-2 text-lg font-medium text-gray-800 dark:text-gray-300">
+                  Sets (Number of Sets)
+                </label>
+                <input
+                  type="number"
+                  id="kegel-sets"
+                  value={kegelSets}
+                  onChange={(e) => setKegelSets(e.target.value)}
+                  className="w-full p-2.5 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200"
+                  placeholder="Enter number of sets"
+                />
+              </div>
+
+              {/* Total Time (calculated) */}
+              <div className="mb-4">
+                <label className="block mb-2 text-lg font-medium text-gray-800 dark:text-gray-300">
+                  Total Time (estimated)
+                </label>
+                <div className="p-2.5 border rounded-lg bg-gray-100 dark:bg-gray-700 text-lg text-gray-800 dark:text-gray-200">
+                  {Number(kegelHoldTime) * Number(kegelReps) * Number(kegelSets)} seconds
+                </div>
+              </div>
+
+              {/* Guided Timer */}
+              <div className="mb-4">
+                <label className="block mb-2 flex items-center text-lg font-medium text-gray-800 dark:text-gray-300">
+                  <input
+                    type="checkbox"
+                    checked={kegelGuidedTimer}
+                    onChange={() => setKegelGuidedTimer(!kegelGuidedTimer)}
+                    className="mr-2 h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  Use Guided Timer
+                </label>
+              </div>
+
+              {kegelGuidedTimer && (
+                <div className="mb-4">
+                  {/* Timer Display */}
+                  <div className="bg-yellow-50 dark:bg-gray-800 p-3 rounded-lg text-center mb-2 shadow-inner">
+                    <div className="text-6xl font-mono font-bold tabular-nums text-yellow-800 dark:text-white">
+                      {formatTime(kegelElapsedTime)}
+                    </div>
+                  </div>
+
+                  {/* Timer Controls */}
+                  <div className="flex justify-between">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsKegelTimerRunning(!isKegelTimerRunning)
+                        setKegelTimerStart(Date.now())
+                      }}
+                      className="min-h-[48px] px-6 text-white rounded-lg flex items-center justify-center shadow-sm hover:shadow transition-all text-lg w-[48%] bg-green-600 hover:bg-green-700"
+                    >
+                      {isKegelTimerRunning ? <Pause size={22} /> : <Play size={22} />}
+                      <span className="ml-2 font-medium">{isKegelTimerRunning ? "Pause" : "Start"}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsKegelTimerRunning(false)
+                        setKegelTimerStart(null)
+                        setKegelElapsedTime(0)
+                      }}
+                      className="min-h-[48px] px-6 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center justify-center shadow-sm hover:shadow transition-all text-lg w-[48%]"
+                    >
+                      <RotateCcw size={22} className="mr-2" /> Reset
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Reps Completed Field */}
+              <div className="mb-4">
+                <label
+                  htmlFor="kegel-reps-completed"
+                  className="block mb-2 text-lg font-medium text-gray-800 dark:text-gray-300"
+                >
+                  Reps Completed
+                </label>
+                <input
+                  type="number"
+                  id="kegel-reps-completed"
+                  value={kegelRepsCompleted}
+                  onChange={(e) => setKegelRepsCompleted(e.target.value)}
+                  className="w-full p-2.5 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200"
+                  placeholder="Enter number of reps completed"
+                />
+              </div>
+
+              {/* Completed Checkbox */}
+              <div className="mb-4">
+                <label className="block mb-2 flex items-center text-lg font-medium text-gray-800 dark:text-gray-300">
+                  <input
+                    type="checkbox"
+                    checked={kegelCompleted}
+                    onChange={() => setKegelCompleted(!kegelCompleted)}
+                    className="mr-2 h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  Completed All Sets
+                </label>
+              </div>
+
+              {/* Notes Field */}
+              <div className="mb-4">
+                <label
+                  htmlFor="kegel-notes"
+                  className="block mb-2 text-lg font-medium text-gray-800 dark:text-gray-300"
+                >
+                  Notes (max 256 characters)
+                </label>
+                <textarea
+                  id="kegel-notes"
+                  value={kegelNotes}
+                  onChange={(e) => setKegelNotes(e.target.value.slice(0, 256))}
+                  maxLength={256}
+                  className="w-full p-2.5 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 min-h-[80px] text-lg text-gray-800 dark:text-gray-200"
+                  rows={2}
+                  placeholder="Add any additional notes about this exercise..."
+                ></textarea>
+                <div className="text-right text-lg text-gray-600 mt-1">{kegelNotes.length}/256 characters</div>
               </div>
             </div>
           </div>

@@ -1,44 +1,38 @@
 import Dexie from "dexie"
-import type { UroLog, HydroLog, CustomResource } from "../types"
+import type { UroLog, HydroLog, CustomResource, KegelLog } from "../types"
 
 // Define the database
 class FlowTrackerDatabase extends Dexie {
-  // Update table names to match the new naming convention
-  uroLogs!: Dexie.Table<UroLog, string> // renamed from flowEntries
-  hydroLogs!: Dexie.Table<HydroLog, string> // renamed from fluidIntakeEntries
+  uroLogs!: Dexie.Table<UroLog, string>
+  hydroLogs!: Dexie.Table<HydroLog, string>
   customResources!: Dexie.Table<CustomResource, string>
+  kegelLogs!: Dexie.Table<KegelLog, string>
 
-  // Modify the constructor to improve version handling
   constructor() {
     super("FlowTrackerDB")
 
-    // Define tables and schema - we'll keep the version number but improve migration
-    this.version(3).stores({
+    this.version(4).stores({
       uroLogs: "timestamp, volume, duration, flowRate, color, urgency, *concerns, isDemo",
       hydroLogs: "timestamp, type, amount, unit, isDemo",
       customResources: "id, title, url, category",
-      // The * before concerns indicates it's a multi-valued property (array)
+      kegelLogs: "timestamp, reps, holdTime, sets, totalTime, completed, isDemo",
     })
 
-    // Add a more robust migration system
     this.on("ready", async () => {
       try {
         console.log("Database ready, checking for migration needs...")
 
-        // Check if the new tables are empty regardless of version
         const uroCount = await this.table("uroLogs").count()
         const hydroCount = await this.table("hydroLogs").count()
+        const kegelCount = await this.table("kegelLogs").count()
 
-        if (uroCount === 0 && hydroCount === 0) {
+        if (uroCount === 0 && hydroCount === 0 && kegelCount === 0) {
           console.log("New tables are empty, checking for data to migrate...")
 
-          // Check if old tables exist in the database schema
           const tableNames = this.tables.map((table) => table.name)
 
-          // Try to migrate from any old table format we know about
           let migratedData = false
 
-          // Check for old "flowEntries" table
           if (tableNames.includes("flowEntries")) {
             try {
               const oldFlowEntries = await this.table("flowEntries").toArray()
@@ -53,7 +47,6 @@ class FlowTrackerDatabase extends Dexie {
             }
           }
 
-          // Check for old "fluidIntakeEntries" table
           if (tableNames.includes("fluidIntakeEntries")) {
             try {
               const oldFluidEntries = await this.table("fluidIntakeEntries").toArray()
@@ -68,7 +61,6 @@ class FlowTrackerDatabase extends Dexie {
             }
           }
 
-          // Also check for any other legacy table names we might have used
           const legacyTableMappings = {
             flowLogs: "uroLogs",
             urinaryLogs: "uroLogs",
@@ -160,6 +152,31 @@ export async function bulkAddHydroLogs(entries: HydroLog[]): Promise<void> {
   await db.hydroLogs.bulkAdd(entries)
 }
 
+// KegelLog operations
+export async function getAllKegelLogs(): Promise<KegelLog[]> {
+  return await db.kegelLogs.toArray()
+}
+
+export async function addKegelLog(entry: KegelLog): Promise<string> {
+  return await db.kegelLogs.add(entry)
+}
+
+export async function updateKegelLog(entry: KegelLog): Promise<number> {
+  return await db.kegelLogs.update(entry.timestamp, entry)
+}
+
+export async function deleteKegelLog(timestamp: string): Promise<void> {
+  await db.kegelLogs.delete(timestamp)
+}
+
+export async function deleteAllKegelLogs(): Promise<void> {
+  await db.kegelLogs.clear()
+}
+
+export async function bulkAddKegelLogs(entries: KegelLog[]): Promise<void> {
+  await db.kegelLogs.bulkAdd(entries)
+}
+
 // Custom Resource operations
 export async function getCustomResources(): Promise<CustomResource[]> {
   return await db.customResources.toArray()
@@ -174,17 +191,18 @@ export async function deleteCustomResource(id: string): Promise<void> {
 }
 
 // Add this function to get database counts
-export async function getDatabaseCounts(): Promise<{ uroLogs: number; hydroLogs: number }> {
+export async function getDatabaseCounts(): Promise<{ uroLogs: number; hydroLogs: number; kegelLogs: number }> {
   const uroCount = await db.uroLogs.count()
   const hydroCount = await db.hydroLogs.count()
+  const kegelCount = await db.kegelLogs.count()
   return {
     uroLogs: uroCount,
     hydroLogs: hydroCount,
+    kegelLogs: kegelCount,
   }
 }
 
 // Update the migrateFromLocalStorage function to ensure it doesn't create duplicates
-
 export async function migrateFromLocalStorage(): Promise<void> {
   // Check for any localStorage data that needs migration
   const keysToCheck = ["uroLogs", "hydroLogs", "customResources"]
@@ -346,8 +364,6 @@ export async function getRecentEntries(limit = 10): Promise<{
 
   return { uroLogs, hydroLogs }
 }
-
-// Add this function to the existing db.ts file, near the other database utility functions
 
 /**
  * Resets the database by clearing all data or optionally deleting and recreating the database

@@ -1,37 +1,17 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useCallback } from "react"
-import {
-  Download,
-  Upload,
-  ChevronDown,
-  ChevronUp,
-  Trash2,
-  BarChart,
-  Droplet,
-  Clock,
-  Calendar,
-  Coffee,
-  Database,
-  Trash,
-  Share2,
-} from "lucide-react"
-import type { UroLog, HydroLog } from "../types"
-import {
-  bulkAddUroLogs,
-  bulkAddHydroLogs,
-  deleteAllUroLogs,
-  deleteAllHydroLogs,
-  deleteUroLog,
-  deleteHydroLog,
-} from "../services/db"
-import { shareContent } from "../services/share"
+
+import { useState, useEffect, useRef } from "react"
+import { Download, Upload, Trash2, Database, Share2, Check, AlertTriangle, RefreshCw, Plus } from "lucide-react"
+import type { UroLog, HydroLog, KegelLog } from "../types"
+import { isShareAvailable, safeShare } from "../services/share"
 import AutoBackupSettings from "./AutoBackupSettings"
 
-// Add the title2 prop to the interface
+// Add the hasDemoDataState prop to the interface
 interface DataManagementProps {
   title2?: React.ReactNode
+  hasDemoDataState?: boolean
 }
 
 interface MonthlyGroup {
@@ -39,16 +19,22 @@ interface MonthlyGroup {
   label: string
   uroLogs: UroLog[]
   hydroLogs: HydroLog[]
+  kegelLogs: KegelLog[]
   averageFlowRate: number
   averageVolume: number
   averageDuration: number
   averageFluidIntake: number
+  averageKegelReps: number
+  averageKegelHoldTime: number
+  averageKegelSets: number
+  averageKegelTotalTime: number
 }
 
 // Export the generateDemoData function so it can be used in other components
 export function generateDemoData() {
   const mockUroLogs: UroLog[] = []
   const mockHydroLogs: HydroLog[] = []
+  const mockKegelLogs: KegelLog[] = []
   const today = new Date()
   const threeMonthsAgo = new Date()
   threeMonthsAgo.setMonth(today.getMonth() - 3)
@@ -107,14 +93,7 @@ export function generateDemoData() {
         "Foamy or Bubbly",
       ]
 
-      const urgencies = [
-        "Normal",
-        "Hour < 60 min",
-        "Hold < 15 min",
-        "Hold < 5 minutes",
-        "Had drips",
-        "Couldn't hold it",
-      ]
+      const urgencies = ["Normal", "Hour < 60 min", "Hold < 15 min", "Had drips", "Couldn't hold it"]
 
       const possibleConcerns = [
         "Straining",
@@ -145,1243 +124,899 @@ export function generateDemoData() {
         }
       }
 
-      // Create UroLog entry with additional fields
+      // Create a UroLog entry
       mockUroLogs.push({
         timestamp: entryTime.toISOString(),
+        flowRate: Number.parseFloat(flowRateVariation.toFixed(2)),
         volume,
         duration,
-        flowRate: flowRateVariation,
         color,
         urgency,
         concerns,
-        notes: "Mock data to be removed",
         isDemo: true, // Mark as demo data
       })
 
-      // Generate random fluid intake data
-      const fluidTypes = ["Water", "Coffee", "Tea", "Juice", "Soda"] as const
-      const fluidType = fluidTypes[Math.floor(Math.random() * fluidTypes.length)]
-      const fluidAmount = Math.floor(Math.random() * 300) + 200 // 200-500 mL
+      // Generate random hydro log data
+      const fluidIntake = Math.floor(Math.random() * 300) + 100 // 100-400 ml
+      const fluidType = ["Water", "Coffee", "Tea", "Juice"][Math.floor(Math.random() * 4)]
 
-      // Create HydroLog entry with same timestamp
+      // Create a HydroLog entry
       mockHydroLogs.push({
         timestamp: entryTime.toISOString(),
         type: fluidType,
-        customType: fluidType === "Other" ? "Custom Beverage" : undefined,
-        amount: fluidAmount,
+        amount: fluidIntake,
         unit: "mL",
-        notes: "Mock data to be removed",
+        isDemo: true, // Mark as demo data
+      })
+
+      // Generate random kegel log data
+      const kegelReps = Math.floor(Math.random() * 20) + 10 // 10-30 reps
+      const kegelHoldTime = Math.floor(Math.random() * 5) + 5 // 5-10 seconds hold
+      const kegelSets = Math.floor(Math.random() * 5) + 1 // 1-5 sets
+      const kegelTotalTime = kegelReps * kegelHoldTime * kegelSets // Total time
+
+      mockKegelLogs.push({
+        timestamp: entryTime.toISOString(),
+        reps: kegelReps,
+        holdTime: kegelHoldTime,
+        sets: kegelSets,
+        totalTime: kegelTotalTime,
+        completed: true,
         isDemo: true, // Mark as demo data
       })
     }
   }
 
-  // Update database
-  try {
-    bulkAddUroLogs(mockUroLogs)
-    bulkAddHydroLogs(mockHydroLogs)
-    return true
-  } catch (error) {
-    console.error("Error adding mock data to database:", error)
-    return false
+  // Add the demo data to the database
+  const addDemoData = async () => {
+    try {
+      const { bulkAddUroLogs, bulkAddHydroLogs, bulkAddKegelLogs } = await import("../services/db")
+      await bulkAddUroLogs(mockUroLogs)
+      await bulkAddHydroLogs(mockHydroLogs)
+      await bulkAddKegelLogs(mockKegelLogs)
+      console.log("Demo data added successfully")
+    } catch (error) {
+      console.error("Error adding demo data:", error)
+    }
   }
+
+  // Call the function to add the demo data
+  addDemoData()
+
+  return { uroLogs: mockUroLogs, hydroLogs: mockHydroLogs, kegelLogs: mockKegelLogs }
 }
 
-// Export the deleteDemoData function so it can be used in other components
-export async function deleteDemoData() {
-  try {
-    // Get all entries
-    const { db } = await import("../services/db")
-    const allUroLogs = await db.uroLogs.toArray()
-    const allHydroLogs = await db.hydroLogs.toArray()
-
-    // Filter out mock data
-    const realUroLogs = allUroLogs.filter((entry) => !entry.isDemo)
-    const realHydroLogs = allHydroLogs.filter((entry) => !entry.isDemo)
-
-    // Delete all entries and re-add only the real ones
-    await deleteAllUroLogs()
-    await deleteAllHydroLogs()
-
-    if (realUroLogs.length > 0) {
-      await bulkAddUroLogs(realUroLogs)
-    }
-
-    if (realHydroLogs.length > 0) {
-      await bulkAddHydroLogs(realHydroLogs)
-    }
-
-    return true
-  } catch (error) {
-    console.error("Error deleting mock data:", error)
-    return false
-  }
-}
-
-// Check if demo data exists
-export const hasDemoData = async (): Promise<boolean> => {
+// Function to check if demo data exists
+export async function hasDemoData(): Promise<boolean> {
   try {
     const { db } = await import("../services/db")
-    const mockUroLogs = await db.uroLogs.filter((entry) => entry.isDemo === true).count()
-    const mockHydroLogs = await db.hydroLogs.filter((entry) => entry.isDemo === true).count()
-    return mockUroLogs > 0 || mockHydroLogs > 0
+
+    // Get all entries and filter them in memory
+    const uroLogs = await db.uroLogs.toArray()
+    const hydroLogs = await db.hydroLogs.toArray()
+
+    // Check if any entry has isDemo set to true
+    const hasDemoUroLogs = uroLogs.some((log) => log.isDemo === true)
+    const hasDemoHydroLogs = hydroLogs.some((log) => log.isDemo === true)
+
+    return hasDemoUroLogs || hasDemoHydroLogs
   } catch (error) {
     console.error("Error checking for demo data:", error)
     return false
   }
 }
 
-// Update the component definition to use the title2 prop
-const DataManagement: React.FC<DataManagementProps> = ({ title2 }) => {
-  const [expandedMonths, setExpandedMonths] = useState<Record<string, boolean>>({})
-  const [shareTestResults, setShareTestResults] = useState<string | null>(null)
-  const [dbCounts, setDbCounts] = useState<{
-    uroLogs: number
-    hydroLogs: number
-  }>({ uroLogs: 0, hydroLogs: 0 })
+// Function to delete all demo data
+export async function deleteDemoData(): Promise<void> {
+  try {
+    const { db } = await import("../services/db")
 
-  // Add new state variables for entries fetched directly from IndexedDB
-  const [dbUroLogs, setDbUroLogs] = useState<UroLog[]>([])
-  const [dbHydroLogs, setDbHydroLogs] = useState<HydroLog[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [hasDemoDataLocal, setHasDemoDataLocal] = useState(false)
+    // Get all entries
+    const uroLogs = await db.uroLogs.toArray()
+    const hydroLogs = await db.hydroLogs.toArray()
+    const kegelLogs = await db.kegelLogs.toArray()
 
-  // Declare monthlyGroups, toggleMonthExpand, and calculateAverage
-  const [monthlyGroups, setMonthlyGroups] = useState<MonthlyGroup[]>([])
+    // Filter out demo entries and get their keys
+    const demoUroLogKeys = uroLogs.filter((log) => log.isDemo === true).map((log) => log.timestamp)
+    const demoHydroLogKeys = hydroLogs.filter((log) => log.isDemo === true).map((log) => log.timestamp)
+    const demoKegelLogKeys = kegelLogs.filter((log) => log.isDemo === true).map((log) => log.timestamp)
 
-  // Add this function to handle deleting demo data within the component
-  const handleDeleteDemoData = async () => {
-    try {
-      await deleteDemoData()
-      // Refresh the data after deleting demo data
-      await fetchEntriesFromDb()
-      // Check if there's still demo data
-      const hasDemo = await hasDemoData()
-      setHasDemoDataLocal(hasDemo)
-    } catch (error) {
-      console.error("Error deleting demo data:", error)
+    // Delete entries by key
+    if (demoUroLogKeys.length > 0) {
+      await db.uroLogs.bulkDelete(demoUroLogKeys)
     }
+
+    if (demoHydroLogKeys.length > 0) {
+      await db.hydroLogs.bulkDelete(demoHydroLogKeys)
+    }
+
+    if (demoKegelLogKeys.length > 0) {
+      await db.kegelLogs.bulkDelete(demoKegelLogKeys)
+    }
+
+    console.log("Demo data deleted successfully")
+  } catch (error) {
+    console.error("Error deleting demo data:", error)
+    throw error
+  }
+}
+
+// Function to group logs by month - fixed to use timestamp instead of time
+export function groupLogsByMonth(uroLogs: UroLog[], hydroLogs: HydroLog[], kegelLogs: KegelLog[]): MonthlyGroup[] {
+  const monthlyGroups: { [key: string]: MonthlyGroup } = {}
+
+  // Helper function to process logs and update monthly groups
+  const processLogs = (logs: (UroLog | HydroLog | KegelLog)[], logType: "uroLogs" | "hydroLogs" | "kegelLogs") => {
+    logs.forEach((log: UroLog | HydroLog | KegelLog) => {
+      const date = new Date(log.timestamp) // Fixed: use timestamp instead of time
+      const year = date.getFullYear()
+      const month = date.getMonth()
+      const key = `${year}-${month + 1}`
+      const label = `${new Intl.DateTimeFormat("en-US", { month: "long" }).format(date)} ${year}`
+
+      if (!monthlyGroups[key]) {
+        monthlyGroups[key] = {
+          key,
+          label,
+          uroLogs: [],
+          hydroLogs: [],
+          kegelLogs: [],
+          averageFlowRate: 0,
+          averageVolume: 0,
+          averageDuration: 0,
+          averageFluidIntake: 0,
+          averageKegelReps: 0,
+          averageKegelHoldTime: 0,
+          averageKegelSets: 0,
+          averageKegelTotalTime: 0,
+        }
+      }
+
+      monthlyGroups[key][logType].push(log as any)
+    })
   }
 
-  // Add this function to check for demo data
-  const checkForDemoData = useCallback(async () => {
-    try {
-      const hasDemo = await hasDemoData()
-      setHasDemoDataLocal(hasDemo)
-    } catch (error) {
-      console.error("Error checking for demo data:", error)
+  // Process each type of log
+  processLogs(uroLogs, "uroLogs")
+  processLogs(hydroLogs, "hydroLogs")
+  processLogs(kegelLogs, "kegelLogs")
+
+  // Calculate averages for each month
+  Object.values(monthlyGroups).forEach((group) => {
+    if (group.uroLogs.length > 0) {
+      group.averageFlowRate = group.uroLogs.reduce((sum, log) => sum + log.flowRate, 0) / group.uroLogs.length
+      group.averageVolume = group.uroLogs.reduce((sum, log) => sum + log.volume, 0) / group.uroLogs.length
+      group.averageDuration = group.uroLogs.reduce((sum, log) => sum + log.duration, 0) / group.uroLogs.length
     }
+
+    if (group.hydroLogs.length > 0) {
+      // Calculate average fluid intake - convert all to mL for consistency
+      const totalIntake = group.hydroLogs.reduce((sum, log) => {
+        const amount = log.unit === "oz" ? log.amount * 29.5735 : log.amount
+        return sum + amount
+      }, 0)
+      group.averageFluidIntake = totalIntake / group.hydroLogs.length
+    }
+
+    if (group.kegelLogs.length > 0) {
+      group.averageKegelReps = group.kegelLogs.reduce((sum, log) => sum + log.reps, 0) / group.kegelLogs.length
+      group.averageKegelHoldTime = group.kegelLogs.reduce((sum, log) => sum + log.holdTime, 0) / group.kegelLogs.length
+      group.averageKegelSets = group.kegelLogs.reduce((sum, log) => sum + log.sets, 0) / group.kegelLogs.length
+      group.averageKegelTotalTime =
+        group.kegelLogs.reduce((sum, log) => sum + log.totalTime, 0) / group.kegelLogs.length
+    }
+  })
+
+  return Object.values(monthlyGroups).sort((a, b) => (a.key > b.key ? -1 : 1))
+}
+
+const DataManagement: React.FC<DataManagementProps> = ({ title2, hasDemoDataState }) => {
+  const [uroLogs, setUroLogs] = useState<UroLog[]>([])
+  const [hydroLogs, setHydroLogs] = useState<HydroLog[]>([])
+  const [kegelLogs, setKegelLogs] = useState<KegelLog[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [monthlyGroups, setMonthlyGroups] = useState<MonthlyGroup[]>([])
+  const [expandedMonths, setExpandedMonths] = useState<Record<string, boolean>>({})
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
+  const [isGeneratingData, setIsGeneratingData] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Fetch data from the database
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true)
+      try {
+        const { getAllUroLogs, getAllHydroLogs, getAllKegelLogs } = await import("../services/db")
+        const uroLogsData = await getAllUroLogs()
+        const hydroLogsData = await getAllHydroLogs()
+        const kegelLogsData = await getAllKegelLogs()
+
+        setUroLogs(uroLogsData)
+        setHydroLogs(hydroLogsData)
+        setKegelLogs(kegelLogsData)
+
+        // Group logs by month
+        const groups = groupLogsByMonth(uroLogsData, hydroLogsData, kegelLogsData)
+        setMonthlyGroups(groups)
+
+        // Initialize expanded state for the first month
+        if (groups.length > 0) {
+          setExpandedMonths({ [groups[0].key]: true })
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error)
+        setMessage({
+          type: "error",
+          text: "Failed to load data. Please try again.",
+        })
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchData()
   }, [])
 
-  const toggleMonthExpand = (monthKey: string) => {
+  // Toggle month expansion
+  const toggleMonth = (key: string) => {
     setExpandedMonths((prev) => ({
       ...prev,
-      [monthKey]: !prev[monthKey],
+      [key]: !prev[key],
     }))
   }
 
-  const calculateAverage = (values: number[]): number => {
-    if (values.length === 0) return 0
-    const sum = values.reduce((acc, val) => acc + val, 0)
-    return sum / values.length
-  }
-
-  // Update the fetchDbCounts function
-  const fetchDbCounts = async () => {
-    try {
-      const { db } = await import("../services/db")
-      const uroCount = await db.uroLogs.count()
-      const hydroCount = await db.hydroLogs.count()
-      setDbCounts({
-        uroLogs: uroCount,
-        hydroLogs: hydroCount,
-      })
-    } catch (error) {
-      console.error("Error fetching database counts:", error)
-    }
-  }
-
-  // Update the fetchEntriesFromDb function to also check for demo data
-  const fetchEntriesFromDb = async () => {
-    setIsLoading(true)
-    try {
-      const { db } = await import("../services/db")
-
-      // Add error handling and fallbacks
-      let uroLogs = []
-      let hydroLogs = []
-
-      try {
-        // Check if the tables exist before calling toArray()
-        if (db.uroLogs) {
-          uroLogs = await db.uroLogs.toArray()
-        }
-      } catch (error) {
-        console.error("Error fetching uroLogs:", error)
-      }
-
-      try {
-        if (db.hydroLogs) {
-          hydroLogs = await db.hydroLogs.toArray()
-        }
-      } catch (error) {
-        console.error("Error fetching hydroLogs:", error)
-      }
-
-      setDbUroLogs(uroLogs)
-      setDbHydroLogs(hydroLogs)
-
-      // Update counts
-      setDbCounts({
-        uroLogs: uroLogs.length,
-        hydroLogs: hydroLogs.length,
-      })
-
-      // Check for demo data
-      await checkForDemoData()
-    } catch (error) {
-      console.error("Error fetching entries from database:", error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  // Fetch database counts when component mounts or entries change
-  useEffect(() => {
-    fetchDbCounts()
-  }, [])
-
-  // Call fetchEntriesFromDb when component mounts and after operations that modify the database
-  useEffect(() => {
-    fetchEntriesFromDb()
-  }, [])
-
-  useEffect(() => {
-    setMonthlyGroups(groupEntriesByMonth())
-  }, [dbUroLogs, dbHydroLogs])
-
-  // Update the handleDeleteUroLog function
-  const handleDeleteUroLog = async (timestamp: string) => {
-    if (confirm("Are you sure you want to delete this UroLog entry?")) {
-      try {
-        // Delete from IndexedDB
-        await deleteUroLog(timestamp)
-        // Refresh entries from DB
-        fetchEntriesFromDb()
-      } catch (error) {
-        console.error("Error deleting UroLog entry:", error)
-      }
-    }
-  }
-
-  const handleDeleteHydroLog = async (timestamp: string) => {
-    if (confirm("Are you sure you want to delete this HydroLog entry?")) {
-      try {
-        // Delete from IndexedDB
-        await deleteHydroLog(timestamp)
-        // Refresh entries from DB
-        fetchEntriesFromDb()
-      } catch (error) {
-        console.error("Error deleting HydroLog entry:", error)
-      }
-    }
-  }
-
-  // Update the exportData function
-  const exportData = () => {
-    // Create combined entries for export
-    const combinedEntries = dbUroLogs.map((uroLog) => {
-      // Find matching HydroLog entry
-      const matchingHydroLog = dbHydroLogs.find((hydroLog) => hydroLog.timestamp === uroLog.timestamp)
-
-      if (matchingHydroLog) {
-        return {
-          ...uroLog,
-          fluidIntake: {
-            type: matchingHydroLog.type,
-            customType: matchingHydroLog.customType,
-            amount: matchingHydroLog.amount,
-            unit: hydroLog.unit,
-            notes: matchingHydroLog.notes,
-          },
-        }
-      }
-
-      return uroLog
-    })
-
-    // Add hydro entries that don't have matching uro entries
-    dbHydroLogs.forEach((hydroLog) => {
-      const hasMatchingUroLog = dbUroLogs.some((uroLog) => uroLog.timestamp === hydroLog.timestamp)
-
-      if (!hasMatchingUroLog) {
-        combinedEntries.push({
-          timestamp: hydroLog.timestamp,
-          volume: 0,
-          duration: 0,
-          flowRate: 0,
-          fluidIntake: {
-            type: hydroLog.type,
-            customType: hydroLog.customType,
-            amount: hydroLog.amount,
-            unit: hydroLog.unit,
-            notes: hydroLog.notes,
-          },
-        })
-      }
-    })
-
-    const csvContent =
-      "data:text/csv;charset=utf-8," +
-      "Original Timestamp,Date,Time,Volume (mL),Duration (s),Flow Rate (mL/s),Color,Urgency,Concerns,Flow Notes,Fluid Type,Fluid Custom Type,Fluid Amount,Fluid Unit,Fluid Notes\n" +
-      combinedEntries
-        .map((e) => {
-          const date = new Date(e.timestamp)
-          const dateStr = date.toISOString().split("T")[0]
-          const timeStr = date.toTimeString().substring(0, 8)
-
-          // Handle fluid intake data
-          const fluidType = e.fluidIntake?.type || ""
-          const fluidCustomType = e.fluidIntake?.customType || ""
-          const fluidAmount = e.fluidIntake?.amount || ""
-          const fluidUnit = e.fluidIntake?.unit || ""
-          const fluidNotes = e.fluidIntake?.notes || ""
-
-          return `${e.timestamp},${dateStr},${timeStr},${e.volume},${e.duration},${e.flowRate},${e.color || ""},${
-            e.urgency || ""
-          },"${e.concerns ? e.concerns.join("; ") : ""}","${e.notes ? e.notes.replace(/"/g, '""') : ""}","${fluidType}","${fluidCustomType}","${fluidAmount}","${fluidUnit}","${
-            fluidNotes ? fluidNotes.replace(/"/g, '""') : ""
-          }"`
-        })
-        .join("\n")
-
-    const encodedUri = encodeURI(csvContent)
-    const link = document.createElement("a")
-    link.setAttribute("href", encodedUri)
-    // Format date as MMDDYY HHMM
-    const now = new Date()
-    const month = String(now.getMonth() + 1).padStart(2, "0")
-    const day = String(now.getDate()).padStart(2, "0")
-    const year = String(now.getFullYear()).slice(-2)
-    const hours = String(now.getHours()).padStart(2, "0")
-    const minutes = String(now.getMinutes()).padStart(2, "0")
-    const dateTimeStr = `${month}${day}${year}_${hours}${minutes}`
-    link.setAttribute("download", `my_uro_log_data_${dateTimeStr}.csv`)
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
-
-  // Update the importData function
-  const importData = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = async (e) => {
-        try {
-          const content = e.target?.result as string
-          const lines = content.split("\n")
-
-          // Parse CSV, handling quoted fields properly
-          const parseCSVLine = (line: string) => {
-            const result = []
-            let current = ""
-            let inQuotes = false
-
-            for (let i = 0; i < line.length; i++) {
-              const char = line[i]
-
-              if (char === '"') {
-                // Handle escaped quotes (two double quotes in a row)
-                if (i + 1 < line.length && line[i + 1] === '"') {
-                  current += '"'
-                  i++ // Skip the next quote
-                } else {
-                  inQuotes = !inQuotes
-                }
-              } else if (char === "," && !inQuotes) {
-                result.push(current)
-                current = ""
-              } else {
-                current += char
-              }
-            }
-
-            result.push(current) // Add the last field
-            return result
-          }
-
-          // Check the header to determine the format
-          const header = lines[0].toLowerCase()
-          const hasOriginalTimestamp = header.includes("original timestamp")
-          const isNewFormat = header.includes("date") && header.includes("time")
-
-          // Get all existing timestamps directly from the database for duplicate checking
-          const { db } = await import("../services/db")
-          const existingUroTimestamps = new Set((await db.uroLogs.toArray()).map((entry) => entry.timestamp))
-          const existingHydroTimestamps = new Set((await db.hydroLogs.toArray()).map((entry) => entry.timestamp))
-
-          const newUroLogs: UroLog[] = []
-          const newHydroLogs: HydroLog[] = []
-          const skippedUroEntries: string[] = []
-          const skippedHydroEntries: string[] = []
-
-          for (let i = 1; i < lines.length; i++) {
-            const line = lines[i].trim()
-            if (!line) continue
-
-            try {
-              const fields = parseCSVLine(line)
-
-              // Determine timestamp based on format
-              let timestamp: string
-
-              if (hasOriginalTimestamp && fields[0] && fields[0].trim()) {
-                // Use the original timestamp if available
-                timestamp = fields[0].trim()
-              } else if (isNewFormat) {
-                // Parse date and time from separate fields
-                const dateIndex = hasOriginalTimestamp ? 1 : 0
-                const timeIndex = hasOriginalTimestamp ? 2 : 1
-
-                const dateStr = fields[dateIndex].replace(/"/g, "").trim()
-                const timeStr = fields[timeIndex].replace(/"/g, "").trim()
-
-                // Create timestamp from date and time
-                try {
-                  // Try to parse the date in MM/DD/YY format
-                  const dateParts = dateStr.split("/")
-                  if (dateParts.length === 3) {
-                    // Handle 2-digit year
-                    if (dateParts[2].length === 2) {
-                      dateParts[2] = "20" + dateParts[2]
-                    }
-
-                    // Format as YYYY-MM-DD for ISO date
-                    const formattedDate = `${dateParts[2]}-${dateParts[0].padStart(2, "0")}-${dateParts[1].padStart(
-                      2,
-                      "0",
-                    )}`
-
-                    // Parse time - handle AM/PM format with or without seconds
-                    let formattedTime = timeStr
-                    if (timeStr.includes("AM") || timeStr.includes("PM")) {
-                      // Convert 12-hour format to 24-hour format
-                      // Updated regex to handle seconds if present
-                      const timeParts = timeStr.match(/(\d+):(\d+)(?::(\d+))?\s*([AP]M)/)
-                      if (timeParts) {
-                        let hours = Number.parseInt(timeParts[1])
-                        const minutes = timeParts[2]
-                        const seconds = timeParts[3] || "00" // Use 00 if seconds not provided
-                        const ampm = timeParts[4]
-
-                        if (ampm === "PM" && hours < 12) hours += 12
-                        if (ampm === "AM" && hours === 12) hours = 0
-
-                        formattedTime = `${hours.toString().padStart(2, "0")}:${minutes}:${seconds}`
-                      }
-                    }
-
-                    // Add more robust error handling for the date creation
-                    try {
-                      timestamp = new Date(`${formattedDate}T${formattedTime}`).toISOString()
-                    } catch (error) {
-                      console.error("Error creating date from:", formattedDate, formattedTime, error)
-
-                      // Try an alternative approach with the Date constructor
-                      try {
-                        const dateObj = new Date()
-                        const [year, month, day] = formattedDate.split("-").map(Number)
-                        const [hours, minutes, seconds] = formattedTime.split(":").map(Number)
-
-                        dateObj.setFullYear(year, month - 1, day)
-                        dateObj.setHours(hours, minutes, seconds || 0, 0)
-
-                        timestamp = dateObj.toISOString()
-                      } catch (fallbackError) {
-                        console.error("Fallback date parsing also failed:", fallbackError)
-                        // Use current timestamp as last resort
-                        timestamp = new Date().toISOString()
-                      }
-                    }
-                  } else {
-                    // Try direct parsing if not in MM/DD/YY format
-                    timestamp = new Date(`${dateStr}T${timeStr}`).toISOString()
-                  }
-                } catch (error) {
-                  console.error("Error parsing date/time:", dateStr, timeStr, error)
-                  // Use current timestamp as fallback
-                  timestamp = new Date().toISOString()
-                }
-              } else {
-                // Old format - first field is the timestamp
-                timestamp = fields[0]
-              }
-
-              // Calculate field indices based on format
-              const offset = hasOriginalTimestamp ? 1 : 0
-              const volumeIndex = isNewFormat ? 2 + offset : 1
-              const durationIndex = isNewFormat ? 3 + offset : 2
-              const flowRateIndex = isNewFormat ? 4 + offset : 3
-              const colorIndex = isNewFormat ? 5 + offset : undefined
-              const urgencyIndex = isNewFormat ? 6 + offset : undefined
-              const concernsIndex = isNewFormat ? 7 + offset : undefined
-              const flowNotesIndex = isNewFormat ? 8 + offset : undefined
-              const fluidTypeIndex = isNewFormat ? 9 + offset : 4
-              const fluidCustomTypeIndex = isNewFormat ? 10 + offset : undefined
-              const fluidAmountIndex = isNewFormat ? 11 + offset : 5
-              const fluidUnitIndex = isNewFormat ? 12 + offset : 6
-              const fluidNotesIndex = isNewFormat ? 13 + offset : undefined
-
-              // Parse UroLog fields
-              const volume = Number.parseFloat(fields[volumeIndex] || "0")
-              const duration = Number.parseFloat(fields[durationIndex] || "0")
-              const flowRate = Number.parseFloat(fields[flowRateIndex] || "0")
-              const color = colorIndex !== undefined ? fields[colorIndex] : undefined
-              const urgency = urgencyIndex !== undefined ? fields[urgencyIndex] : undefined
-              const concerns =
-                concernsIndex !== undefined && fields[concernsIndex]
-                  ? fields[concernsIndex].split(";").map((c) => c.trim())
-                  : undefined
-              const flowNotes = flowNotesIndex !== undefined ? fields[flowNotesIndex] : undefined
-
-              // Create UroLog if we have valid data and it doesn't already exist
-              if (volume > 0 && duration > 0 && flowRate > 0) {
-                if (existingUroTimestamps.has(timestamp)) {
-                  // Skip this entry as it already exists
-                  skippedUroEntries.push(timestamp)
-                } else {
-                  newUroLogs.push({
-                    timestamp,
-                    volume,
-                    duration,
-                    flowRate,
-                    color,
-                    urgency,
-                    concerns,
-                    notes: flowNotes,
-                  })
-                  // Add to set to prevent duplicates within the import
-                  existingUroTimestamps.add(timestamp)
-                }
-              }
-
-              // Parse HydroLog fields
-              const fluidType = fluidTypeIndex !== undefined ? fields[fluidTypeIndex] : ""
-              const fluidCustomType = fluidCustomTypeIndex !== undefined ? fields[fluidCustomTypeIndex] : undefined
-              const fluidAmount =
-                fluidAmountIndex !== undefined ? Number.parseFloat(fields[fluidAmountIndex] || "0") : 0
-              const fluidUnit = fluidUnitIndex !== undefined ? (fields[fluidUnitIndex] as "oz" | "mL") || "mL" : "mL"
-              const fluidNotes = fluidNotesIndex !== undefined ? fields[fluidNotesIndex] : undefined
-
-              // Create HydroLog if we have valid data and it doesn't already exist
-              if (fluidType && fluidAmount > 0) {
-                if (existingHydroTimestamps.has(timestamp)) {
-                  // Skip this entry as it already exists
-                  skippedHydroEntries.push(timestamp)
-                } else {
-                  newHydroLogs.push({
-                    timestamp,
-                    type: fluidType as any,
-                    customType: fluidCustomType,
-                    amount: fluidAmount,
-                    unit: fluidUnit,
-                    notes: fluidNotes,
-                  })
-                  // Add to set to prevent duplicates within the import
-                  existingHydroTimestamps.add(timestamp)
-                }
-              }
-            } catch (error) {
-              console.error("Error parsing CSV line:", line, error)
-              // Continue with next line
-            }
-          }
-
-          // Add new entries to database
-          if (newUroLogs.length > 0) {
-            try {
-              await bulkAddUroLogs(newUroLogs)
-            } catch (error) {
-              console.error("Error adding UroLogs to database:", error)
-            }
-          }
-
-          if (newHydroLogs.length > 0) {
-            try {
-              await bulkAddHydroLogs(newHydroLogs)
-            } catch (error) {
-              console.error("Error adding HydroLogs to database:", error)
-            }
-          }
-
-          // Refresh entries from database
-          await fetchEntriesFromDb()
-
-          // Create a detailed message about the restoration
-          let message = `Restoration complete!\n\n`
-
-          if (newUroLogs.length > 0 || newHydroLogs.length > 0) {
-            message += `✅ Successfully added ${newUroLogs.length + newHydroLogs.length} new entries to database:\n`
-            if (newUroLogs.length > 0) {
-              message += `   • ${newUroLogs.length} UroLogs\n`
-            }
-            if (newHydroLogs.length > 0) {
-              message += `   • ${newHydroLogs.length} HydroLogs\n`
-            }
-          } else {
-            message += "❌ No new entries were added to the database.\n"
-          }
-
-          if (skippedUroEntries.length > 0 || skippedHydroEntries.length > 0) {
-            message += `\n⚠️ Skipped ${skippedUroEntries.length + skippedHydroEntries.length} duplicate entries (already exist in database):\n`
-            if (skippedUroEntries.length > 0) {
-              message += `   • ${skippedUroEntries.length} UroLogs\n`
-            }
-            if (skippedHydroEntries.length > 0) {
-              message += `   • ${skippedHydroEntries.length} HydroLogs\n`
-            }
-          }
-
-          // Show alert with import results
-          alert(message)
-
-          // Add a confirmation to run storage tests
-          if (newUroLogs.length > 0 || newHydroLogs.length > 0) {
-            if (confirm("Would you like to run storage tests to verify no duplicates were created?")) {
-              // Scroll to the Help section and open the Storage Tests section
-              const helpButton = document.querySelector('button[aria-label="Help"]')
-              if (helpButton) {
-                ;(helpButton as HTMLButtonElement).click()
-
-                // Wait for the Help section to load
-                setTimeout(() => {
-                  // Find and click the Development section
-                  const developmentSection = Array.from(document.querySelectorAll("h2")).find((el) =>
-                    el.textContent?.includes("Development"),
-                  )
-                  if (developmentSection) {
-                    developmentSection.click()
-
-                    // Find and click the Storage Tests section
-                    setTimeout(() => {
-                      const storageTestsSection = Array.from(document.querySelectorAll("h3")).find((el) =>
-                        el.textContent?.includes("Storage Tests"),
-                      )
-                      if (storageTestsSection) {
-                        storageTestsSection.click()
-
-                        // Find and click the Run Tests button
-                        setTimeout(() => {
-                          const runTestsButton = Array.from(document.querySelectorAll("button")).find((el) =>
-                            el.textContent?.includes("Run Tests"),
-                          )
-                          if (runTestsButton) {
-                            ;(runTestsButton as HTMLButtonElement).click()
-                          }
-                        }, 300)
-                      }
-                    }, 300)
-                  }
-                }, 300)
-              }
-            }
-          }
-        } catch (error) {
-          console.error("Error processing CSV file:", error)
-          alert("Error processing your backup file. Please check that it's a valid backup file (CSV format).")
-        }
-      }
-      reader.readAsText(file)
-      // Reset the input
-      event.target.value = ""
-    }
-  }
-
-  // Update the groupEntriesByMonth function
-  const groupEntriesByMonth = (): MonthlyGroup[] => {
-    const groups: Record<
-      string,
-      {
-        uroLogs: UroLog[]
-        hydroLogs: HydroLog[]
-      }
-    > = {}
-
-    // Process UroLogs
-    dbUroLogs.forEach((entry) => {
-      const date = new Date(entry.timestamp)
-      const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
-
-      if (!groups[monthYear]) {
-        groups[monthYear] = {
-          uroLogs: [],
-          hydroLogs: [],
-        }
-      }
-
-      groups[monthYear].uroLogs.push(entry)
-    })
-
-    // Process HydroLogs
-    dbHydroLogs.forEach((entry) => {
-      const date = new Date(entry.timestamp)
-      const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
-
-      if (!groups[monthYear]) {
-        groups[monthYear] = {
-          uroLogs: [],
-          hydroLogs: [],
-        }
-      }
-
-      groups[monthYear].hydroLogs.push(entry)
-    })
-
-    // Calculate averages for each month
-    return Object.entries(groups)
-      .map(([key, { uroLogs, hydroLogs }]) => {
-        const date = new Date(uroLogs.length > 0 ? uroLogs[0].timestamp : hydroLogs[0].timestamp)
-        const monthNames = [
-          "January",
-          "February",
-          "March",
-          "April",
-          "May",
-          "June",
-          "July",
-          "August",
-          "September",
-          "October",
-          "November",
-          "December",
-        ]
-
-        const label = `${monthNames[date.getMonth()]} ${date.getFullYear()}`
-
-        // Calculate flow averages
-        const averageFlowRate =
-          uroLogs.length > 0 ? uroLogs.reduce((sum, entry) => sum + entry.flowRate, 0) / uroLogs.length : 0
-
-        const averageVolume =
-          uroLogs.length > 0 ? uroLogs.reduce((sum, entry) => sum + entry.volume, 0) / uroLogs.length : 0
-
-        const averageDuration =
-          uroLogs.length > 0 ? uroLogs.reduce((sum, entry) => sum + entry.duration, 0) / uroLogs.length : 0
-
-        // Calculate fluid intake average
-        const fluidIntakeAmounts = hydroLogs.map((entry) =>
-          entry.unit === "oz" ? entry.amount * 29.5735 : entry.amount,
-        )
-
-        const averageFluidIntake =
-          fluidIntakeAmounts.length > 0
-            ? fluidIntakeAmounts.reduce((sum, amount) => sum + amount, 0) / fluidIntakeAmounts.length
-            : 0
-
-        return {
-          key,
-          label,
-          uroLogs,
-          hydroLogs,
-          averageFlowRate,
-          averageVolume,
-          averageDuration,
-          averageFluidIntake,
-        }
-      })
-      .sort((a, b) => {
-        // Sort by date (newest first)
-        const dateA = new Date(a.key + "-01")
-        const dateB = new Date(b.key + "-01")
-        return dateB.getTime() - dateA.getTime()
-      })
-  }
-
-  // Restore the formatDate and formatTime functions
+  // Format date for display
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
-    return date.toLocaleDateString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    })
+    return date.toLocaleString()
   }
 
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleTimeString(undefined, {
-      hour: "2-digit",
-      minute: "2-digit",
-    })
-  }
+  // Delete an entry
+  const deleteEntry = async (type: "uroLog" | "hydroLog" | "kegelLog", timestamp: string) => {
+    if (!confirm("Are you sure you want to delete this entry?")) return
 
-  // Restore the getColorClass and getUrgencyClass functions
-  const getColorClassValue = (color?: string): string => {
-    if (!color) return "text-gray-500 dark:text-gray-400"
+    try {
+      const { deleteUroLog, deleteHydroLog, deleteKegelLog } = await import("../services/db")
 
-    // Ensure high contrast in both light and dark modes
-    switch (color) {
-      case "Light Yellow":
-        return "text-yellow-700 dark:text-yellow-300"
-      case "Clear":
-        return "text-blue-700 dark:text-blue-300"
-      case "Dark Yellow":
-        return "text-amber-700 dark:text-amber-300"
-      case "Amber or Honey":
-        return "text-amber-800 dark:text-amber-300"
-      case "Orange":
-        return "text-orange-700 dark:text-orange-300"
-      case "Pink or Red":
-        return "text-red-700 dark:text-red-300"
-      case "Blue or Green":
-        return "text-teal-700 dark:text-teal-300"
-      case "Brown or Cola-colored":
-        return "text-amber-800 dark:text-amber-300"
-      case "Cloudy or Murky":
-        return "text-gray-700 dark:text-gray-300"
-      case "Foamy or Bubbly":
-        return "text-blue-700 dark:text-blue-300"
-      default:
-        return "text-gray-700 dark:text-gray-300"
-    }
-  }
-
-  const getUrgencyClassValue = (urgency?: string): string => {
-    if (!urgency) return "text-gray-500 dark:text-gray-400"
-
-    // Ensure high contrast in both light and dark modes
-    switch (urgency) {
-      case "Normal":
-        return "text-green-700 dark:text-green-300"
-      case "Hour < 60 min":
-        return "text-blue-700 dark:text-blue-300"
-      case "Hold < 15 min":
-        return "text-amber-700 dark:text-amber-300"
-      case "Hold < 5 minutes":
-        return "text-orange-700 dark:text-orange-300"
-      case "Had drips":
-        return "text-red-700 dark:text-red-300"
-      case "Couldn't hold it":
-        return "text-red-700 dark:text-red-300 font-medium"
-      default:
-        return "text-gray-700 dark:text-gray-300"
-    }
-  }
-
-  // Restore the shareData function and related functions
-  const shareData = (monthKey?: string) => {
-    const { title, text } = generateShareData(monthKey)
-
-    // Use our improved sharing function that bypasses Web Share API in problematic environments
-    shareContent({
-      title,
-      text,
-    })
-  }
-
-  // Update the generateShareData function
-  const generateShareData = (monthKey?: string): { title: string; text: string } => {
-    // Determine which entries to share
-    let entriesToShare: UroLog[] = []
-    let hydroLogsToShare: HydroLog[] = []
-    let title = "My Uro Log Data"
-    let monthsToInclude: MonthlyGroup[] = []
-
-    if (monthKey) {
-      // Share specific month
-      const monthGroup = monthlyGroups.find((group) => group.key === monthKey)
-      if (monthGroup) {
-        entriesToShare = monthGroup.uroLogs
-        hydroLogsToShare = monthGroup.hydroLogs
-        title = `My Uro Log Data - ${monthGroup.label}`
-        monthsToInclude = [monthGroup]
+      if (type === "uroLog") {
+        await deleteUroLog(timestamp)
+        setUroLogs((prev) => prev.filter((log) => log.timestamp !== timestamp))
+      } else if (type === "hydroLog") {
+        await deleteHydroLog(timestamp)
+        setHydroLogs((prev) => prev.filter((log) => log.timestamp !== timestamp))
+      } else if (type === "kegelLog") {
+        await deleteKegelLog(timestamp)
+        setKegelLogs((prev) => prev.filter((log) => log.timestamp !== timestamp))
       }
-    } else {
-      // Share all data - no limits
-      entriesToShare = dbUroLogs
-      hydroLogsToShare = dbHydroLogs
-      title = `My Uro Log Complete Data Summary`
-    }
 
-    // Create a summary text
-    let summary = ""
-    summary += "=".repeat(title.length) + "\n"
-
-    // Overall summary
-    if (entriesToShare.length > 0) {
-      summary += `Total UroLogs: ${entriesToShare.length}\n`
-      const avgFlowRate = calculateAverage(entriesToShare.map((entry) => entry.flowRate))
-      const avgVolume = calculateAverage(entriesToShare.map((entry) => entry.volume))
-      const avgDuration = calculateAverage(entriesToShare.map((entry) => entry.duration))
-
-      summary += `Overall Average Flow Rate: ${avgFlowRate.toFixed(1)} mL/s\n`
-      summary += `Overall Average Volume: ${avgVolume.toFixed(0)} mL\n`
-      summary += `Overall Average Duration: ${avgDuration.toFixed(1)} sec\n\n`
-    }
-
-    if (hydroLogsToShare.length > 0) {
-      summary += `Total HydroLogs: ${hydroLogsToShare.length}\n`
-
-      // Calculate average fluid intake
-      const fluidIntakeAmounts = hydroLogsToShare.map((entry) =>
-        entry.unit === "oz" ? entry.amount * 29.5735 : entry.amount,
+      // Update monthly groups
+      const updatedGroups = groupLogsByMonth(
+        type === "uroLog" ? uroLogs.filter((log) => log.timestamp !== timestamp) : uroLogs,
+        type === "hydroLog" ? hydroLogs.filter((log) => log.timestamp !== timestamp) : hydroLogs,
+        type === "kegelLog" ? kegelLogs.filter((log) => log.timestamp !== timestamp) : kegelLogs,
       )
-      const avgFluidIntake = calculateAverage(fluidIntakeAmounts)
+      setMonthlyGroups(updatedGroups)
 
-      summary += `Overall Average Fluid Intake: ${avgFluidIntake.toFixed(0)} mL (${(avgFluidIntake / 29.5735).toFixed(1)} oz)\n\n`
-    }
+      setMessage({
+        type: "success",
+        text: "Entry deleted successfully.",
+      })
 
-    // Monthly summaries
-    if (monthsToInclude.length > 1) {
-      summary += "MONTHLY SUMMARIES\n"
-      summary += "----------------\n\n"
-
-      monthsToInclude.forEach((month) => {
-        summary += `${month.label}:\n`
-        if (month.uroLogs.length > 0) {
-          summary += `  UroLogs: ${month.uroLogs.length}\n`
-          summary += `  Avg Flow Rate: ${month.averageFlowRate.toFixed(1)} mL/s\n`
-          summary += `  Avg Volume: ${month.averageVolume.toFixed(0)} mL\n`
-          summary += `  Avg Duration: ${month.averageDuration.toFixed(1)} sec\n`
-        }
-
-        if (month.hydroLogs.length > 0) {
-          summary += `  HydroLogs: ${month.hydroLogs.length}\n`
-          summary += `  Avg Fluid Intake: ${month.averageFluidIntake.toFixed(0)} mL\n`
-        }
-        summary += "\n"
+      // Clear message after 3 seconds
+      setTimeout(() => setMessage(null), 3000)
+    } catch (error) {
+      console.error("Error deleting entry:", error)
+      setMessage({
+        type: "error",
+        text: "Failed to delete entry. Please try again.",
       })
     }
-
-    return { title, text: summary }
   }
 
-  // Update the UI labels
-  return (
-    <>
-      <div className="mb-4">
-        {dbUroLogs.length === 0 && dbHydroLogs.length === 0 ? (
-          <div className="text-center p-4">
-            <p className="text-gray-500 dark:text-gray-400 mb-4">
-              No entries yet. Add your first UroLog entry or generate demo data.
-            </p>
-            <button
-              onClick={generateDemoData}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center mx-auto shadow-sm font-medium"
-            >
-              <Database className="mr-2" size={18} /> Generate Demo Data
-            </button>
-          </div>
-        ) : (
-          <div className="flex justify-end space-x-2">
-            {hasDemoDataLocal && (
-              <button
-                onClick={handleDeleteDemoData}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center shadow-sm font-medium"
-              >
-                <Trash className="mr-2" size={18} /> Delete All Demo Data
-              </button>
-            )}
-            <button
-              onClick={() => shareData()}
-              className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 flex items-center shadow-sm font-medium"
-            >
-              <Share2 size={18} className="mr-2" /> Share All Data
-            </button>
+  // Export data as CSV
+  const exportData = () => {
+    try {
+      // Create CSV content
+      let csvContent = "Date,Time,Type,Volume (mL),Duration (s),Flow Rate (mL/s),Color,Urgency,Concerns,Notes\n"
 
-            <button
-              onClick={generateDemoData}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center"
-            >
-              <Database className="mr-2" size={18} /> Generate Demo Data
-            </button>
-          </div>
+      // Add UroLog entries
+      uroLogs.forEach((log) => {
+        const date = new Date(log.timestamp)
+        const dateStr = date.toLocaleDateString()
+        const timeStr = date.toLocaleTimeString()
+        const volume = log.volume
+        const duration = log.duration
+        const flowRate = log.flowRate
+        const color = log.color || ""
+        const urgency = log.urgency || ""
+        const concerns = log.concerns ? log.concerns.join(", ") : ""
+        const notes = log.notes || ""
+
+        csvContent += `${dateStr},${timeStr},UroLog,${volume},${duration},${flowRate},"${color}","${urgency}","${concerns}","${notes}"\n`
+      })
+
+      // Add HydroLog entries
+      hydroLogs.forEach((log) => {
+        const date = new Date(log.timestamp)
+        const dateStr = date.toLocaleDateString()
+        const timeStr = date.toLocaleTimeString()
+        const type = log.type
+        const customType = log.customType || ""
+        const amount = log.amount
+        const unit = log.unit
+        const notes = log.notes || ""
+        const volumeInMl = unit === "oz" ? amount * 29.5735 : amount
+
+        csvContent += `${dateStr},${timeStr},HydroLog,${volumeInMl},,,,,,"${type}${
+          customType ? ` (${customType})` : ""
+        } - ${amount} ${unit} - ${notes}"\n`
+      })
+
+      // Add KegelLog entries
+      kegelLogs.forEach((log) => {
+        const date = new Date(log.timestamp)
+        const dateStr = date.toLocaleDateString()
+        const timeStr = date.toLocaleTimeString()
+        const reps = log.reps
+        const holdTime = log.holdTime
+        const sets = log.sets
+        const totalTime = log.totalTime
+        const completed = log.completed ? "Yes" : "No"
+        const notes = log.notes || ""
+
+        csvContent += `${dateStr},${timeStr},KegelLog,,${totalTime},,,,,"Reps: ${reps}, Hold: ${holdTime}s, Sets: ${sets}, Completed: ${completed} - ${notes}"\n`
+      })
+
+      // Create a blob and download link
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.setAttribute("href", url)
+      link.setAttribute("download", `flow-tracker-export-${new Date().toISOString().split("T")[0]}.csv`)
+      link.style.visibility = "hidden"
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+
+      setMessage({
+        type: "success",
+        text: "Data exported successfully.",
+      })
+
+      // Clear message after 3 seconds
+      setTimeout(() => setMessage(null), 3000)
+    } catch (error) {
+      console.error("Error exporting data:", error)
+      setMessage({
+        type: "error",
+        text: "Failed to export data. Please try again.",
+      })
+    }
+  }
+
+  // Import data from CSV
+  const importData = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = async (e) => {
+      try {
+        const content = e.target?.result as string
+        const lines = content.split("\n")
+
+        // Skip header row
+        const dataRows = lines.slice(1).filter((line) => line.trim() !== "")
+
+        const newUroLogs: UroLog[] = []
+        const newHydroLogs: HydroLog[] = []
+        const newKegelLogs: KegelLog[] = []
+
+        // Process each row
+        for (const row of dataRows) {
+          const columns = row.split(",")
+
+          // Basic validation
+          if (columns.length < 4) continue
+
+          const dateStr = columns[0]
+          const timeStr = columns[1]
+          const type = columns[2]
+          const date = new Date(`${dateStr} ${timeStr}`)
+          const timestamp = date.toISOString()
+
+          // Check if entry already exists
+          const existingUroLog = uroLogs.find((log) => log.timestamp === timestamp)
+          const existingHydroLog = hydroLogs.find((log) => log.timestamp === timestamp)
+          const existingKegelLog = kegelLogs.find((log) => log.timestamp === timestamp)
+
+          if (existingUroLog || existingHydroLog || existingKegelLog) {
+            console.log(`Skipping duplicate entry at ${timestamp}`)
+            continue
+          }
+
+          if (type === "UroLog") {
+            const volume = Number.parseFloat(columns[3])
+            const duration = Number.parseFloat(columns[4])
+            const flowRate = Number.parseFloat(columns[5])
+            const color = columns[6].replace(/"/g, "")
+            const urgency = columns[7].replace(/"/g, "")
+            const concerns = columns[8]
+              .replace(/"/g, "")
+              .split(", ")
+              .filter((c) => c)
+            const notes = columns[9].replace(/"/g, "")
+
+            newUroLogs.push({
+              timestamp,
+              volume,
+              duration,
+              flowRate,
+              color: color || undefined,
+              urgency: urgency || undefined,
+              concerns: concerns.length > 0 ? concerns : undefined,
+              notes: notes || undefined,
+            })
+          } else if (type === "HydroLog") {
+            // Parse the notes field to extract type, amount, and unit
+            const notesField = columns[9].replace(/"/g, "")
+            const typeMatch = notesField.match(/^(.+?)(?:\s+$$(.+?)$$)?\s+-\s+(\d+\.?\d*)\s+(mL|oz)/)
+
+            if (typeMatch) {
+              const fluidType = typeMatch[1].trim()
+              const customType = typeMatch[2] ? typeMatch[2].trim() : undefined
+              const amount = Number.parseFloat(typeMatch[3])
+              const unit = typeMatch[4] as "mL" | "oz"
+              const notes = notesField.split(" - ").slice(2).join(" - ").trim()
+
+              newHydroLogs.push({
+                timestamp,
+                type: fluidType as any,
+                customType,
+                amount,
+                unit,
+                notes: notes || undefined,
+              })
+            }
+          } else if (type === "KegelLog") {
+            // Parse the notes field to extract reps, hold time, sets, and completed
+            const notesField = columns[9].replace(/"/g, "")
+            const kegelMatch = notesField.match(
+              /Reps:\s+(\d+),\s+Hold:\s+(\d+)s,\s+Sets:\s+(\d+),\s+Completed:\s+(Yes|No)/,
+            )
+
+            if (kegelMatch) {
+              const reps = Number.parseInt(kegelMatch[1])
+              const holdTime = Number.parseInt(kegelMatch[2])
+              const sets = Number.parseInt(kegelMatch[3])
+              const completed = kegelMatch[4] === "Yes"
+              const totalTime = Number.parseInt(columns[4])
+              const notes = notesField.split(" - ").slice(1).join(" - ").trim()
+
+              newKegelLogs.push({
+                timestamp,
+                reps,
+                holdTime,
+                sets,
+                totalTime,
+                completed,
+                notes: notes || undefined,
+              })
+            }
+          }
+        }
+
+        // Add new entries to the database
+        const { bulkAddUroLogs, bulkAddHydroLogs, bulkAddKegelLogs } = await import("../services/db")
+
+        if (newUroLogs.length > 0) {
+          await bulkAddUroLogs(newUroLogs)
+        }
+
+        if (newHydroLogs.length > 0) {
+          await bulkAddHydroLogs(newHydroLogs)
+        }
+
+        if (newKegelLogs.length > 0) {
+          await bulkAddKegelLogs(newKegelLogs)
+        }
+
+        // Update state
+        setUroLogs((prev) => [...prev, ...newUroLogs])
+        setHydroLogs((prev) => [...prev, ...newHydroLogs])
+        setKegelLogs((prev) => [...prev, ...newKegelLogs])
+
+        // Update monthly groups
+        const updatedGroups = groupLogsByMonth(
+          [...uroLogs, ...newUroLogs],
+          [...hydroLogs, ...newHydroLogs],
+          [...kegelLogs, ...newKegelLogs],
+        )
+        setMonthlyGroups(updatedGroups)
+
+        setMessage({
+          type: "success",
+          text: `Imported ${newUroLogs.length} UroLogs, ${newHydroLogs.length} HydroLogs, and ${newKegelLogs.length} KegelLogs.`,
+        })
+
+        // Clear message after 5 seconds
+        setTimeout(() => setMessage(null), 5000)
+      } catch (error) {
+        console.error("Error importing data:", error)
+        setMessage({
+          type: "error",
+          text: "Failed to import data. Please check the file format and try again.",
+        })
+      }
+    }
+
+    reader.readAsText(file)
+    // Reset the file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
+  }
+
+  // Generate demo data
+  const handleGenerateDemoData = async () => {
+    if (!confirm("This will generate demo data for testing. Continue?")) {
+      return
+    }
+
+    setIsGeneratingData(true)
+    try {
+      generateDemoData()
+      setMessage({
+        type: "success",
+        text: "Demo data generated successfully. Refresh the page to see the data.",
+      })
+
+      // Reload the page after 2 seconds
+      setTimeout(() => {
+        window.location.reload()
+      }, 2000)
+    } catch (error) {
+      console.error("Error generating demo data:", error)
+      setMessage({
+        type: "error",
+        text: "Failed to generate demo data. Please try again.",
+      })
+    } finally {
+      setIsGeneratingData(false)
+    }
+  }
+
+  // Share data
+  const shareData = async () => {
+    if (!isShareAvailable()) {
+      alert("Sharing is not available on this device. Data will be copied to clipboard instead.")
+    }
+
+    try {
+      // Create a summary of the data
+      const summary = `Flow Tracker Data Summary
+      
+Total UroLogs: ${uroLogs.length}
+Total HydroLogs: ${hydroLogs.length}
+Total KegelLogs: ${kegelLogs.length}
+
+Average Flow Rate: ${
+        uroLogs.length > 0 ? (uroLogs.reduce((sum, log) => sum + log.flowRate, 0) / uroLogs.length).toFixed(2) : "N/A"
+      } mL/s
+Average Volume: ${
+        uroLogs.length > 0 ? (uroLogs.reduce((sum, log) => sum + log.volume, 0) / uroLogs.length).toFixed(2) : "N/A"
+      } mL
+Average Duration: ${
+        uroLogs.length > 0 ? (uroLogs.reduce((sum, log) => sum + log.duration, 0) / uroLogs.length).toFixed(2) : "N/A"
+      } seconds
+
+Data from ${new Date(Math.min(...uroLogs.map((log) => new Date(log.timestamp).getTime()))).toLocaleDateString()} to ${new Date().toLocaleDateString()}
+`
+
+      // Share the data
+      await safeShare({
+        title: "Flow Tracker Data Summary",
+        text: summary,
+      })
+
+      setMessage({
+        type: "success",
+        text: "Data shared successfully.",
+      })
+
+      // Clear message after 3 seconds
+      setTimeout(() => setMessage(null), 3000)
+    } catch (error) {
+      console.error("Error sharing data:", error)
+      setMessage({
+        type: "error",
+        text: "Failed to share data. Please try again.",
+      })
+    }
+  }
+
+  // Render loading state
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <RefreshCw className="animate-spin h-8 w-8 text-blue-500 mr-2" />
+        <p>Loading data...</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      {title2 && <div>{title2}</div>}
+
+      {/* Action buttons */}
+      <div className="flex flex-wrap gap-3">
+        <button
+          onClick={exportData}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
+        >
+          <Download size={18} className="mr-2" />
+          Export Data (CSV)
+        </button>
+
+        <label className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center cursor-pointer">
+          <Upload size={18} className="mr-2" />
+          Import Data (CSV)
+          <input type="file" accept=".csv" onChange={importData} className="hidden" ref={fileInputRef} />
+        </label>
+
+        <button
+          onClick={shareData}
+          className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center"
+        >
+          <Share2 size={18} className="mr-2" />
+          Share Summary
+        </button>
+
+        {!hasDemoDataState && (
+          <button
+            onClick={handleGenerateDemoData}
+            disabled={isGeneratingData}
+            className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isGeneratingData ? (
+              <RefreshCw size={18} className="mr-2 animate-spin" />
+            ) : (
+              <Plus size={18} className="mr-2" />
+            )}
+            Generate Demo Data
+          </button>
         )}
       </div>
 
-      {shareTestResults && (
-        <div className="mb-4 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg border">
-          <h4 className="font-bold mb-2">Share Test Results</h4>
-          <pre className="whitespace-pre-wrap text-sm">{shareTestResults}</pre>
-          <button
-            onClick={() => setShareTestResults(null)}
-            className="mt-2 px-3 py-1 bg-gray-300 dark:bg-gray-700 rounded hover:bg-gray-400 dark:hover:bg-gray-600"
-          >
-            Dismiss
-          </button>
+      {/* Status message */}
+      {message && (
+        <div
+          className={`p-4 rounded-lg flex items-center ${
+            message.type === "success"
+              ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200"
+              : "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200"
+          }`}
+        >
+          {message.type === "success" ? (
+            <Check size={20} className="mr-2 flex-shrink-0" />
+          ) : (
+            <AlertTriangle size={20} className="mr-2 flex-shrink-0" />
+          )}
+          <span>{message.text}</span>
         </div>
       )}
 
-      {/* Update the database counts display */}
-      <div className="mb-4">
-        <h3 className="text-xl font-bold">Entry Logs</h3>
+      {/* Data summary */}
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+        <h3 className="text-lg font-semibold mb-3">Data Summary</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+            <h4 className="font-medium flex items-center">
+              <Database size={16} className="mr-2 text-blue-500" />
+              UroLogs
+            </h4>
+            <p className="text-2xl font-bold">{uroLogs.length}</p>
+          </div>
+          <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+            <h4 className="font-medium flex items-center">
+              <Database size={16} className="mr-2 text-green-500" />
+              HydroLogs
+            </h4>
+            <p className="text-2xl font-bold">{hydroLogs.length}</p>
+          </div>
+          <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+            <h4 className="font-medium flex items-center">
+              <Database size={16} className="mr-2 text-purple-500" />
+              KegelLogs
+            </h4>
+            <p className="text-2xl font-bold">{kegelLogs.length}</p>
+          </div>
+        </div>
       </div>
 
-      {/* Update the UroLog and HydroLog section titles */}
-      {monthlyGroups.length === 0 ? (
-        <div className="text-center p-4 text-gray-500 dark:text-gray-400 border rounded-lg">
-          No entries yet. Add your first UroLog entry above.
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {monthlyGroups.map((group) => (
-            <div key={group.key} className="border rounded-lg overflow-hidden">
-              <div className="bg-gray-100 dark:bg-gray-700 p-3 flex justify-between items-center">
-                <div
-                  className="font-medium flex items-center cursor-pointer"
-                  onClick={() => toggleMonthExpand(group.key)}
-                >
-                  <Calendar size={16} className="mr-2" />
-                  {group.label} ({group.uroLogs.length + group.hydroLogs.length} entries)
-                </div>
+      {/* Auto-backup settings */}
+      <AutoBackupSettings triggerBackup={exportData} />
+
+      {/* Monthly data */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold">Monthly Data</h3>
+
+        {monthlyGroups.length === 0 ? (
+          <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg text-center">
+            <p>No data available. Start tracking to see your data here.</p>
+          </div>
+        ) : (
+          monthlyGroups.map((group) => (
+            <div
+              key={group.key}
+              className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
+            >
+              <div
+                className="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+                onClick={() => toggleMonth(group.key)}
+              >
+                <h4 className="font-medium">{group.label}</h4>
                 <div className="flex items-center">
-                  {group.uroLogs.length > 0 && (
-                    <div className="text-blue-600 dark:text-blue-400 font-bold mr-4">
-                      Avg: {group.averageFlowRate.toFixed(1)} mL/s
-                    </div>
-                  )}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      shareData(group.key)
-                    }}
-                    className="mr-2 p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600"
-                    aria-label={`Share data for ${group.label}`}
+                  <span className="text-sm text-gray-500 dark:text-gray-400 mr-4">
+                    {group.uroLogs.length} UroLogs, {group.hydroLogs.length} HydroLogs, {group.kegelLogs.length}{" "}
+                    KegelLogs
+                  </span>
+                  <svg
+                    className={`h-5 w-5 transform transition-transform ${
+                      expandedMonths[group.key] ? "rotate-180" : ""
+                    }`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
                   >
-                    <Share2 size={18} />
-                  </button>
-                  <div className="cursor-pointer" onClick={() => toggleMonthExpand(group.key)}>
-                    {expandedMonths[group.key] ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                  </div>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
                 </div>
               </div>
 
               {expandedMonths[group.key] && (
-                <div>
-                  <div className="p-3 grid grid-cols-1 md:grid-cols-4 gap-3 bg-gray-50 dark:bg-gray-800 border-b">
-                    {group.uroLogs.length > 0 && (
-                      <>
-                        <div className="flex items-center">
-                          <BarChart className="mr-2 text-blue-500" size={18} />
-                          <div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">Avg Flow Rate</div>
-                            <div className="font-medium">{group.averageFlowRate.toFixed(1)} mL/s</div>
-                          </div>
-                        </div>
-                        <div className="flex items-center">
-                          <Droplet className="mr-2 text-green-500" size={18} />
-                          <div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">Avg Volume</div>
-                            <div className="font-medium">{group.averageVolume.toFixed(0)} mL</div>
-                          </div>
-                        </div>
-                        <div className="flex items-center">
-                          <Clock className="mr-2 text-purple-500" size={18} />
-                          <div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">Avg Duration</div>
-                            <div className="font-medium">{group.averageDuration.toFixed(1)} sec</div>
-                          </div>
-                        </div>
-                      </>
-                    )}
-                    {group.hydroLogs.length > 0 && (
-                      <div className="flex items-center">
-                        <Coffee className="mr-2 text-cyan-500" size={18} />
-                        <div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">Avg Fluid Intake</div>
-                          <div className="font-medium">{group.averageFluidIntake.toFixed(0)} mL</div>
-                        </div>
-                      </div>
-                    )}
+                <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+                  {/* Month summary */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                      <h5 className="text-sm font-medium text-gray-500 dark:text-gray-400">Avg Flow Rate</h5>
+                      <p className="text-xl font-bold">
+                        {group.averageFlowRate > 0 ? group.averageFlowRate.toFixed(2) : "N/A"} mL/s
+                      </p>
+                    </div>
+                    <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                      <h5 className="text-sm font-medium text-gray-500 dark:text-gray-400">Avg Volume</h5>
+                      <p className="text-xl font-bold">
+                        {group.averageVolume > 0 ? group.averageVolume.toFixed(0) : "N/A"} mL
+                      </p>
+                    </div>
+                    <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                      <h5 className="text-sm font-medium text-gray-500 dark:text-gray-400">Avg Duration</h5>
+                      <p className="text-xl font-bold">
+                        {group.averageDuration > 0 ? group.averageDuration.toFixed(1) : "N/A"} sec
+                      </p>
+                    </div>
+                    <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                      <h5 className="text-sm font-medium text-gray-500 dark:text-gray-400">Avg Fluid Intake</h5>
+                      <p className="text-xl font-bold">
+                        {group.averageFluidIntake > 0 ? group.averageFluidIntake.toFixed(0) : "N/A"} mL
+                      </p>
+                    </div>
                   </div>
 
-                  {/* UroLogs */}
-                  {group.uroLogs.length > 0 && (
-                    <div className="mb-4">
-                      <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border-b">
-                        <h4 className="font-medium">UroLogs ({group.uroLogs.length})</h4>
-                      </div>
-                      <div className="divide-y">
-                        {group.uroLogs
-                          .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-                          .map((entry) => (
-                            <div key={entry.timestamp} className="p-3 hover:bg-gray-50 dark:hover:bg-gray-700">
-                              <div className="flex justify-between items-start mb-2">
-                                <div className="flex items-start">
-                                  <div className="mr-4">
-                                    <div className="font-medium">{formatDate(entry.timestamp)}</div>
-                                  </div>
-                                  <div>
-                                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                                      {formatTime(entry.timestamp)}
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="flex items-center">
-                                  <div className="mr-4 text-right">
-                                    <div className="font-bold text-blue-600 dark:text-blue-400">
-                                      {entry.flowRate.toFixed(1)} mL/s
-                                    </div>
-                                    <div className="text-sm">
-                                      {entry.volume} mL in {entry.duration.toFixed(1)}s
-                                    </div>
-                                  </div>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      handleDeleteUroLog(entry.timestamp)
-                                    }}
-                                    className="text-red-500 hover:text-red-700 p-1"
-                                    aria-label="Delete entry"
-                                  >
-                                    <Trash2 size={18} />
-                                  </button>
-                                </div>
-                              </div>
-
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm mt-2">
-                                <div>
-                                  <span className="text-gray-500 dark:text-gray-400 font-medium">Color:</span>{" "}
-                                  <span className={getColorClassValue(entry.color)}>
-                                    {entry.color || "Not recorded"}
-                                  </span>
-                                </div>
-                                <div>
-                                  <span className="text-gray-500 dark:text-gray-400 font-medium">Urgency:</span>{" "}
-                                  <span className={getUrgencyClassValue(entry.urgency)}>
-                                    {entry.urgency || "Not recorded"}
-                                  </span>
-                                </div>
-                              </div>
-
-                              {entry.concerns && entry.concerns.length > 0 && (
-                                <div className="mt-2">
-                                  <span className="text-gray-500 dark:text-gray-400 text-sm font-medium">
-                                    Concerns:
-                                  </span>
-                                  <div className="flex flex-wrap gap-1 mt-1">
-                                    {entry.concerns.map((concern, i) => (
-                                      <span
-                                        key={i}
-                                        className="bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 text-xs px-2 py-0.5 rounded"
-                                      >
-                                        {concern}
-                                      </span>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-
-                              {entry.notes && (
-                                <div className="mt-2 text-sm">
-                                  <span className="text-gray-500 dark:text-gray-400 font-medium">Notes:</span>
-                                  <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded mt-1">{entry.notes}</div>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                      </div>
+                  {/* Tabs for UroLogs, HydroLogs, and KegelLogs */}
+                  <div className="mb-4">
+                    <div className="flex border-b">
+                      <button
+                        className="px-4 py-2 border-b-2 border-blue-500 text-blue-600 dark:text-blue-400"
+                        onClick={() => {}}
+                      >
+                        UroLogs ({group.uroLogs.length})
+                      </button>
+                      <button
+                        className="px-4 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                        onClick={() => {}}
+                      >
+                        HydroLogs ({group.hydroLogs.length})
+                      </button>
+                      <button
+                        className="px-4 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                        onClick={() => {}}
+                      >
+                        KegelLogs ({group.kegelLogs.length})
+                      </button>
                     </div>
-                  )}
+                  </div>
 
-                  {/* HydroLogs */}
-                  {group.hydroLogs.length > 0 && (
-                    <div>
-                      <div className="p-3 bg-cyan-50 dark:bg-cyan-900/20 border-b">
-                        <h4 className="font-medium">HydroLogs ({group.hydroLogs.length})</h4>
-                      </div>
-                      <div className="divide-y">
-                        {group.hydroLogs
-                          .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-                          .map((entry) => (
-                            <div key={entry.timestamp} className="p-3 hover:bg-gray-50 dark:hover:bg-gray-700">
-                              <div className="flex justify-between items-start mb-2">
-                                <div className="flex items-start">
-                                  <div className="mr-4">
-                                    <div className="font-medium">{formatDate(entry.timestamp)}</div>
-                                  </div>
-                                  <div>
-                                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                                      {formatTime(entry.timestamp)}
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="flex items-center">
-                                  <div className="mr-4 text-right">
-                                    <div className="font-bold text-cyan-600 dark:text-cyan-400">
-                                      {entry.type === "Other" && entry.customType ? entry.customType : entry.type}
-                                    </div>
-                                    <div className="text-sm">
-                                      {entry.amount} {entry.unit}
-                                    </div>
-                                  </div>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      handleDeleteHydroLog(entry.timestamp)
-                                    }}
-                                    className="text-red-500 hover:text-red-700 p-1"
-                                    aria-label="Delete entry"
-                                  >
-                                    <Trash2 size={18} />
-                                  </button>
-                                </div>
-                              </div>
-
-                              {entry.notes && (
-                                <div className="mt-2 text-sm">
-                                  <span className="text-gray-500 dark:text-gray-400">Notes:</span>
-                                  <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded mt-1">{entry.notes}</div>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                      </div>
-                    </div>
-                  )}
+                  {/* UroLogs table */}
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                      <thead className="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                          <th
+                            scope="col"
+                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                          >
+                            Date & Time
+                          </th>
+                          <th
+                            scope="col"
+                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                          >
+                            Volume (mL)
+                          </th>
+                          <th
+                            scope="col"
+                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                          >
+                            Duration (s)
+                          </th>
+                          <th
+                            scope="col"
+                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                          >
+                            Flow Rate (mL/s)
+                          </th>
+                          <th
+                            scope="col"
+                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                          >
+                            Color
+                          </th>
+                          <th
+                            scope="col"
+                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                          >
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        {group.uroLogs.slice(0, 5).map((log) => (
+                          <tr key={log.timestamp}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                              {formatDate(log.timestamp)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                              {log.volume}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                              {log.duration.toFixed(1)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                              {log.flowRate.toFixed(2)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                              {log.color || "N/A"}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                              <button
+                                onClick={() => deleteEntry("uroLog", log.timestamp)}
+                                className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                        {group.uroLogs.length > 5 && (
+                          <tr>
+                            <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-300">
+                              {group.uroLogs.length - 5} more entries...
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
             </div>
-          ))}
-        </div>
-      )}
-
-      <h3 className="text-lg font-semibold mb-3">Backup & Restore</h3>
-
-      <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-        <p>
-          <strong>Backup:</strong> Creates a file with all your data that you can save to your device.
-        </p>
-        <p className="mt-1">
-          <strong>Restore:</strong> Loads your data from a previously created backup file.
-        </p>
+          ))
+        )}
       </div>
-
-      <div className="flex flex-wrap -mx-2">
-        <div className="w-full md:w-1/2 px-2 mb-4">
-          <button
-            onClick={exportData}
-            className="w-full p-3 bg-purple-500 text-white rounded hover:bg-purple-600 flex items-center justify-center"
-          >
-            <Download className="mr-2" /> Backup My Data
-          </button>
-        </div>
-        <div className="w-full md:w-1/2 px-2 mb-4">
-          <label className="w-full p-3 bg-teal-500 text-white rounded hover:bg-teal-600 flex items-center justify-center cursor-pointer">
-            <Upload className="mr-2" /> Restore My Data
-            <input type="file" accept=".csv,.json" onChange={importData} className="hidden" />
-          </label>
-        </div>
-      </div>
-      <AutoBackupSettings triggerBackup={exportData} />
-      {isLoading && (
-        <div className="text-center py-4">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-          <p className="mt-2 text-gray-500 dark:text-gray-400">Loading entries from database...</p>
-        </div>
-      )}
-    </>
+    </div>
   )
 }
 
