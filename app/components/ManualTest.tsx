@@ -1,8 +1,46 @@
 "use client"
 
 import { useState } from "react"
-import { testManualComponent } from "../tests/manual.test"
 import { Check, X, Loader2 } from "lucide-react"
+
+// Include the test function directly in the component
+const testManualComponent = (): Promise<{
+  success: boolean
+  message: string
+  contentLength?: number
+}> => {
+  // Check if the Manual.md file is accessible
+  return fetch("/Manual.md")
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`Failed to fetch Manual.md: ${response.status}`)
+      }
+      return response.text()
+    })
+    .then((text) => {
+      // Check if the content is valid markdown
+      if (!text || text.trim() === "") {
+        throw new Error("Manual.md is empty")
+      }
+
+      // Check if it has at least one heading
+      if (!text.includes("# ")) {
+        throw new Error("Manual.md does not contain any headings")
+      }
+
+      return {
+        success: true,
+        message: "Manual.md is accessible and contains valid content",
+        contentLength: text.length,
+      }
+    })
+    .catch((error) => {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : String(error),
+      }
+    })
+}
 
 export function ManualTest() {
   const [result, setResult] = useState<{

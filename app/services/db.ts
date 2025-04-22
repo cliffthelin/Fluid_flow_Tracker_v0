@@ -8,62 +8,100 @@ class FlowTrackerDatabase extends Dexie {
   hydroLogs!: Dexie.Table<HydroLog, string> // renamed from fluidIntakeEntries
   customResources!: Dexie.Table<CustomResource, string>
 
+  // Modify the constructor to improve version handling
   constructor() {
     super("FlowTrackerDB")
 
-    // Define tables and schema - increment version number to trigger schema migration
+    // Define tables and schema - we'll keep the version number but improve migration
     this.version(3).stores({
-      uroLogs: "timestamp, volume, duration, flowRate, color, urgency, *concerns",
-      hydroLogs: "timestamp, type, amount, unit",
+      uroLogs: "timestamp, volume, duration, flowRate, color, urgency, *concerns, isDemo",
+      hydroLogs: "timestamp, type, amount, unit, isDemo",
       customResources: "id, title, url, category",
       // The * before concerns indicates it's a multi-valued property (array)
     })
 
-    // Add migration from old table names to new ones
+    // Add a more robust migration system
     this.on("ready", async () => {
-      // We can access the current version using this.verno instead of db.version()
       try {
-        // Check if we need to migrate data from old table names
-        // Only attempt migration if we're on version 3 (the first version with new table names)
-        if (this.verno === 3) {
-          console.log("Checking for data migration needs...")
+        console.log("Database ready, checking for migration needs...")
 
-          // Check if the new tables are empty
-          const uroCount = await this.table("uroLogs").count()
-          const hydroCount = await this.table("hydroLogs").count()
+        // Check if the new tables are empty regardless of version
+        const uroCount = await this.table("uroLogs").count()
+        const hydroCount = await this.table("hydroLogs").count()
 
-          if (uroCount === 0 && hydroCount === 0) {
-            // Check if old tables exist in the database schema
-            const tableNames = this.tables.map((table) => table.name)
+        if (uroCount === 0 && hydroCount === 0) {
+          console.log("New tables are empty, checking for data to migrate...")
 
-            // Migrate data from old tables if they exist
-            if (tableNames.includes("flowEntries")) {
-              try {
-                const oldFlowEntries = await this.table("flowEntries").toArray()
-                if (oldFlowEntries.length > 0) {
-                  await this.table("uroLogs").bulkAdd(oldFlowEntries)
-                  console.log(`Migrated ${oldFlowEntries.length} entries from flowEntries to uroLogs`)
-                }
-              } catch (error) {
-                console.error("Error migrating flowEntries:", error)
+          // Check if old tables exist in the database schema
+          const tableNames = this.tables.map((table) => table.name)
+
+          // Try to migrate from any old table format we know about
+          let migratedData = false
+
+          // Check for old "flowEntries" table
+          if (tableNames.includes("flowEntries")) {
+            try {
+              const oldFlowEntries = await this.table("flowEntries").toArray()
+              if (oldFlowEntries.length > 0) {
+                console.log(`Found ${oldFlowEntries.length} entries in flowEntries, migrating...`)
+                await this.table("uroLogs").bulkAdd(oldFlowEntries)
+                console.log(`Migrated ${oldFlowEntries.length} entries from flowEntries to uroLogs`)
+                migratedData = true
               }
+            } catch (error) {
+              console.error("Error migrating flowEntries:", error)
             }
+          }
 
-            if (tableNames.includes("fluidIntakeEntries")) {
+          // Check for old "fluidIntakeEntries" table
+          if (tableNames.includes("fluidIntakeEntries")) {
+            try {
+              const oldFluidEntries = await this.table("fluidIntakeEntries").toArray()
+              if (oldFluidEntries.length > 0) {
+                console.log(`Found ${oldFluidEntries.length} entries in fluidIntakeEntries, migrating...`)
+                await this.table("hydroLogs").bulkAdd(oldFluidEntries)
+                console.log(`Migrated ${oldFluidEntries.length} entries from fluidIntakeEntries to hydroLogs`)
+                migratedData = true
+              }
+            } catch (error) {
+              console.error("Error migrating fluidIntakeEntries:", error)
+            }
+          }
+
+          // Also check for any other legacy table names we might have used
+          const legacyTableMappings = {
+            flowLogs: "uroLogs",
+            urinaryLogs: "uroLogs",
+            fluidLogs: "hydroLogs",
+            hydrationLogs: "hydroLogs",
+          }
+
+          for (const [oldTable, newTable] of Object.entries(legacyTableMappings)) {
+            if (tableNames.includes(oldTable)) {
               try {
-                const oldFluidEntries = await this.table("fluidIntakeEntries").toArray()
-                if (oldFluidEntries.length > 0) {
-                  await this.table("hydroLogs").bulkAdd(oldFluidEntries)
-                  console.log(`Migrated ${oldFluidEntries.length} entries from fluidIntakeEntries to hydroLogs`)
+                const oldEntries = await this.table(oldTable).toArray()
+                if (oldEntries.length > 0) {
+                  console.log(`Found ${oldEntries.length} entries in ${oldTable}, migrating...`)
+                  await this.table(newTable).bulkAdd(oldEntries)
+                  console.log(`Migrated ${oldEntries.length} entries from ${oldTable} to ${newTable}`)
+                  migratedData = true
                 }
               } catch (error) {
-                console.error("Error migrating fluidIntakeEntries:", error)
+                console.error(`Error migrating ${oldTable}:`, error)
               }
             }
           }
+
+          if (migratedData) {
+            console.log("Successfully migrated data from old tables to new schema")
+          } else {
+            console.log("No legacy data found to migrate")
+          }
+        } else {
+          console.log(`Database already contains data: ${uroCount} uroLogs and ${hydroCount} hydroLogs`)
         }
       } catch (error) {
-        console.error("Error during table migration:", error)
+        console.error("Error during database initialization:", error)
       }
     })
   }
@@ -199,6 +237,7 @@ export async function migrateFromLocalStorage(): Promise<void> {
                 urgency: entry.urgency,
                 concerns: entry.concerns,
                 notes: entry.notes,
+                isDemo: false, // Mark as not demo data
               }
 
               uroLogs.push(uroLog)
@@ -211,6 +250,8 @@ export async function migrateFromLocalStorage(): Promise<void> {
                   customType: entry.fluidIntake.customType,
                   amount: entry.fluidIntake.amount,
                   unit: entry.fluidIntake.unit,
+                  notes: entry.notes,
+                  isDemo: false, // Mark as not demo data
                 }
 
                 hydroLogs.push(hydroLog)

@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import {
   Download,
   Upload,
@@ -27,6 +27,7 @@ import {
   deleteHydroLog,
 } from "../services/db"
 import { shareContent } from "../services/share"
+import AutoBackupSettings from "./AutoBackupSettings"
 
 // Add the title2 prop to the interface
 interface DataManagementProps {
@@ -44,7 +45,193 @@ interface MonthlyGroup {
   averageFluidIntake: number
 }
 
-// Update the component definition
+// Export the generateDemoData function so it can be used in other components
+export function generateDemoData() {
+  const mockUroLogs: UroLog[] = []
+  const mockHydroLogs: HydroLog[] = []
+  const today = new Date()
+  const threeMonthsAgo = new Date()
+  threeMonthsAgo.setMonth(today.getMonth() - 3)
+
+  // Base flow rate that will change by +/- 1 ml/s each day
+  let baseFlowRate = 10.0 // Starting at 10 ml/s
+
+  // Loop through each day in the 3-month period
+  for (
+    let currentDate = new Date(threeMonthsAgo);
+    currentDate <= today;
+    currentDate.setDate(currentDate.getDate() + 1)
+  ) {
+    // Adjust the base flow rate by +/- 1 ml/s each day
+    // Use a simple algorithm to make it look natural but predictable
+    const dayOfYear = Math.floor(
+      (currentDate.getTime() - new Date(currentDate.getFullYear(), 0, 0).getTime()) / 86400000,
+    )
+    const direction = dayOfYear % 2 === 0 ? 1 : -1 // Alternate between up and down
+    baseFlowRate += direction * 1.0 // Change by exactly 1 ml/s
+
+    // Keep the flow rate within reasonable bounds
+    baseFlowRate = Math.max(5.0, Math.min(15.0, baseFlowRate))
+
+    // Create 3 entries for each day
+    for (let i = 0; i < 3; i++) {
+      const entryTime = new Date(currentDate)
+
+      // Set different times for the 3 entries
+      if (i === 0) {
+        entryTime.setHours(7, Math.floor(Math.random() * 60), 0) // Morning
+      } else if (i === 1) {
+        entryTime.setHours(13, Math.floor(Math.random() * 60), 0) // Afternoon
+      } else {
+        entryTime.setHours(20, Math.floor(Math.random() * 60), 0) // Evening
+      }
+
+      // Small random variation for each entry within the day
+      const flowRateVariation = baseFlowRate + (Math.random() * 0.6 - 0.3) // +/- 0.3 ml/s variation
+
+      // Generate random flow data based on the flow rate
+      const duration = Math.floor(Math.random() * 10) + 30 // 30-40 seconds
+      const volume = Math.floor(flowRateVariation * duration) // Volume based on flow rate and duration
+
+      // Define possible colors, urgencies, and concerns
+      const colors = [
+        "Light Yellow",
+        "Clear",
+        "Dark Yellow",
+        "Amber or Honey",
+        "Orange",
+        "Pink or Red",
+        "Blue or Green",
+        "Brown or Cola-colored",
+        "Cloudy or Murky",
+        "Foamy or Bubbly",
+      ]
+
+      const urgencies = [
+        "Normal",
+        "Hour < 60 min",
+        "Hold < 15 min",
+        "Hold < 5 minutes",
+        "Had drips",
+        "Couldn't hold it",
+      ]
+
+      const possibleConcerns = [
+        "Straining",
+        "Dribbling",
+        "Frequent urges",
+        "Incomplete emptying",
+        "Waking just to pee",
+        "Pain",
+        "Burning",
+        "Blood",
+      ]
+
+      // Randomly select color and urgency
+      const color = colors[Math.floor(Math.random() * colors.length)]
+      const urgency = urgencies[Math.floor(Math.random() * urgencies.length)]
+
+      // Add concerns occasionally (about 20% of entries)
+      let concerns: string[] | undefined = undefined
+      if (Math.random() < 0.2) {
+        // Add 1-2 random concerns
+        const numConcerns = Math.floor(Math.random() * 2) + 1
+        concerns = []
+        for (let j = 0; j < numConcerns; j++) {
+          const concern = possibleConcerns[Math.floor(Math.random() * possibleConcerns.length)]
+          if (!concerns.includes(concern)) {
+            concerns.push(concern)
+          }
+        }
+      }
+
+      // Create UroLog entry with additional fields
+      mockUroLogs.push({
+        timestamp: entryTime.toISOString(),
+        volume,
+        duration,
+        flowRate: flowRateVariation,
+        color,
+        urgency,
+        concerns,
+        notes: "Mock data to be removed",
+        isDemo: true, // Mark as demo data
+      })
+
+      // Generate random fluid intake data
+      const fluidTypes = ["Water", "Coffee", "Tea", "Juice", "Soda"] as const
+      const fluidType = fluidTypes[Math.floor(Math.random() * fluidTypes.length)]
+      const fluidAmount = Math.floor(Math.random() * 300) + 200 // 200-500 mL
+
+      // Create HydroLog entry with same timestamp
+      mockHydroLogs.push({
+        timestamp: entryTime.toISOString(),
+        type: fluidType,
+        customType: fluidType === "Other" ? "Custom Beverage" : undefined,
+        amount: fluidAmount,
+        unit: "mL",
+        notes: "Mock data to be removed",
+        isDemo: true, // Mark as demo data
+      })
+    }
+  }
+
+  // Update database
+  try {
+    bulkAddUroLogs(mockUroLogs)
+    bulkAddHydroLogs(mockHydroLogs)
+    return true
+  } catch (error) {
+    console.error("Error adding mock data to database:", error)
+    return false
+  }
+}
+
+// Export the deleteDemoData function so it can be used in other components
+export async function deleteDemoData() {
+  try {
+    // Get all entries
+    const { db } = await import("../services/db")
+    const allUroLogs = await db.uroLogs.toArray()
+    const allHydroLogs = await db.hydroLogs.toArray()
+
+    // Filter out mock data
+    const realUroLogs = allUroLogs.filter((entry) => !entry.isDemo)
+    const realHydroLogs = allHydroLogs.filter((entry) => !entry.isDemo)
+
+    // Delete all entries and re-add only the real ones
+    await deleteAllUroLogs()
+    await deleteAllHydroLogs()
+
+    if (realUroLogs.length > 0) {
+      await bulkAddUroLogs(realUroLogs)
+    }
+
+    if (realHydroLogs.length > 0) {
+      await bulkAddHydroLogs(realHydroLogs)
+    }
+
+    return true
+  } catch (error) {
+    console.error("Error deleting mock data:", error)
+    return false
+  }
+}
+
+// Check if demo data exists
+export const hasDemoData = async (): Promise<boolean> => {
+  try {
+    const { db } = await import("../services/db")
+    const mockUroLogs = await db.uroLogs.filter((entry) => entry.isDemo === true).count()
+    const mockHydroLogs = await db.hydroLogs.filter((entry) => entry.isDemo === true).count()
+    return mockUroLogs > 0 || mockHydroLogs > 0
+  } catch (error) {
+    console.error("Error checking for demo data:", error)
+    return false
+  }
+}
+
+// Update the component definition to use the title2 prop
 const DataManagement: React.FC<DataManagementProps> = ({ title2 }) => {
   const [expandedMonths, setExpandedMonths] = useState<Record<string, boolean>>({})
   const [shareTestResults, setShareTestResults] = useState<string | null>(null)
@@ -57,9 +244,34 @@ const DataManagement: React.FC<DataManagementProps> = ({ title2 }) => {
   const [dbUroLogs, setDbUroLogs] = useState<UroLog[]>([])
   const [dbHydroLogs, setDbHydroLogs] = useState<HydroLog[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [hasDemoDataLocal, setHasDemoDataLocal] = useState(false)
 
   // Declare monthlyGroups, toggleMonthExpand, and calculateAverage
   const [monthlyGroups, setMonthlyGroups] = useState<MonthlyGroup[]>([])
+
+  // Add this function to handle deleting demo data within the component
+  const handleDeleteDemoData = async () => {
+    try {
+      await deleteDemoData()
+      // Refresh the data after deleting demo data
+      await fetchEntriesFromDb()
+      // Check if there's still demo data
+      const hasDemo = await hasDemoData()
+      setHasDemoDataLocal(hasDemo)
+    } catch (error) {
+      console.error("Error deleting demo data:", error)
+    }
+  }
+
+  // Add this function to check for demo data
+  const checkForDemoData = useCallback(async () => {
+    try {
+      const hasDemo = await hasDemoData()
+      setHasDemoDataLocal(hasDemo)
+    } catch (error) {
+      console.error("Error checking for demo data:", error)
+    }
+  }, [])
 
   const toggleMonthExpand = (monthKey: string) => {
     setExpandedMonths((prev) => ({
@@ -89,7 +301,7 @@ const DataManagement: React.FC<DataManagementProps> = ({ title2 }) => {
     }
   }
 
-  // Update the fetchEntriesFromDb function
+  // Update the fetchEntriesFromDb function to also check for demo data
   const fetchEntriesFromDb = async () => {
     setIsLoading(true)
     try {
@@ -124,6 +336,9 @@ const DataManagement: React.FC<DataManagementProps> = ({ title2 }) => {
         uroLogs: uroLogs.length,
         hydroLogs: hydroLogs.length,
       })
+
+      // Check for demo data
+      await checkForDemoData()
     } catch (error) {
       console.error("Error fetching entries from database:", error)
     } finally {
@@ -145,150 +360,7 @@ const DataManagement: React.FC<DataManagementProps> = ({ title2 }) => {
     setMonthlyGroups(groupEntriesByMonth())
   }, [dbUroLogs, dbHydroLogs])
 
-  // Update the generateDemoData function
-  const generateDemoData = () => {
-    if (!confirm("This will generate 3 months of mock data (3 entries per day). Continue?")) {
-      return
-    }
-
-    const mockUroLogs: UroLog[] = []
-    const mockHydroLogs: HydroLog[] = []
-    const today = new Date()
-    const threeMonthsAgo = new Date()
-    threeMonthsAgo.setMonth(today.getMonth() - 3)
-
-    // Base flow rate that will change by +/- 1 ml/s each day
-    let baseFlowRate = 10.0 // Starting at 10 ml/s
-
-    // Loop through each day in the 3-month period
-    for (
-      let currentDate = new Date(threeMonthsAgo);
-      currentDate <= today;
-      currentDate.setDate(currentDate.getDate() + 1)
-    ) {
-      // Adjust the base flow rate by +/- 1 ml/s each day
-      // Use a simple algorithm to make it look natural but predictable
-      const dayOfYear = Math.floor(
-        (currentDate.getTime() - new Date(currentDate.getFullYear(), 0, 0).getTime()) / 86400000,
-      )
-      const direction = dayOfYear % 2 === 0 ? 1 : -1 // Alternate between up and down
-      baseFlowRate += direction * 1.0 // Change by exactly 1 ml/s
-
-      // Keep the flow rate within reasonable bounds
-      baseFlowRate = Math.max(5.0, Math.min(15.0, baseFlowRate))
-
-      // Create 3 entries for each day
-      for (let i = 0; i < 3; i++) {
-        const entryTime = new Date(currentDate)
-
-        // Set different times for the 3 entries
-        if (i === 0) {
-          entryTime.setHours(7, Math.floor(Math.random() * 60), 0) // Morning
-        } else if (i === 1) {
-          entryTime.setHours(13, Math.floor(Math.random() * 60), 0) // Afternoon
-        } else {
-          entryTime.setHours(20, Math.floor(Math.random() * 60), 0) // Evening
-        }
-
-        // Small random variation for each entry within the day
-        const flowRateVariation = baseFlowRate + (Math.random() * 0.6 - 0.3) // +/- 0.3 ml/s variation
-
-        // Generate random flow data based on the flow rate
-        const duration = Math.floor(Math.random() * 10) + 30 // 30-40 seconds
-        const volume = Math.floor(flowRateVariation * duration) // Volume based on flow rate and duration
-
-        // Define possible colors, urgencies, and concerns
-        const colors = [
-          "Light Yellow",
-          "Clear",
-          "Dark Yellow",
-          "Amber or Honey",
-          "Orange",
-          "Pink or Red",
-          "Blue or Green",
-          "Brown or Cola-colored",
-          "Cloudy or Murky",
-          "Foamy or Bubbly",
-        ]
-
-        const urgencies = [
-          "Normal",
-          "Hour < 60 min",
-          "Hold < 15 min",
-          "Hold < 5 minutes",
-          "Had drips",
-          "Couldn't hold it",
-        ]
-
-        const possibleConcerns = [
-          "Straining",
-          "Dribbling",
-          "Frequent urges",
-          "Incomplete emptying",
-          "Waking just to pee",
-          "Pain",
-          "Burning",
-          "Blood",
-        ]
-
-        // Randomly select color and urgency
-        const color = colors[Math.floor(Math.random() * colors.length)]
-        const urgency = urgencies[Math.floor(Math.random() * urgencies.length)]
-
-        // Add concerns occasionally (about 20% of entries)
-        let concerns: string[] | undefined = undefined
-        if (Math.random() < 0.2) {
-          // Add 1-2 random concerns
-          const numConcerns = Math.floor(Math.random() * 2) + 1
-          concerns = []
-          for (let j = 0; j < numConcerns; j++) {
-            const concern = possibleConcerns[Math.floor(Math.random() * possibleConcerns.length)]
-            if (!concerns.includes(concern)) {
-              concerns.push(concern)
-            }
-          }
-        }
-
-        // Create UroLog entry with additional fields
-        mockUroLogs.push({
-          timestamp: entryTime.toISOString(),
-          volume,
-          duration,
-          flowRate: flowRateVariation,
-          color,
-          urgency,
-          concerns,
-          notes: "Mock data to be removed",
-        })
-
-        // Generate random fluid intake data
-        const fluidTypes = ["Water", "Coffee", "Tea", "Juice", "Soda"] as const
-        const fluidType = fluidTypes[Math.floor(Math.random() * fluidTypes.length)]
-        const fluidAmount = Math.floor(Math.random() * 300) + 200 // 200-500 mL
-
-        // Create HydroLog entry with same timestamp
-        mockHydroLogs.push({
-          timestamp: entryTime.toISOString(),
-          type: fluidType,
-          amount: fluidAmount,
-          unit: "mL",
-          notes: "Mock data to be removed",
-        })
-      }
-    }
-
-    // Update state and database
-    try {
-      bulkAddUroLogs(mockUroLogs)
-      bulkAddHydroLogs(mockHydroLogs)
-      // Refresh entries from DB
-      fetchEntriesFromDb()
-    } catch (error) {
-      console.error("Error adding mock data to database:", error)
-    }
-  }
-
-  // Update the delete functions
+  // Update the handleDeleteUroLog function
   const handleDeleteUroLog = async (timestamp: string) => {
     if (confirm("Are you sure you want to delete this UroLog entry?")) {
       try {
@@ -315,35 +387,6 @@ const DataManagement: React.FC<DataManagementProps> = ({ title2 }) => {
     }
   }
 
-  // Update the deleteDemoData function
-  const deleteDemoData = async () => {
-    if (!confirm("This will delete all mock data entries. Continue?")) {
-      return
-    }
-
-    const realUroLogs = dbUroLogs.filter((entry) => entry.notes !== "Mock data to be removed")
-    const realHydroLogs = dbHydroLogs.filter((entry) => entry.notes !== "Mock data to be removed")
-
-    try {
-      // Delete all entries and re-add only the real ones
-      await deleteAllUroLogs()
-      await deleteAllHydroLogs()
-
-      if (realUroLogs.length > 0) {
-        await bulkAddUroLogs(realUroLogs)
-      }
-
-      if (realHydroLogs.length > 0) {
-        await bulkAddHydroLogs(realHydroLogs)
-      }
-
-      // Refresh entries from DB
-      fetchEntriesFromDb()
-    } catch (error) {
-      console.error("Error deleting mock data:", error)
-    }
-  }
-
   // Update the exportData function
   const exportData = () => {
     // Create combined entries for export
@@ -358,7 +401,7 @@ const DataManagement: React.FC<DataManagementProps> = ({ title2 }) => {
             type: matchingHydroLog.type,
             customType: matchingHydroLog.customType,
             amount: matchingHydroLog.amount,
-            unit: matchingHydroLog.unit,
+            unit: hydroLog.unit,
             notes: matchingHydroLog.notes,
           },
         }
@@ -415,7 +458,15 @@ const DataManagement: React.FC<DataManagementProps> = ({ title2 }) => {
     const encodedUri = encodeURI(csvContent)
     const link = document.createElement("a")
     link.setAttribute("href", encodedUri)
-    link.setAttribute("download", "my_uro_log_data.csv")
+    // Format date as MMDDYY HHMM
+    const now = new Date()
+    const month = String(now.getMonth() + 1).padStart(2, "0")
+    const day = String(now.getDate()).padStart(2, "0")
+    const year = String(now.getFullYear()).slice(-2)
+    const hours = String(now.getHours()).padStart(2, "0")
+    const minutes = String(now.getMinutes()).padStart(2, "0")
+    const dateTimeStr = `${month}${day}${year}_${hours}${minutes}`
+    link.setAttribute("download", `my_uro_log_data_${dateTimeStr}.csv`)
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -512,24 +563,47 @@ const DataManagement: React.FC<DataManagementProps> = ({ title2 }) => {
                       "0",
                     )}`
 
-                    // Parse time - handle AM/PM format
+                    // Parse time - handle AM/PM format with or without seconds
                     let formattedTime = timeStr
                     if (timeStr.includes("AM") || timeStr.includes("PM")) {
                       // Convert 12-hour format to 24-hour format
-                      const timeParts = timeStr.match(/(\d+):(\d+)\s*([AP]M)/)
+                      // Updated regex to handle seconds if present
+                      const timeParts = timeStr.match(/(\d+):(\d+)(?::(\d+))?\s*([AP]M)/)
                       if (timeParts) {
                         let hours = Number.parseInt(timeParts[1])
                         const minutes = timeParts[2]
-                        const ampm = timeParts[3]
+                        const seconds = timeParts[3] || "00" // Use 00 if seconds not provided
+                        const ampm = timeParts[4]
 
                         if (ampm === "PM" && hours < 12) hours += 12
                         if (ampm === "AM" && hours === 12) hours = 0
 
-                        formattedTime = `${hours.toString().padStart(2, "0")}:${minutes}`
+                        formattedTime = `${hours.toString().padStart(2, "0")}:${minutes}:${seconds}`
                       }
                     }
 
-                    timestamp = new Date(`${formattedDate}T${formattedTime}`).toISOString()
+                    // Add more robust error handling for the date creation
+                    try {
+                      timestamp = new Date(`${formattedDate}T${formattedTime}`).toISOString()
+                    } catch (error) {
+                      console.error("Error creating date from:", formattedDate, formattedTime, error)
+
+                      // Try an alternative approach with the Date constructor
+                      try {
+                        const dateObj = new Date()
+                        const [year, month, day] = formattedDate.split("-").map(Number)
+                        const [hours, minutes, seconds] = formattedTime.split(":").map(Number)
+
+                        dateObj.setFullYear(year, month - 1, day)
+                        dateObj.setHours(hours, minutes, seconds || 0, 0)
+
+                        timestamp = dateObj.toISOString()
+                      } catch (fallbackError) {
+                        console.error("Fallback date parsing also failed:", fallbackError)
+                        // Use current timestamp as last resort
+                        timestamp = new Date().toISOString()
+                      }
+                    }
                   } else {
                     // Try direct parsing if not in MM/DD/YY format
                     timestamp = new Date(`${dateStr}T${timeStr}`).toISOString()
@@ -846,50 +920,52 @@ const DataManagement: React.FC<DataManagementProps> = ({ title2 }) => {
   const getColorClassValue = (color?: string): string => {
     if (!color) return "text-gray-500 dark:text-gray-400"
 
+    // Ensure high contrast in both light and dark modes
     switch (color) {
       case "Light Yellow":
-        return "text-yellow-600 dark:text-yellow-400"
+        return "text-yellow-700 dark:text-yellow-300"
       case "Clear":
-        return "text-blue-500 dark:text-blue-300"
+        return "text-blue-700 dark:text-blue-300"
       case "Dark Yellow":
-        return "text-amber-600 dark:text-amber-400"
+        return "text-amber-700 dark:text-amber-300"
       case "Amber or Honey":
-        return "text-amber-700 dark:text-amber-500"
+        return "text-amber-800 dark:text-amber-300"
       case "Orange":
-        return "text-orange-600 dark:text-orange-400"
+        return "text-orange-700 dark:text-orange-300"
       case "Pink or Red":
-        return "text-red-600 dark:text-red-400"
+        return "text-red-700 dark:text-red-300"
       case "Blue or Green":
-        return "text-teal-600 dark:text-teal-400"
+        return "text-teal-700 dark:text-teal-300"
       case "Brown or Cola-colored":
-        return "text-brown-600 dark:text-amber-700"
+        return "text-amber-800 dark:text-amber-300"
       case "Cloudy or Murky":
-        return "text-gray-600 dark:text-gray-400"
+        return "text-gray-700 dark:text-gray-300"
       case "Foamy or Bubbly":
-        return "text-blue-600 dark:text-blue-400"
+        return "text-blue-700 dark:text-blue-300"
       default:
-        return "text-gray-600 dark:text-gray-400"
+        return "text-gray-700 dark:text-gray-300"
     }
   }
 
   const getUrgencyClassValue = (urgency?: string): string => {
     if (!urgency) return "text-gray-500 dark:text-gray-400"
 
+    // Ensure high contrast in both light and dark modes
     switch (urgency) {
       case "Normal":
-        return "text-green-600 dark:text-green-400"
+        return "text-green-700 dark:text-green-300"
       case "Hour < 60 min":
-        return "text-blue-600 dark:text-blue-400"
+        return "text-blue-700 dark:text-blue-300"
       case "Hold < 15 min":
-        return "text-amber-600 dark:text-amber-400"
+        return "text-amber-700 dark:text-amber-300"
       case "Hold < 5 minutes":
-        return "text-orange-600 dark:text-orange-400"
+        return "text-orange-700 dark:text-orange-300"
       case "Had drips":
-        return "text-red-500 dark:text-red-400"
+        return "text-red-700 dark:text-red-300"
       case "Couldn't hold it":
-        return "text-red-600 dark:text-red-500 font-medium"
+        return "text-red-700 dark:text-red-300 font-medium"
       default:
-        return "text-gray-600 dark:text-gray-400"
+        return "text-gray-700 dark:text-gray-300"
     }
   }
 
@@ -925,7 +1001,6 @@ const DataManagement: React.FC<DataManagementProps> = ({ title2 }) => {
       // Share all data - no limits
       entriesToShare = dbUroLogs
       hydroLogsToShare = dbHydroLogs
-      monthsToInclude = monthlyGroups
       title = `My Uro Log Complete Data Summary`
     }
 
@@ -1000,12 +1075,14 @@ const DataManagement: React.FC<DataManagementProps> = ({ title2 }) => {
           </div>
         ) : (
           <div className="flex justify-end space-x-2">
-            <button
-              onClick={deleteDemoData}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center shadow-sm font-medium"
-            >
-              <Trash className="mr-2" size={18} /> Delete All Demo Data
-            </button>
+            {hasDemoDataLocal && (
+              <button
+                onClick={handleDeleteDemoData}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center shadow-sm font-medium"
+              >
+                <Trash className="mr-2" size={18} /> Delete All Demo Data
+              </button>
+            )}
             <button
               onClick={() => shareData()}
               className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 flex items-center shadow-sm font-medium"
@@ -1037,19 +1114,8 @@ const DataManagement: React.FC<DataManagementProps> = ({ title2 }) => {
       )}
 
       {/* Update the database counts display */}
-      <div className="flex justify-between items-center mb-4">
+      <div className="mb-4">
         <h3 className="text-xl font-bold">Entry Logs</h3>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={fetchEntriesFromDb}
-            className="px-3 py-1 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600 flex items-center"
-          >
-            <Database size={14} className="mr-1" /> Refresh from Database
-          </button>
-          <div className="text-sm bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-lg">
-            <span className="font-medium">Database:</span> {dbCounts.uroLogs + dbCounts.hydroLogs} entries
-          </div>
-        </div>
       </div>
 
       {/* Update the UroLog and HydroLog section titles */}
@@ -1308,6 +1374,7 @@ const DataManagement: React.FC<DataManagementProps> = ({ title2 }) => {
           </label>
         </div>
       </div>
+      <AutoBackupSettings triggerBackup={exportData} />
       {isLoading && (
         <div className="text-center py-4">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>

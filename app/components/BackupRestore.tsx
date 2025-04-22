@@ -26,10 +26,17 @@ const BackupRestore: React.FC<BackupRestoreProps> = ({ entries, setEntries }) =>
       const url = URL.createObjectURL(blob)
       const link = document.createElement("a")
       link.href = url
+
+      // Format date as MMDDYY_HHMM
       const now = new Date()
-      const dateStr = now.toISOString().split("T")[0] // YYYY-MM-DD
-      const timeStr = now.toTimeString().substring(0, 5).replace(":", "-") // HH-MM
-      link.download = `my-uro-log-backup-${dateStr}-${timeStr}.json`
+      const month = String(now.getMonth() + 1).padStart(2, "0")
+      const day = String(now.getDate()).padStart(2, "0")
+      const year = String(now.getFullYear()).slice(-2)
+      const hours = String(now.getHours()).padStart(2, "0")
+      const minutes = String(now.getMinutes()).padStart(2, "0")
+      const dateTimeStr = `${month}${day}${year}_${hours}${minutes}`
+
+      link.download = `my-uro-log-backup_${dateTimeStr}.json`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)

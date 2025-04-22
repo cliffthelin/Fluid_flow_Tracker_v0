@@ -22,15 +22,16 @@ import CollapsibleSection from "./CollapsibleSection"
 import { useBuilderLog } from "../hooks/useBuilderLog"
 import { downloadBuilderLog } from "../services/builderLogExport"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { HeaderTest } from "./HeaderTest"
 import { Manual } from "./Manual"
 import { ManualBuilder } from "./ManualBuilder"
-import { ContrastTest } from "./ContrastTest"
 import { TechnicalCompendium } from "./TechnicalCompendium"
 import { isShareAvailable, fallbackShare } from "../services/share"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { StorageTests } from "./StorageTests"
 import { DatabaseReset } from "./DatabaseReset"
+import { ValidateAll } from "./ValidateAll"
+import { ApplicationLog } from "./ApplicationLog"
+import { getDatabaseCounts } from "../services/db"
 
 const Help: React.FC = () => {
   const { logEntries } = useBuilderLog()
@@ -38,6 +39,20 @@ const Help: React.FC = () => {
   // Add these at the beginning of the Help component, after the logEntries declaration:
 
   const [shareTestResults, setShareTestResults] = useState<string | null>(null)
+  const [dbCounts, setDbCounts] = useState<{ uroLogs: number; hydroLogs: number }>({ uroLogs: 0, hydroLogs: 0 })
+
+  useEffect(() => {
+    const fetchDbCounts = async () => {
+      try {
+        const counts = await getDatabaseCounts()
+        setDbCounts(counts)
+      } catch (error) {
+        console.error("Error fetching database counts:", error)
+      }
+    }
+
+    fetchDbCounts()
+  }, [])
 
   // Add these functions inside the Help component:
 
@@ -92,27 +107,17 @@ const Help: React.FC = () => {
     const platform = detectPlatform()
 
     // Create test results
-    let results = `Share Functionality Test Results:
-
-`
-    results += `Platform: ${platform}
-`
-    results += `Web Share API Available: ${shareApiAvailable ? "Yes" : "No"}
-`
-    results += `Test Time: ${new Date().toLocaleString()}
-
-`
+    let results = `Share Functionality Test Results:\n\n`
+    results += `Platform: ${platform}\n`
+    results += `Web Share API Available: ${shareApiAvailable ? "Yes" : "No"}\n`
+    results += `Test Time: ${new Date().toLocaleString()}\n\n`
 
     if (shareApiAvailable) {
-      results += `Share Method: Native Web Share API
-`
-      results += `Fallback: Clipboard copy if sharing fails
-`
+      results += `Share Method: Native Web Share API\n`
+      results += `Fallback: Clipboard copy if sharing fails\n`
     } else {
-      results += `Share Method: Clipboard copy
-`
-      results += `Reason: Web Share API not available on this platform/environment
-`
+      results += `Share Method: Clipboard copy\n`
+      results += `Reason: Web Share API not available on this platform/environment\n`
     }
 
     // Set test results to display
@@ -551,79 +556,6 @@ const Help: React.FC = () => {
 
           {/* Header Test Section */}
           <CollapsibleSection
-            title="Header Test"
-            defaultExpanded={false}
-            className="mb-0 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700"
-          >
-            <div className="space-y-4">
-              <p className="text-gray-800 dark:text-gray-100">
-                This test verifies that the header is not sticky and scrolls away when the page is scrolled.
-              </p>
-              <HeaderTest />
-            </div>
-          </CollapsibleSection>
-
-          {/* Contrast Test Section */}
-          <CollapsibleSection
-            title="Contrast Test"
-            defaultExpanded={false}
-            className="mb-0 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700"
-          >
-            <div className="space-y-4">
-              <p className="text-gray-800 dark:text-gray-100">
-                This test checks the contrast ratio of text elements on the page to ensure they meet accessibility
-                standards in both light and dark modes.
-              </p>
-              <ContrastTest />
-            </div>
-          </CollapsibleSection>
-
-          {/* Share Test Section */}
-          <CollapsibleSection
-            title="Share Test"
-            defaultExpanded={false}
-            className="mb-0 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700"
-          >
-            <div className="space-y-4">
-              <p className="text-gray-800 dark:text-gray-100">
-                This test verifies the sharing functionality across different platforms and environments.
-              </p>
-              <div className="space-y-4">
-                <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <h4 className="font-medium mb-2">Platform Detection</h4>
-                  <p className="text-sm">
-                    Current platform: <span className="font-medium">{detectPlatform()}</span>
-                  </p>
-                  <p className="text-sm mt-1">
-                    Web Share API available: <span className="font-medium">{isShareAvailable() ? "Yes" : "No"}</span>
-                  </p>
-                </div>
-
-                <button
-                  onClick={runShareTest}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center shadow-sm font-medium"
-                >
-                  Run Share Test
-                </button>
-
-                {shareTestResults && (
-                  <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg border">
-                    <h4 className="font-bold mb-2">Share Test Results</h4>
-                    <pre className="whitespace-pre-wrap text-sm">{shareTestResults}</pre>
-                    <button
-                      onClick={() => setShareTestResults(null)}
-                      className="mt-2 px-3 py-1 bg-gray-300 dark:bg-gray-700 rounded hover:bg-gray-400 dark:hover:bg-gray-600"
-                    >
-                      Dismiss
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </CollapsibleSection>
-
-          {/* Storage Tests Section */}
-          <CollapsibleSection
             title="Storage Tests"
             defaultExpanded={false}
             className="mb-0 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700"
@@ -653,6 +585,17 @@ const Help: React.FC = () => {
           </CollapsibleSection>
         </div>
       </CollapsibleSection>
+
+      <CollapsibleSection
+        title="Validate All"
+        defaultExpanded={false}
+        className="mb-0 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700"
+      >
+        <ValidateAll />
+      </CollapsibleSection>
+
+      {/* Application Log - Add this at the very end, right before the final closing </div> */}
+      <ApplicationLog />
     </div>
   )
 }

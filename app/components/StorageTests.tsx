@@ -2,8 +2,8 @@
 
 import type React from "react"
 
-import { useState } from "react"
-import { db } from "../services/db"
+import { useState, useEffect } from "react"
+import { db, getDatabaseInfo } from "../services/db"
 import type { FlowEntry } from "../types"
 import { AlertCircle, CheckCircle, Database, HardDrive } from "lucide-react"
 import { DatabaseReset } from "./DatabaseReset"
@@ -21,6 +21,15 @@ export function StorageTests() {
     status: "idle",
     results: [],
   })
+
+  const [dbInfo, setDbInfo] = useState<{
+    version: number
+    isOpen: boolean
+    tableNames: string[]
+    entryCounts: Record<string, number>
+  } | null>(null)
+
+  const [showDbInfo, setShowDbInfo] = useState(false)
 
   const runTests = async () => {
     setTestResults({
@@ -100,14 +109,14 @@ export function StorageTests() {
       }
 
       // Add the test entry
-      await db.flowEntries.add(testEntry)
+      await db.uroLogs.add(testEntry)
 
       // Try to read it back
-      const retrievedEntry = await db.flowEntries.get(testTimestamp)
+      const retrievedEntry = await db.uroLogs.get(testTimestamp)
       const readSuccessful = retrievedEntry !== undefined && retrievedEntry.volume === 999
 
       // Delete the test entry
-      await db.flowEntries.delete(testTimestamp)
+      await db.uroLogs.delete(testTimestamp)
 
       results.push({
         name: "IndexedDB Write/Read Test",
@@ -127,8 +136,8 @@ export function StorageTests() {
 
     // Test 5: Check for duplicate entries in IndexedDB
     try {
-      const allFlowEntries = await db.flowEntries.toArray()
-      const allFluidEntries = await db.fluidIntakeEntries.toArray()
+      const allFlowEntries = await db.uroLogs.toArray()
+      const allFluidEntries = await db.hydroLogs.toArray()
 
       // Check for duplicate timestamps in flow entries
       const flowTimestamps = allFlowEntries.map((entry) => entry.timestamp)
@@ -199,12 +208,12 @@ export function StorageTests() {
       await db.migrateFromLocalStorage()
 
       // Check if the entry was migrated to IndexedDB
-      const migratedEntry = await db.flowEntries.get(testLocalEntry.timestamp)
+      const migratedEntry = await db.uroLogs.get(testLocalEntry.timestamp)
       const migrationSuccessful = migratedEntry !== undefined && migratedEntry.volume === 888
 
       // Clean up - delete the test entry from IndexedDB
       if (migratedEntry) {
-        await db.flowEntries.delete(testLocalEntry.timestamp)
+        await db.uroLogs.delete(testLocalEntry.timestamp)
       }
 
       // Clean up - remove from localStorage
@@ -239,7 +248,7 @@ export function StorageTests() {
       }
 
       // Add it to IndexedDB
-      await db.flowEntries.add(testEntry)
+      await db.uroLogs.add(testEntry)
 
       // Create a CSV string that includes this entry (simulating an import)
       const csvString = `Date,Time,Volume (mL),Duration (s),Flow Rate (mL/s),Color,Urgency,Concerns,Flow Notes,Fluid Type,Fluid Custom Type,Fluid Amount,Fluid Unit,Fluid Notes
@@ -271,11 +280,11 @@ ${new Date(testTimestamp).toISOString().split("T")[0]},${new Date(testTimestamp)
       await new Promise((resolve) => setTimeout(resolve, 1000))
 
       // Check if we still have only one entry with this timestamp
-      const entriesAfterImport = await db.flowEntries.where("timestamp").equals(testTimestamp).toArray()
+      const entriesAfterImport = await db.uroLogs.where("timestamp").equals(testTimestamp).toArray()
       const noDuplication = entriesAfterImport.length === 1
 
       // Clean up - delete the test entry
-      await db.flowEntries.delete(testTimestamp)
+      await db.uroLogs.delete(testTimestamp)
 
       results.push({
         name: "Import Duplication Test",
@@ -299,6 +308,27 @@ ${new Date(testTimestamp).toISOString().split("T")[0]},${new Date(testTimestamp)
     })
   }
 
+  useEffect(() => {
+    fetchDatabaseInfo()
+  }, [])
+
+  const fetchDatabaseInfo = async () => {
+    try {
+      const info = await getDatabaseInfo()
+      setDbInfo(info)
+      setShowDbInfo(true)
+      alert(
+        `Database contains:
+- ${info.entryCounts.uroLogs} UroLogs
+- ${info.entryCounts.hydroLogs} HydroLogs
+Total: ${info.entryCounts.uroLogs + info.entryCounts.hydroLogs} entries`,
+      )
+    } catch (error) {
+      console.error("Error fetching database info:", error)
+      alert(`Failed to fetch database info: ${error instanceof Error ? error.message : String(error)}`)
+    }
+  }
+
   // Function to fix localStorage issues if found
   const fixLocalStorageIssues = () => {
     try {
@@ -314,8 +344,8 @@ ${new Date(testTimestamp).toISOString().split("T")[0]},${new Date(testTimestamp)
   const fixDuplicateEntries = async () => {
     try {
       // Get all entries
-      const allFlowEntries = await db.flowEntries.toArray()
-      const allFluidEntries = await db.fluidIntakeEntries.toArray()
+      const allFlowEntries = await db.uroLogs.toArray()
+      const allFluidEntries = await db.hydroLogs.toArray()
 
       // Find unique entries by timestamp
       const uniqueFlowEntries = Array.from(new Map(allFlowEntries.map((entry) => [entry.timestamp, entry])).values())
@@ -327,15 +357,19 @@ ${new Date(testTimestamp).toISOString().split("T")[0]},${new Date(testTimestamp)
       const fluidDuplicatesRemoved = allFluidEntries.length - uniqueFluidEntries.length
 
       // Clear all tables
-      await db.flowEntries.clear()
-      await db.fluidIntakeEntries.clear()
+      await db.uroLogs.clear()
+      await db.hydroLogs.clear()
 
       // Add back only the unique entries
-      await db.flowEntries.bulkAdd(uniqueFlowEntries)
-      await db.fluidIntakeEntries.bulkAdd(uniqueFluidEntries)
+      await db.uroLogs.bulkAdd(uniqueFlowEntries)
+      await db.hydroLogs.bulkAdd(uniqueFluidEntries)
 
       alert(
-        `Fixed duplicate entries:\n- Removed ${flowDuplicatesRemoved} duplicate flow entries\n- Removed ${fluidDuplicatesRemoved} duplicate fluid intake entries\n\nPlease run the tests again to verify the fix.`,
+        `Fixed duplicate entries:
+- Removed ${flowDuplicatesRemoved} duplicate flow entries
+- Removed ${fluidDuplicatesRemoved} duplicate fluid intake entries
+
+Please run the tests again to verify the fix.`,
       )
       runTests()
     } catch (error) {
@@ -345,6 +379,20 @@ ${new Date(testTimestamp).toISOString().split("T")[0]},${new Date(testTimestamp)
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 mb-4">
+        <button
+          onClick={fetchDatabaseInfo}
+          className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 flex items-center"
+        >
+          <Database size={18} className="mr-2" /> Refresh from Database
+        </button>
+
+        <div className="text-sm bg-gray-700 text-white px-4 py-2 rounded-lg">
+          <span className="font-medium">Database:</span>{" "}
+          {testResults.results?.find((r) => r.name === "Database Accessibility")?.passed ? "Connected" : "0 entries"}
+        </div>
+      </div>
+
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-medium">Storage and Database Tests</h3>
         <button

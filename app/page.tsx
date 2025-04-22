@@ -3,16 +3,19 @@
 import { useState, useEffect } from "react"
 import Header from "./components/Header"
 import FlowEntryForm from "./components/FlowEntryForm"
-import FluidStats from "./components/FluidStats"
-import DataManagement from "./components/DataManagement"
+import Stats from "./components/FluidStats"
+import DataManagement, { generateDemoData, hasDemoData, deleteDemoData } from "./components/DataManagement"
 import Resources from "./components/Resources"
-import Help from "./components/Help" // Fixed import path
-import InstallPrompt from "./components/InstallPrompt" // Fixed import path
-import PWARegistration from "./components/PWARegistration" // Fixed import path
+import Help from "./components/Help"
+import InstallPrompt from "./components/InstallPrompt"
+import PWARegistration from "./components/PWARegistration"
 import BottomNav from "./components/BottomNav"
 import type { UroLog, HydroLog } from "./types"
-import { Plus, BarChart, Database, BookMarked, BookOpen } from "lucide-react"
 import { addUroLog as dbAddUroLog, addHydroLog as dbAddHydroLog } from "./services/db"
+import { Plus, BarChart, Database, BookMarked, BookOpen, Trash } from "lucide-react"
+
+// Add imports for auto-backup system
+import { createAutoBackup, restoreFromAutoBackup, hasAutoBackup } from "./services/autoBackup"
 
 export default function Home() {
   const [darkMode, setDarkMode] = useState(false)
@@ -21,7 +24,10 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true)
   const [dataInitialized, setDataInitialized] = useState(false)
   const [activeSection, setActiveSection] = useState<"entry" | "stats" | "data" | "resources" | "help">("entry")
+  const [dbCounts, setDbCounts] = useState<{ uroLogs: number; hydroLogs: number }>({ uroLogs: 0, hydroLogs: 0 })
+  const [hasDemoDataState, setHasDemoDataState] = useState(false)
 
+  // Update the useEffect that initializes the database to include auto-backup restoration
   useEffect(() => {
     // Check system preference for dark mode
     if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
@@ -52,7 +58,18 @@ export default function Home() {
 
         // Migrate data from localStorage if needed
         await migrateFromLocalStorage()
+
+        // Check if we need to restore from auto-backup
+        if (hasAutoBackup()) {
+          await restoreFromAutoBackup()
+        }
+
         setDataInitialized(true)
+
+        // Create an auto-backup after successful initialization
+        setTimeout(() => {
+          createAutoBackup()
+        }, 5000) // Wait 5 seconds to ensure everything is loaded
       } catch (error) {
         console.error("Error initializing database:", error)
         // Still set dataInitialized to true so the app can continue
@@ -78,6 +95,21 @@ export default function Home() {
     }
   }, [])
 
+  // Add a periodic auto-backup
+  useEffect(() => {
+    if (!isLoading && dataInitialized) {
+      // Create auto-backup every 10 minutes while the app is open
+      const backupInterval = setInterval(
+        () => {
+          createAutoBackup()
+        },
+        10 * 60 * 1000,
+      )
+
+      return () => clearInterval(backupInterval)
+    }
+  }, [isLoading, dataInitialized])
+
   useEffect(() => {
     if (!isLoading && dataInitialized) {
       // Check if there are any entries in the database
@@ -86,9 +118,16 @@ export default function Home() {
           const { db } = await import("./services/db")
           const uroLogCount = await db.uroLogs.count()
           const hydroLogCount = await db.hydroLogs.count()
+          setDbCounts({ uroLogs: uroLogCount, hydroLogs: hydroLogCount })
 
-          // If there are no entries, start with the help section
+          // Check if there's demo data
+          const hasDemo = await hasDemoData()
+          setHasDemoDataState(hasDemo)
+
+          // If there are no entries, generate demo data and go to the help section
           if (uroLogCount === 0 && hydroLogCount === 0) {
+            console.log("No entries found, generating demo data...")
+            generateDemoData()
             setActiveSection("help")
           }
         } catch (error) {
@@ -114,10 +153,40 @@ export default function Home() {
     document.documentElement.style.setProperty("--font-size-adjustment", `${fontSize * 0.125}rem`)
   }, [fontSize])
 
+  // Check for demo data periodically
+  useEffect(() => {
+    const checkDemoData = async () => {
+      const hasDemo = await hasDemoData()
+      setHasDemoDataState(hasDemo)
+    }
+
+    // Check initially and then every 5 seconds
+    checkDemoData()
+    const interval = setInterval(checkDemoData, 5000)
+
+    return () => clearInterval(interval)
+  }, [])
+
+  const handleDeleteDemoData = async () => {
+    await deleteDemoData()
+    setHasDemoDataState(false)
+
+    // If we're on the data management page, refresh the data
+    if (activeSection === "data") {
+      // Force a re-render of the data management component
+      setActiveSection("stats")
+      setTimeout(() => {
+        setActiveSection("data")
+      }, 10)
+    }
+  }
+
   const addUroLog = async (entry: UroLog) => {
     try {
       // Add to IndexedDB
       await dbAddUroLog(entry)
+      // Create a backup after adding new data
+      createAutoBackup()
       // Navigate to stats page after saving
       setActiveSection("stats")
     } catch (error) {
@@ -130,6 +199,8 @@ export default function Home() {
     try {
       // Add to IndexedDB
       await dbAddHydroLog(entry)
+      // Create a backup after adding new data
+      createAutoBackup()
       // Navigate to stats page after saving
       setActiveSection("stats")
     } catch (error) {
@@ -146,6 +217,18 @@ export default function Home() {
       <PWARegistration />
       <div className="bg-blue-50 dark:bg-slate-900 min-h-screen pb-32">
         <Header darkMode={darkMode} setDarkMode={setDarkMode} fontSize={fontSize} setFontSize={setFontSize} />
+
+        {/* Persistent Delete Demo Data button */}
+        {hasDemoDataState && (
+          <div className="fixed top-20 right-4 z-50">
+            <button
+              onClick={handleDeleteDemoData}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center shadow-md"
+            >
+              <Trash className="mr-2" size={18} /> Delete Demo Data
+            </button>
+          </div>
+        )}
 
         <div className="container mx-auto max-w-4xl px-4 sm:px-6 pt-4 pb-32">
           {!isOnline && (
@@ -182,9 +265,9 @@ export default function Home() {
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-100 dark:border-gray-700 p-4">
                   <div className="flex items-center mb-4">
                     <BarChart className="mr-2 text-green-500" size={24} />
-                    <h2 className="text-xl font-semibold">Fluid Stats</h2>
+                    <h2 className="text-xl font-semibold">Stats</h2>
                   </div>
-                  <FluidStats />
+                  <Stats />
                 </div>
               )}
 
@@ -194,7 +277,7 @@ export default function Home() {
                     <Database className="mr-2 text-purple-500" size={24} />
                     <h2 className="text-xl font-semibold">Data Management</h2>
                   </div>
-                  <DataManagement />
+                  <DataManagement hasDemoDataState={hasDemoDataState} />
                 </div>
               )}
 

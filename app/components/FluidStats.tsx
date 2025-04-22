@@ -2,49 +2,57 @@
 
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
-import {
-  BarChartIcon,
-  Calendar,
-  Clock,
-  Droplet,
-  AlertTriangle,
-  Coffee,
-  TrendingUp,
-  TrendingDown,
-  LineChart,
-  Grid,
-  ScatterChart,
-  Filter,
-  Share2,
-} from "lucide-react"
-import type { FlowEntry, FluidIntakeEntry } from "../types"
-import { isShareAvailable, fallbackShare } from "../services/share"
+import { Clock, Droplet, AlertTriangle, Coffee, TrendingUp, TrendingDown, Filter, Share2 } from "lucide-react"
+import type { UroLog, HydroLog } from "../types"
+import { isShareAvailable } from "../services/share"
 
 interface FluidStatsProps {
   title2?: React.ReactNode
 }
 
-// Update the component definition to use the title2 prop
-const FluidStats: React.FC<FluidStatsProps> = ({ title2 }) => {
+// Change the component name from FluidStats to Stats
+const Stats: React.FC<FluidStatsProps> = ({ title2 }) => {
   // Add these state variables at the top of the component
-  const [flowEntries, setFlowEntries] = useState<FlowEntry[]>([])
-  const [fluidIntakeEntries, setFluidIntakeEntries] = useState<FluidIntakeEntry[]>([])
+  const [flowEntries, setFlowEntries] = useState<UroLog[]>([])
+  const [fluidIntakeEntries, setFluidIntakeEntries] = useState<HydroLog[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<"table" | "line" | "heatmap" | "scatter">("table")
+  const [activeTab, setActiveTab] = useState<"table" | "line" | "heatmap" | "bar" | "pie">("table")
   const lineChartRef = useRef<HTMLCanvasElement>(null)
   const heatmapRef = useRef<HTMLCanvasElement>(null)
   const scatterRef = useRef<HTMLCanvasElement>(null)
+  const barChartRef = useRef<HTMLCanvasElement>(null)
+  const pieChartRef = useRef<HTMLCanvasElement>(null)
 
   // Add filter state
   const [timeFilter, setTimeFilter] = useState<"week" | "month" | "year" | "all">("all")
   const [dataTypeFilter, setDataTypeFilter] = useState<"flow" | "intake" | "both">("both")
-  const [metricFilter, setMetricFilter] = useState<"volume" | "rate" | "color" | "urgency" | "concerns" | "beverage">(
-    "rate",
-  )
+  const [metricFilter, setMetricFilter] = useState<
+    "volume" | "rate" | "color" | "urgency" | "concerns" | "beverage" | "duration"
+  >("rate")
   const [showFilterPanel, setShowFilterPanel] = useState(false)
+  const [darkMode, setDarkMode] = useState(false)
+
+  // Add this to the beginning of the component, after the state declarations
+  useEffect(() => {
+    // Check if dark mode is active
+    setDarkMode(document.documentElement.classList.contains("dark"))
+
+    // Set up an observer to detect theme changes
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === "class") {
+          setDarkMode(document.documentElement.classList.contains("dark"))
+        }
+      })
+    })
+
+    observer.observe(document.documentElement, { attributes: true })
+
+    return () => observer.disconnect()
+  }, [])
 
   // Filter data based on selected time period
-  const filterDataByTime = (entries: (FlowEntry | FluidIntakeEntry)[]) => {
+  const filterDataByTime = (entries: (UroLog | HydroLog)[]) => {
     const now = new Date()
     let cutoffDate: Date
 
@@ -238,12 +246,111 @@ const FluidStats: React.FC<FluidStatsProps> = ({ title2 }) => {
     }
   }
 
+  // Add these helper functions to filter data by time periods
+  // Add these functions after the existing filter functions but before the useEffect hooks
+
+  // Helper functions to get data for specific time periods
+  const getTodayData = (entries: (UroLog | HydroLog)[]) => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return entries.filter((entry) => new Date(entry.timestamp) >= today)
+  }
+
+  const getWeekData = (entries: (UroLog | HydroLog)[]) => {
+    const weekAgo = new Date()
+    weekAgo.setDate(weekAgo.getDate() - 7)
+    return entries.filter((entry) => new Date(entry.timestamp) >= weekAgo)
+  }
+
+  const getMonthData = (entries: (UroLog | HydroLog)[]) => {
+    const monthAgo = new Date()
+    monthAgo.setMonth(monthAgo.getMonth() - 1)
+    return entries.filter((entry) => new Date(entry.timestamp) >= monthAgo)
+  }
+
+  const getYearData = (entries: (UroLog | HydroLog)[]) => {
+    const yearAgo = new Date()
+    yearAgo.setFullYear(yearAgo.getFullYear() - 1)
+    return entries.filter((entry) => new Date(entry.timestamp) >= yearAgo)
+  }
+
+  // Functions to calculate flow rate statistics for different time periods
+  const getTodayFlowRate = () => {
+    const todayEntries = getTodayData(flowEntries)
+    return calculateAverage(todayEntries.map((entry) => (entry as UroLog).flowRate)) || 0
+  }
+
+  const getWeekFlowRate = () => {
+    const weekEntries = getWeekData(flowEntries)
+    return calculateAverage(weekEntries.map((entry) => (entry as UroLog).flowRate)) || 0
+  }
+
+  const getMonthFlowRate = () => {
+    const monthEntries = getMonthData(flowEntries)
+    return calculateAverage(monthEntries.map((entry) => (entry as UroLog).flowRate)) || 0
+  }
+
+  const getYearFlowRate = () => {
+    const yearEntries = getYearData(flowEntries)
+    return calculateAverage(yearEntries.map((entry) => (entry as UroLog).flowRate)) || 0
+  }
+
+  // Functions to get entry counts for different time periods
+  const getTodayFlowCount = () => getTodayData(flowEntries).length
+  const getWeekFlowCount = () => getWeekData(flowEntries).length
+  const getMonthFlowCount = () => getMonthData(flowEntries).length
+  const getYearFlowCount = () => getYearData(flowEntries).length
+
+  // Functions to calculate fluid intake statistics for different time periods
+  const getTodayFluidIntake = () => {
+    const todayEntries = getTodayData(fluidIntakeEntries)
+    const amounts = todayEntries.map((entry) => {
+      const hydroEntry = entry as HydroLog
+      return hydroEntry.unit === "oz" ? hydroEntry.amount * 29.5735 : hydroEntry.amount
+    })
+    return calculateAverage(amounts) || 0
+  }
+
+  const getWeekFluidIntake = () => {
+    const weekEntries = getWeekData(fluidIntakeEntries)
+    const amounts = weekEntries.map((entry) => {
+      const hydroEntry = entry as HydroLog
+      return hydroEntry.unit === "oz" ? hydroEntry.amount * 29.5735 : hydroEntry.amount
+    })
+    return calculateAverage(amounts) || 0
+  }
+
+  const getMonthFluidIntake = () => {
+    const monthEntries = getMonthData(fluidIntakeEntries)
+    const amounts = monthEntries.map((entry) => {
+      const hydroEntry = entry as HydroLog
+      return hydroEntry.unit === "oz" ? hydroEntry.amount * 29.5735 : hydroEntry.amount
+    })
+    return calculateAverage(amounts) || 0
+  }
+
+  const getYearFluidIntake = () => {
+    const yearEntries = getYearData(fluidIntakeEntries)
+    const amounts = yearEntries.map((entry) => {
+      const hydroEntry = entry as HydroLog
+      return hydroEntry.unit === "oz" ? hydroEntry.amount * 29.5735 : hydroEntry.amount
+    })
+    return calculateAverage(amounts) || 0
+  }
+
+  // Functions to get fluid entry counts for different time periods
+  const getTodayFluidCount = () => getTodayData(fluidIntakeEntries).length
+  const getWeekFluidCount = () => getWeekData(fluidIntakeEntries).length
+  const getMonthFluidCount = () => getMonthData(fluidIntakeEntries).length
+  const getYearFluidCount = () => getYearData(fluidIntakeEntries).length
+
   // Add this useEffect to fetch data from IndexedDB
   useEffect(() => {
     const fetchEntries = async () => {
       setIsLoading(true)
       try {
         const { db } = await import("../services/db")
+        console.log("Fetching data from IndexedDB...")
 
         // Add error handling and fallbacks
         let uroLogs = []
@@ -253,6 +360,7 @@ const FluidStats: React.FC<FluidStatsProps> = ({ title2 }) => {
           // Check if the tables exist before calling toArray()
           if (db.uroLogs) {
             uroLogs = await db.uroLogs.toArray()
+            console.log(`Fetched ${uroLogs.length} UroLogs from IndexedDB`)
           }
         } catch (error) {
           console.error("Error fetching uroLogs:", error)
@@ -261,6 +369,7 @@ const FluidStats: React.FC<FluidStatsProps> = ({ title2 }) => {
         try {
           if (db.hydroLogs) {
             hydroLogs = await db.hydroLogs.toArray()
+            console.log(`Fetched ${hydroLogs.length} HydroLogs from IndexedDB`)
           }
         } catch (error) {
           console.error("Error fetching hydroLogs:", error)
@@ -298,85 +407,115 @@ const FluidStats: React.FC<FluidStatsProps> = ({ title2 }) => {
       )
 
       // Check if we have data to display
-      if ((dataTypeFilter === "flow" || dataTypeFilter === "both") && sortedFlowEntries.length === 0) {
-        ctx.fillStyle = "#666"
+      if (sortedFlowEntries.length === 0 && sortedFluidEntries.length === 0) {
+        ctx.fillStyle = darkMode ? "#e5e7eb" : "#374151" // High contrast text
         ctx.font = "14px Arial"
         ctx.textAlign = "center"
-        ctx.fillText("No flow data available for the selected time period", canvas.width / 2, canvas.height / 2 - 20)
-        if (dataTypeFilter === "both" && sortedFluidEntries.length === 0) {
-          ctx.fillText(
-            "No intake data available for the selected time period",
-            canvas.width / 2,
-            canvas.height / 2 + 20,
-          )
-        }
-        return
-      }
-
-      if ((dataTypeFilter === "intake" || dataTypeFilter === "both") && sortedFluidEntries.length === 0) {
-        ctx.fillStyle = "#666"
-        ctx.font = "14px Arial"
-        ctx.textAlign = "center"
-        ctx.fillText("No intake data available for the selected time period", canvas.width / 2, canvas.height / 2)
+        ctx.fillText("No data available for the selected time period", canvas.width / 2, canvas.height / 2)
         return
       }
 
       // Prepare data based on metric filter
-      let flowData: number[] = []
-      let flowLabel = ""
+      let dataPoints: { timestamp: string; value: number }[] = []
+      let metricLabel = ""
+      let maxYValue = 0
+      let defaultMaxY = 30 // Default max for flow rate
 
+      // Determine which data to show based on filters
       if (dataTypeFilter === "flow" || dataTypeFilter === "both") {
         switch (metricFilter) {
           case "volume":
-            flowData = sortedFlowEntries.map((entry) => entry.volume)
-            flowLabel = "Volume (mL)"
+            dataPoints = sortedFlowEntries.map((entry) => ({
+              timestamp: entry.timestamp,
+              value: entry.volume,
+            }))
+            metricLabel = "Volume (mL)"
+            defaultMaxY = 500 // Default max for volume
+            break
+          case "duration":
+            dataPoints = sortedFlowEntries.map((entry) => ({
+              timestamp: entry.timestamp,
+              value: entry.duration,
+            }))
+            metricLabel = "Duration (sec)"
+            defaultMaxY = 60 // Default max for duration
             break
           case "rate":
           default:
-            flowData = sortedFlowEntries.map((entry) => entry.flowRate)
-            flowLabel = "Flow Rate (mL/s)"
+            dataPoints = sortedFlowEntries.map((entry) => ({
+              timestamp: entry.timestamp,
+              value: entry.flowRate,
+            }))
+            metricLabel = "Flow Rate (mL/s)"
+            defaultMaxY = 30 // Default max for flow rate
             break
         }
+      } else if (dataTypeFilter === "intake") {
+        dataPoints = sortedFluidEntries.map((entry) => ({
+          timestamp: entry.timestamp,
+          value: entry.unit === "oz" ? entry.amount * 29.5735 : entry.amount,
+        }))
+        metricLabel = "Fluid Intake (mL)"
+        defaultMaxY = 1000 // Default max for fluid intake
       }
 
-      let intakeData: number[] = []
-      let intakeLabel = ""
+      // Find max value for scaling, ensuring it's at least the default
+      if (dataPoints.length > 0) {
+        const dataMax = Math.max(...dataPoints.map((point) => point.value))
+        // Set maxYValue to 1.5 times the maximum data value, but cap it at reasonable defaults
+        if (metricFilter === "rate") {
+          // For flow rate, if max is around 8, set max to 12
+          maxYValue = Math.min(Math.max(12, Math.ceil(dataMax * 1.5)), 30)
+        } else if (metricFilter === "volume") {
+          // For volume, set a reasonable scale
+          maxYValue = Math.min(Math.max(500, Math.ceil(dataMax * 1.5)), 1000)
+        } else if (metricFilter === "duration") {
+          // For duration, set a reasonable scale
+          maxYValue = Math.min(Math.max(60, Math.ceil(dataMax * 1.5)), 120)
+        } else {
+          // For other metrics, use 1.5x scaling
+          maxYValue = Math.ceil(dataMax * 1.5)
+        }
 
-      if (dataTypeFilter === "intake" || dataTypeFilter === "both") {
-        intakeData = sortedFluidEntries.map((entry) => {
-          return entry.unit === "oz" ? entry.amount * 29.5735 : entry.amount
-        })
-        intakeLabel = "Fluid Intake (mL)"
+        // Find highest and lowest values in the dataset
+        const highestValue = dataMax
+        const lowestValue = Math.min(...dataPoints.map((point) => point.value))
+      } else {
+        maxYValue = defaultMaxY
       }
-
-      const flowDates = sortedFlowEntries.map((entry) => new Date(entry.timestamp).toLocaleDateString())
-      const fluidDates = sortedFluidEntries.map((entry) => new Date(entry.timestamp).toLocaleDateString())
 
       // Set chart dimensions
       const padding = 40
-      const width = canvas.width - padding * 2
-      const height = canvas.height - padding * 2
+      const canvasWidth = canvas.width
+      const canvasHeight = canvas.height
+      const width = canvasWidth - padding * 2
+      const height = canvasHeight - padding * 2
 
-      // Find max values for scaling
-      const maxFlowValue = flowData.length > 0 ? Math.max(...flowData, 1) * 1.1 : 1
-      const maxIntakeValue = intakeData.length > 0 ? Math.max(...intakeData, 1) * 1.1 : 1000
-
-      // Draw axes
+      // Draw axes with high contrast colors
       ctx.beginPath()
-      ctx.strokeStyle = "#666"
+      ctx.strokeStyle = darkMode ? "#e5e7eb" : "#374151" // High contrast
       ctx.lineWidth = 1
       ctx.moveTo(padding, padding)
       ctx.lineTo(padding, canvas.height - padding)
       ctx.lineTo(canvas.width - padding, canvas.height - padding)
       ctx.stroke()
 
-      // Get time period indicators
-      const allDatesSet = [...new Set([...flowDates, ...fluidDates])].map((d) => new Date(d))
-      allDatesSet.sort((a, b) => a.getTime() - b.getTime())
+      // Draw zero baseline (if not at bottom)
+      ctx.beginPath()
+      ctx.strokeStyle = darkMode ? "rgba(229, 231, 235, 0.2)" : "rgba(55, 65, 81, 0.2)" // Subtle line
+      ctx.setLineDash([5, 3])
+      ctx.moveTo(padding, canvas.height - padding)
+      ctx.lineTo(canvas.width - padding, canvas.height - padding)
+      ctx.stroke()
+      ctx.setLineDash([])
 
-      if (allDatesSet.length > 0) {
-        const firstDate = allDatesSet[0]
-        const lastDate = allDatesSet[allDatesSet.length - 1]
+      // Get time period indicators
+      const allDates = dataPoints.map((point) => new Date(point.timestamp))
+      allDates.sort((a, b) => a.getTime() - b.getTime())
+
+      if (allDates.length > 0) {
+        const firstDate = allDates[0]
+        const lastDate = allDates[allDates.length - 1]
 
         // Calculate week, month, and year markers
         const weekDate = new Date(lastDate)
@@ -396,7 +535,7 @@ const FluidStats: React.FC<FluidStatsProps> = ({ title2 }) => {
           markers.push({
             position: padding + weekPosition * width,
             label: "Week",
-            color: "rgba(52, 152, 219, 0.5)",
+            color: darkMode ? "rgba(147, 197, 253, 0.5)" : "rgba(59, 130, 246, 0.5)",
             highlight: timeFilter === "week",
           })
         }
@@ -406,7 +545,7 @@ const FluidStats: React.FC<FluidStatsProps> = ({ title2 }) => {
           markers.push({
             position: padding + monthPosition * width,
             label: "Month",
-            color: "rgba(155, 89, 182, 0.5)",
+            color: darkMode ? "rgba(192, 132, 252, 0.5)" : "rgba(139, 92, 246, 0.5)",
             highlight: timeFilter === "month",
           })
         }
@@ -416,7 +555,7 @@ const FluidStats: React.FC<FluidStatsProps> = ({ title2 }) => {
           markers.push({
             position: padding + yearPosition * width,
             label: "Year",
-            color: "rgba(231, 76, 60, 0.5)",
+            color: darkMode ? "rgba(252, 165, 165, 0.5)" : "rgba(239, 68, 68, 0.5)",
             highlight: timeFilter === "year",
           })
         }
@@ -432,7 +571,7 @@ const FluidStats: React.FC<FluidStatsProps> = ({ title2 }) => {
           ctx.stroke()
           ctx.setLineDash([])
 
-          // Draw label
+          // Draw label with high contrast
           ctx.fillStyle = marker.color
           ctx.font = marker.highlight ? "bold 12px Arial" : "12px Arial"
           ctx.textAlign = "center"
@@ -440,14 +579,16 @@ const FluidStats: React.FC<FluidStatsProps> = ({ title2 }) => {
         })
       }
 
-      // Draw flow data line if data exists and should be shown
-      if ((dataTypeFilter === "flow" || dataTypeFilter === "both") && flowData.length > 0) {
+      // Draw data line if data exists
+      if (dataPoints.length > 0) {
+        // Draw the line
         ctx.beginPath()
-        ctx.strokeStyle = "#3b82f6"
+        ctx.strokeStyle = darkMode ? "#3b82f6" : "#1d4ed8" // Blue with good contrast in both modes
         ctx.lineWidth = 2
-        flowData.forEach((value, i) => {
-          const x = padding + (i / (flowData.length - 1 || 1)) * width
-          const y = canvas.height - padding - (value / maxFlowValue) * height
+
+        dataPoints.forEach((point, i) => {
+          const x = padding + (i / (dataPoints.length - 1 || 1)) * width
+          const y = canvas.height - padding - (point.value / maxYValue) * height
           if (i === 0) {
             ctx.moveTo(x, y)
           } else {
@@ -456,128 +597,112 @@ const FluidStats: React.FC<FluidStatsProps> = ({ title2 }) => {
         })
         ctx.stroke()
 
-        // Draw flow data points
-        flowData.forEach((value, i) => {
-          const x = padding + (i / (flowData.length - 1 || 1)) * width
-          const y = canvas.height - padding - (value / maxFlowValue) * height
+        // Draw data points
+        dataPoints.forEach((point, i) => {
+          const x = padding + (i / (dataPoints.length - 1 || 1)) * width
+          const y = canvas.height - padding - (point.value / maxYValue) * height
           ctx.beginPath()
-          ctx.fillStyle = "#3b82f6"
+          ctx.fillStyle = darkMode ? "#60a5fa" : "#2563eb" // Blue with good contrast
           ctx.arc(x, y, 4, 0, Math.PI * 2)
           ctx.fill()
         })
-      }
 
-      // Draw fluid intake line if data exists and should be shown
-      if ((dataTypeFilter === "intake" || dataTypeFilter === "both") && intakeData.length > 0) {
+        // Find highest and lowest values in the dataset
+        const highestValue = Math.max(...dataPoints.map((point) => point.value))
+        const lowestValue = Math.min(...dataPoints.map((point) => point.value))
+
+        // Draw highest value line
+        const highestY = canvas.height - padding - (highestValue / maxYValue) * height
         ctx.beginPath()
-        ctx.strokeStyle = "#10b981"
-        ctx.lineWidth = 2
-
-        let firstPoint = true
-        intakeData.forEach((value, i) => {
-          if (value > 0) {
-            const x = padding + (i / (intakeData.length - 1 || 1)) * width
-            const y = canvas.height - padding - (value / maxIntakeValue) * height
-
-            if (firstPoint) {
-              ctx.moveTo(x, y)
-              firstPoint = false
-            } else {
-              ctx.lineTo(x, y)
-            }
-          }
-        })
+        ctx.strokeStyle = darkMode ? "rgba(239, 68, 68, 0.7)" : "rgba(220, 38, 38, 0.7)" // Red with good contrast
+        ctx.lineWidth = 1
+        ctx.setLineDash([5, 3])
+        ctx.moveTo(padding, highestY)
+        ctx.lineTo(canvas.width - padding, highestY)
         ctx.stroke()
 
-        // Draw fluid intake points
-        intakeData.forEach((value, i) => {
-          if (value > 0) {
-            const x = padding + (i / (intakeData.length - 1 || 1)) * width
-            const y = canvas.height - padding - (value / maxIntakeValue) * height
-            ctx.beginPath()
-            ctx.fillStyle = "#10b981"
-            ctx.arc(x, y, 4, 0, Math.PI * 2)
-            ctx.fill()
-          }
-        })
+        // Draw highest value label
+        ctx.fillStyle = darkMode ? "rgba(239, 68, 68, 0.9)" : "rgba(220, 38, 38, 0.9)"
+        ctx.font = "12px Arial"
+        ctx.textAlign = "left"
+        ctx.fillText(`Highest: ${highestValue.toFixed(1)}`, padding + 5, highestY - 5)
+
+        // Draw lowest value line
+        const lowestY = canvas.height - padding - (lowestValue / maxYValue) * height
+        ctx.beginPath()
+        ctx.strokeStyle = darkMode ? "rgba(59, 130, 246, 0.7)" : "rgba(37, 99, 235, 0.7)" // Blue with good contrast
+        ctx.lineWidth = 1
+        ctx.setLineDash([5, 3])
+        ctx.moveTo(padding, lowestY)
+        ctx.lineTo(canvas.width - padding, lowestY)
+        ctx.stroke()
+
+        // Draw lowest value label
+        ctx.fillStyle = darkMode ? "rgba(59, 130, 246, 0.9)" : "rgba(37, 99, 235, 0.9)"
+        ctx.font = "12px Arial"
+        ctx.textAlign = "left"
+        ctx.fillText(`Lowest: ${lowestValue.toFixed(1)}`, padding + 5, lowestY + 15)
+
+        // Reset line dash
+        ctx.setLineDash([])
       }
 
-      // Draw labels
-      ctx.fillStyle = "#666"
+      // Draw labels with high contrast colors
+      ctx.fillStyle = darkMode ? "#e5e7eb" : "#374151" // High contrast text
       ctx.font = "12px Arial"
       ctx.textAlign = "center"
 
       // X-axis labels (dates)
-      // Combine and deduplicate dates
-      const allDates = [...new Set([...flowDates, ...fluidDates])]
-      allDates.sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
+      if (dataPoints.length > 0) {
+        const dateLabels = dataPoints.map((point) => new Date(point.timestamp).toLocaleDateString())
 
-      if (allDates.length > 10) {
-        // If too many dates, show fewer labels
-        const step = Math.ceil(allDates.length / 10)
-        for (let i = 0; i < allDates.length; i += step) {
-          const x = padding + (i / (allDates.length - 1 || 1)) * width
-          ctx.fillText(allDates[i], x, canvas.height - padding + 15)
-        }
-      } else {
-        allDates.forEach((date, i) => {
-          const x = padding + (i / (allDates.length - 1 || 1)) * width
-          ctx.fillText(date, x, canvas.height - padding + 15)
-        })
-      }
-
-      // Y-axis labels (flow value)
-      if (dataTypeFilter === "flow" || dataTypeFilter === "both") {
-        ctx.textAlign = "right"
-        for (let i = 0; i <= 5; i++) {
-          const value = (maxFlowValue * i) / 5
-          const y = canvas.height - padding - (value / maxFlowValue) * height
-          ctx.fillStyle = "#3b82f6"
-          ctx.fillText(value.toFixed(1) + (metricFilter === "rate" ? " mL/s" : " mL"), padding - 5, y + 4)
+        if (dateLabels.length > 10) {
+          // If too many dates, show fewer labels
+          const step = Math.ceil(dateLabels.length / 10)
+          for (let i = 0; i < dateLabels.length; i += step) {
+            const x = padding + (i / (dateLabels.length - 1 || 1)) * width
+            ctx.fillText(dateLabels[i], x, canvas.height - padding + 15)
+          }
+        } else {
+          dateLabels.forEach((date, i) => {
+            const x = padding + (i / (dateLabels.length - 1 || 1)) * width
+            ctx.fillText(date, x, canvas.height - padding + 15)
+          })
         }
       }
 
-      // Y-axis labels (fluid intake)
-      if (dataTypeFilter === "intake" || dataTypeFilter === "both") {
-        ctx.textAlign = "left"
-        for (let i = 0; i <= 5; i++) {
-          const value = (maxIntakeValue * i) / 5
-          const y = canvas.height - padding - (value / maxIntakeValue) * height
-          ctx.fillStyle = "#10b981"
-          ctx.fillText(value.toFixed(0) + " mL", canvas.width - padding + 5, y + 4)
-        }
+      // Y-axis labels
+      ctx.textAlign = "right"
+      for (let i = 0; i <= 5; i++) {
+        const value = (maxYValue * i) / 5
+        const y = canvas.height - padding - (value / maxYValue) * height
+        ctx.fillText(value.toFixed(1), padding - 5, y + 4)
       }
 
-      // Legend
-      ctx.textAlign = "left"
-      let legendX = padding
-
-      if (dataTypeFilter === "flow" || dataTypeFilter === "both") {
-        ctx.fillStyle = "#3b82f6"
-        ctx.fillRect(legendX, 15, 15, 15)
-        ctx.fillStyle = "#000"
-        ctx.fillText(flowLabel, legendX + 20, 25)
-        legendX += 120
-      }
-
-      if (dataTypeFilter === "intake" || dataTypeFilter === "both") {
-        ctx.fillStyle = "#10b981"
-        ctx.fillRect(legendX, 15, 15, 15)
-        ctx.fillStyle = "#000"
-        ctx.fillText(intakeLabel, legendX + 20, 25)
-      }
+      // Chart title and Y-axis label
+      ctx.textAlign = "center"
+      ctx.font = "16px Arial"
+      ctx.fillText(metricLabel, canvas.width / 2, 20)
 
       // Time period indicator
       ctx.textAlign = "right"
-      ctx.fillStyle = "#666"
+      ctx.fillStyle = darkMode ? "#e5e7eb" : "#374151" // High contrast
       ctx.font = "12px Arial"
       ctx.fillText(
-        `Showing: ${timeFilter === "all" ? "All Time" : timeFilter === "week" ? "Last Week" : timeFilter === "month" ? "Last Month" : "Last Year"}`,
+        `Showing: ${
+          timeFilter === "all"
+            ? "All Time"
+            : timeFilter === "week"
+              ? "Last Week"
+              : timeFilter === "month"
+                ? "Last Month"
+                : "Last Year"
+        }`,
         canvas.width - padding,
-        25,
+        40,
       )
     }
-  }, [activeTab, filteredFlowEntries, filteredFluidIntakeEntries, timeFilter, dataTypeFilter, metricFilter])
+  }, [activeTab, filteredFlowEntries, filteredFluidIntakeEntries, timeFilter, dataTypeFilter, metricFilter, darkMode])
 
   // Draw heatmap
   useEffect(() => {
@@ -619,11 +744,13 @@ const FluidStats: React.FC<FluidStatsProps> = ({ title2 }) => {
 
       // Set chart dimensions
       const padding = 40
-      const cellWidth = (canvas.width - padding * 2) / 24 // 24 hours
-      const cellHeight = (canvas.height - padding * 2) / 7 // 7 days
+      const canvasWidth = canvas.width
+      const canvasHeight = canvas.height
+      const cellWidth = (canvasWidth - padding * 2) / 24 // 24 hours
+      const cellHeight = (canvasHeight - padding * 2) / 7 // 7 days
 
       // Draw grid
-      ctx.strokeStyle = "#ddd"
+      ctx.strokeStyle = darkMode ? "#e5e7eb" : "#374151"
       ctx.lineWidth = 1
 
       // Vertical lines (hours)
@@ -675,7 +802,7 @@ const FluidStats: React.FC<FluidStatsProps> = ({ title2 }) => {
       }
 
       // Draw labels
-      ctx.fillStyle = "#666"
+      ctx.fillStyle = darkMode ? "#e5e7eb" : "#374151"
       ctx.font = "12px Arial"
       ctx.textAlign = "center"
 
@@ -701,7 +828,7 @@ const FluidStats: React.FC<FluidStatsProps> = ({ title2 }) => {
 
       // Time period indicator
       ctx.textAlign = "right"
-      ctx.fillStyle = "#666"
+      ctx.fillStyle = darkMode ? "#cccccc" : "#666666"
       ctx.font = "12px Arial"
       ctx.fillText(
         `Showing: ${timeFilter === "all" ? "All Time" : timeFilter === "week" ? "Last Week" : timeFilter === "month" ? "Last Month" : "Last Year"}`,
@@ -709,182 +836,247 @@ const FluidStats: React.FC<FluidStatsProps> = ({ title2 }) => {
         40,
       )
     }
-  }, [activeTab, filteredFlowEntries, timeFilter, metricFilter])
+  }, [activeTab, filteredFlowEntries, timeFilter, metricFilter, darkMode])
 
-  // Draw scatter plot
+  // Draw bar chart
   useEffect(() => {
-    if (
-      activeTab === "scatter" &&
-      scatterRef.current &&
-      filteredFlowEntries.length > 0 &&
-      filteredFluidIntakeEntries.length > 0
-    ) {
-      const canvas = scatterRef.current
+    if (activeTab === "bar" && barChartRef.current) {
+      const canvas = barChartRef.current
       const ctx = canvas.getContext("2d")
       if (!ctx) return
 
       // Clear canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-      // Match flow entries with fluid intake entries by timestamp
-      const matchedData = []
+      // Set chart dimensions
+      const padding = 60
+      const canvasWidth = canvas.width
+      const canvasHeight = canvas.height
+      const width = canvasWidth - padding * 2
+      const height = canvasHeight - padding * 2
 
-      for (const flowEntry of filteredFlowEntries) {
-        // Find fluid intake entries from the same day
-        const flowDate = new Date(flowEntry.timestamp)
-        flowDate.setHours(0, 0, 0, 0)
+      // Prepare data based on the selected metric and filter
+      let data: { label: string; value: number; color: string }[] = []
+      let chartTitle = ""
 
-        const matchingFluidEntries = filteredFluidIntakeEntries.filter((fluidEntry) => {
-          const fluidDate = new Date(fluidEntry.timestamp)
-          fluidDate.setHours(0, 0, 0, 0)
-          return fluidDate.getTime() === flowDate.getTime()
-        })
+      if (dataTypeFilter === "flow" || dataTypeFilter === "both") {
+        // For flow data, group by different metrics
+        switch (metricFilter) {
+          case "color":
+            // Group by color
+            chartTitle = "Distribution by Urine Color"
+            const colorGroups: Record<string, number> = {}
+            filteredFlowEntries.forEach((entry) => {
+              if (entry.color) {
+                colorGroups[entry.color] = (colorGroups[entry.color] || 0) + 1
+              }
+            })
 
-        if (matchingFluidEntries.length > 0) {
-          // Calculate total fluid intake for the day
-          let totalFluidIntake = 0
-          matchingFluidEntries.forEach((entry) => {
-            totalFluidIntake += entry.unit === "oz" ? entry.amount * 29.5735 : entry.amount
-          })
+            // Generate colors for each group
+            const colorPalette = [
+              "#3b82f6",
+              "#ef4444",
+              "#10b981",
+              "#f59e0b",
+              "#8b5cf6",
+              "#ec4899",
+              "#6366f1",
+              "#14b8a6",
+            ]
 
-          // Add data based on metric filter
-          let flowValue = 0
-          switch (metricFilter) {
-            case "volume":
-              flowValue = flowEntry.volume
-              break
-            case "rate":
-            default:
-              flowValue = flowEntry.flowRate
-              break
+            data = Object.entries(colorGroups).map(([color, count], index) => ({
+              label: color,
+              value: count,
+              color: colorPalette[index % colorPalette.length],
+            }))
+            break
+
+          case "urgency":
+            // Group by urgency
+            chartTitle = "Distribution by Urgency Rating"
+            const urgencyGroups: Record<string, number> = {}
+            filteredFlowEntries.forEach((entry) => {
+              if (entry.urgency) {
+                urgencyGroups[entry.urgency] = (urgencyGroups[entry.urgency] || 0) + 1
+              }
+            })
+
+            data = Object.entries(urgencyGroups).map(([urgency, count], index) => ({
+              label: urgency,
+              value: count,
+              color: `hsl(${index * 30}, 70%, 60%)`,
+            }))
+            break
+
+          case "concerns":
+            // Group by concerns
+            chartTitle = "Distribution by Reported Concerns"
+            const concernGroups: Record<string, number> = {}
+            filteredFlowEntries.forEach((entry) => {
+              if (entry.concerns && entry.concerns.length > 0) {
+                entry.concerns.forEach((concern) => {
+                  concernGroups[concern] = (concernGroups[concern] || 0) + 1
+                })
+              }
+            })
+
+            data = Object.entries(concernGroups).map(([concern, count], index) => ({
+              label: concern,
+              value: count,
+              color: `hsl(${index * 40}, 80%, 60%)`,
+            }))
+            break
+
+          default:
+            // Group by time periods (e.g., days of week)
+            chartTitle = `Average ${
+              metricFilter === "rate" ? "Flow Rate" : metricFilter === "volume" ? "Volume" : "Duration"
+            } by Day of Week`
+
+            // Group by day of week
+            const dayGroups: Record<number, number[]> = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] }
+            filteredFlowEntries.forEach((entry) => {
+              const date = new Date(entry.timestamp)
+              const day = date.getDay() // 0-6 (Sunday-Saturday)
+
+              if (!dayGroups[day]) {
+                dayGroups[day] = []
+              }
+
+              // Add value based on metric
+              if (metricFilter === "volume") {
+                dayGroups[day].push(entry.volume)
+              } else if (metricFilter === "duration") {
+                dayGroups[day].push(entry.duration)
+              } else {
+                dayGroups[day].push(entry.flowRate)
+              }
+            })
+
+            // Calculate averages for each day
+            const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+            const dayColors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#6366f1"]
+
+            data = Object.entries(dayGroups).map(([day, values], index) => ({
+              label: dayNames[Number.parseInt(day)],
+              value: values.length > 0 ? calculateAverage(values) : 0,
+              color: dayColors[index % dayColors.length],
+            }))
+            break
+        }
+      } else if (dataTypeFilter === "intake") {
+        // For intake data, group by fluid type
+        chartTitle =
+          metricFilter === "beverage" ? "Distribution by Beverage Type" : "Average Fluid Intake by Beverage Type"
+
+        const fluidGroups: Record<string, number[]> = {}
+        filteredFluidIntakeEntries.forEach((entry) => {
+          const type = entry.type === "Other" && entry.customType ? entry.customType : entry.type
+
+          if (!fluidGroups[type]) {
+            fluidGroups[type] = []
           }
 
-          matchedData.push({
-            flowValue,
-            fluidIntake: totalFluidIntake,
-            timestamp: flowEntry.timestamp,
-          })
+          // Convert to mL for consistency
+          const amount = entry.unit === "oz" ? entry.amount * 29.5735 : entry.amount
+          fluidGroups[type].push(amount)
+        })
+
+        // Generate colors for each group
+        const fluidColors = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#6366f1", "#14b8a6"]
+
+        if (metricFilter === "beverage") {
+          // Count occurrences of each type
+          data = Object.entries(fluidGroups).map(([type, values], index) => ({
+            label: type,
+            value: values.length,
+            color: fluidColors[index % fluidColors.length],
+          }))
+        } else {
+          // Calculate average intake for each type
+          data = Object.entries(fluidGroups).map(([type, values], index) => ({
+            label: type,
+            value: values.length > 0 ? calculateAverage(values) : 0,
+            color: fluidColors[index % fluidColors.length],
+          }))
         }
       }
 
-      if (matchedData.length === 0) {
-        ctx.fillStyle = "#666"
+      // Sort data by value (descending)
+      data.sort((a, b) => b.value - a.value)
+
+      // If no data, show message
+      if (data.length === 0) {
+        ctx.fillStyle = darkMode ? "#e5e7eb" : "#374151"
         ctx.font = "14px Arial"
         ctx.textAlign = "center"
-        ctx.fillText("Not enough data for scatter plot", canvas.width / 2, canvas.height / 2)
+        ctx.fillText("No data available for the selected filters", canvas.width / 2, canvas.height / 2)
         return
       }
 
-      // Set chart dimensions
-      const padding = 50
-      const width = canvas.width - padding * 2
-      const height = canvas.height - padding * 2
-
-      // Find max values for scaling
-      const maxFlowValue = Math.max(...matchedData.map((d) => d.flowValue)) * 1.1
-      const maxFluidIntake = Math.max(...matchedData.map((d) => d.fluidIntake)) * 1.1
+      // Calculate max value for scaling
+      const maxValue = Math.max(...data.map((item) => item.value))
 
       // Draw axes
       ctx.beginPath()
-      ctx.strokeStyle = "#666"
+      ctx.strokeStyle = darkMode ? "#e5e7eb" : "#374151"
       ctx.lineWidth = 1
       ctx.moveTo(padding, padding)
       ctx.lineTo(padding, canvas.height - padding)
       ctx.lineTo(canvas.width - padding, canvas.height - padding)
       ctx.stroke()
 
-      // Draw scatter points
-      matchedData.forEach((point) => {
-        const x = padding + (point.fluidIntake / maxFluidIntake) * width
-        const y = canvas.height - padding - (point.flowValue / maxFlowValue) * height
+      // Draw bars
+      const barWidth = Math.min(50, (width / data.length) * 0.8)
+      const barSpacing = width / data.length
 
-        // Calculate point color based on recency
-        const date = new Date(point.timestamp)
-        const now = new Date()
-        const daysDiff = (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
-        const opacity = Math.max(0.3, 1 - daysDiff / 30) // Fade over 30 days
+      data.forEach((item, index) => {
+        const barHeight = (item.value / maxValue) * height
+        const x = padding + index * barSpacing + (barSpacing - barWidth) / 2
+        const y = canvas.height - padding - barHeight
 
-        ctx.beginPath()
-        ctx.fillStyle = `rgba(59, 130, 246, ${opacity})`
-        ctx.arc(x, y, 6, 0, Math.PI * 2)
-        ctx.fill()
+        // Draw bar
+        ctx.fillStyle = item.color
+        ctx.fillRect(x, y, barWidth, barHeight)
+
+        // Draw value on top of bar
+        ctx.fillStyle = darkMode ? "#ffffff" : "#000000"
+        ctx.font = "12px Arial"
+        ctx.textAlign = "center"
+        ctx.fillText(item.value.toFixed(metricFilter === "rate" ? 1 : 0), x + barWidth / 2, y - 5)
+
+        // Draw label below bar
+        ctx.fillStyle = darkMode ? "#e5e7eb" : "#374151"
+        ctx.font = "10px Arial"
+        ctx.textAlign = "center"
+
+        // Handle long labels
+        let label = item.label
+        if (label.length > 10) {
+          label = label.substring(0, 8) + "..."
+        }
+
+        // Rotate labels if there are many
+        if (data.length > 5) {
+          ctx.save()
+          ctx.translate(x + barWidth / 2, canvas.height - padding + 10)
+          ctx.rotate(-Math.PI / 4)
+          ctx.fillText(label, 0, 0)
+          ctx.restore()
+        } else {
+          ctx.fillText(label, x + barWidth / 2, canvas.height - padding + 15)
+        }
       })
 
-      // Draw trend line if enough points
-      if (matchedData.length >= 3) {
-        // Simple linear regression
-        let sumX = 0,
-          sumY = 0,
-          sumXY = 0,
-          sumX2 = 0
-        const n = matchedData.length
-
-        matchedData.forEach((point) => {
-          sumX += point.fluidIntake
-          sumY += point.flowValue
-          sumXY += point.fluidIntake * point.flowValue
-          sumX2 += point.fluidIntake * point.fluidValue
-        })
-
-        const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX)
-        const intercept = (sumY - slope * sumX) / n
-
-        // Draw trend line
-        ctx.beginPath()
-        ctx.strokeStyle = "rgba(239, 68, 68, 0.7)"
-        ctx.lineWidth = 2
-
-        const x1 = padding
-        const y1 = canvas.height - padding - (intercept / maxFlowValue) * height
-        const x2 = canvas.width - padding
-        const y2 = canvas.height - padding - ((slope * maxFluidIntake + intercept) / maxFlowValue) * height
-
-        ctx.moveTo(x1, y1)
-        ctx.lineTo(x2, y2)
-        ctx.stroke()
-      }
-
-      // Draw labels
-      ctx.fillStyle = "#666"
-      ctx.font = "12px Arial"
-
-      // X-axis labels (fluid intake)
-      ctx.textAlign = "center"
-      for (let i = 0; i <= 5; i++) {
-        const value = (maxFluidIntake * i) / 5
-        const x = padding + (value / maxFluidIntake) * width
-        ctx.fillText(value.toFixed(0) + " mL", x, canvas.height - padding + 15)
-      }
-
-      // Y-axis labels (flow value)
-      ctx.textAlign = "right"
-      for (let i = 0; i <= 5; i++) {
-        const value = (maxFlowValue * i) / 5
-        const y = canvas.height - padding - (value / maxFlowValue) * height
-        ctx.fillText(value.toFixed(1) + (metricFilter === "rate" ? " mL/s" : " mL"), padding - 5, y + 4)
-      }
-
-      // Axis titles
-      ctx.textAlign = "center"
-      ctx.font = "14px Arial"
-      ctx.fillText("Fluid Intake (mL)", canvas.width / 2, canvas.height - 10)
-
-      ctx.save()
-      ctx.translate(15, canvas.height / 2)
-      ctx.rotate(-Math.PI / 2)
-      const yAxisLabel = metricFilter === "volume" ? "Volume (mL)" : "Flow Rate (mL/s)"
-      ctx.fillText(yAxisLabel, 0, 0)
-      ctx.restore()
-
-      // Chart title
-      ctx.textAlign = "center"
+      // Draw title
+      ctx.fillStyle = darkMode ? "#ffffff" : "#000000"
       ctx.font = "16px Arial"
-      const titleMetric = metricFilter === "volume" ? "Volume" : "Flow Rate"
-      ctx.fillText(`${titleMetric} vs. Fluid Intake`, canvas.width / 2, 20)
+      ctx.textAlign = "center"
+      ctx.fillText(chartTitle, canvas.width / 2, 20)
 
-      // Time period indicator
+      // Draw time period
       ctx.textAlign = "right"
-      ctx.fillStyle = "#666"
+      ctx.fillStyle = darkMode ? "#cccccc" : "#666666"
       ctx.font = "12px Arial"
       ctx.fillText(
         `Showing: ${timeFilter === "all" ? "All Time" : timeFilter === "week" ? "Last Week" : timeFilter === "month" ? "Last Month" : "Last Year"}`,
@@ -892,598 +1084,694 @@ const FluidStats: React.FC<FluidStatsProps> = ({ title2 }) => {
         40,
       )
     }
-  }, [activeTab, filteredFlowEntries, filteredFluidIntakeEntries, timeFilter, metricFilter])
+  }, [activeTab, filteredFlowEntries, filteredFluidIntakeEntries, timeFilter, dataTypeFilter, metricFilter, darkMode])
 
-  // Share functionality
-  const shareChart = async (chartType: string, chartRef: React.RefObject<HTMLCanvasElement>) => {
-    try {
-      const canvas = chartRef.current
-      if (!canvas) {
-        throw new Error("Chart not available")
-      }
+  // Draw pie chart
+  useEffect(() => {
+    if (activeTab === "pie" && pieChartRef.current) {
+      const canvas = pieChartRef.current
+      const ctx = canvas.getContext("2d")
+      if (!ctx) return
 
-      // Create a title based on the chart type
-      const title = `Flow Tracker - ${chartType} Chart`
+      // Clear canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-      // Create a text summary of the chart data
-      let summary = `${title}\n\n`
-
-      // Add relevant stats based on chart type
-      if (chartType === "Flow Rate") {
-        summary += `Average Flow Rate: ${averageFlowRate.toFixed(1)} mL/s\n`
-        summary += `Entries: ${flowEntries.length}\n`
-      } else if (chartType === "Volume") {
-        summary += `Average Volume: ${averageVolume.toFixed(0)} mL\n`
-        summary += `Entries: ${flowEntries.length}\n`
-      }
-
-      // Check if Web Share API is likely to work
-      if (isShareAvailable()) {
-        try {
-          await navigator.share({
-            title,
-            text: summary,
-          })
-        } catch (error) {
-          console.error("Web Share API failed:", error)
-          // Fall back to clipboard
-          fallbackShare(title, summary)
-        }
-      } else {
-        // Skip trying Web Share API and go straight to fallback
-        fallbackShare(title, summary)
-      }
-    } catch (error) {
-      console.error("Error sharing chart:", error)
-      alert("Failed to share chart. Using clipboard instead.")
-
-      // Always fall back to clipboard if anything goes wrong
-      fallbackShare(
-        "Flow Tracker Chart",
-        "There was an error sharing the chart. A text summary has been copied to your clipboard instead.",
-      )
-    }
-  }
-
-  // Update the shareSummaryData function similarly
-  const shareSummaryData = async () => {
-    try {
-      // Create text summary
-      let summary = "Flow Tracker Summary\n-------------------\n\n"
+      // Prepare data based on the selected metric and filter
+      let data: { label: string; value: number; color: string }[] = []
+      let chartTitle = ""
 
       if (dataTypeFilter === "flow" || dataTypeFilter === "both") {
-        summary += `Time period: ${timeFilter === "all" ? "All Time" : timeFilter === "week" ? "Last Week" : timeFilter === "month" ? "Last Month" : "Last Year"}\n`
-        summary += `Average Flow Rate: ${averageFlowRate.toFixed(2)} mL/s\n`
-        summary += `Average Volume: ${averageVolume.toFixed(0)} mL\n`
-        summary += `Average Duration: ${averageDuration.toFixed(1)} sec\n`
-        summary += `Total Entries: ${filteredFlowEntries.length}\n\n`
-      }
+        // For flow data, group by different metrics
+        switch (metricFilter) {
+          case "color":
+            // Group by color
+            chartTitle = "Distribution by Urine Color"
+            const colorGroups: Record<string, number> = {}
+            filteredFlowEntries.forEach((entry) => {
+              if (entry.color) {
+                colorGroups[entry.color] = (colorGroups[entry.color] || 0) + 1
+              } else {
+                colorGroups["Not Recorded"] = (colorGroups["Not Recorded"] || 0) + 1
+              }
+            })
 
-      if ((dataTypeFilter === "intake" || dataTypeFilter === "both") && filteredFluidIntakeEntries.length > 0) {
-        summary += "Fluid Intake Stats\n"
-        summary += `Average Fluid Intake: ${averageFluidIntake.toFixed(0)} mL (${(averageFluidIntake / 29.5735).toFixed(1)} oz)\n`
-        summary += `Fluid Intake Trend: ${fluidIntakeTrend === "up" ? "Increasing" : fluidIntakeTrend === "down" ? "Decreasing" : "Stable"}\n`
-        if (mostCommonFluidType) {
-          summary += `Most Common Beverage: ${mostCommonFluidType}\n`
+            // Generate colors for each group
+            const colorPalette = [
+              "#3b82f6",
+              "#ef4444",
+              "#10b981",
+              "#f59e0b",
+              "#8b5cf6",
+              "#ec4899",
+              "#6366f1",
+              "#14b8a6",
+            ]
+
+            data = Object.entries(colorGroups).map(([color, count], index) => ({
+              label: color,
+              value: count,
+              color: colorPalette[index % colorPalette.length],
+            }))
+            break
+
+          case "urgency":
+            // Group by urgency
+            chartTitle = "Distribution by Urgency Rating"
+            const urgencyGroups: Record<string, number> = {}
+            filteredFlowEntries.forEach((entry) => {
+              if (entry.urgency) {
+                urgencyGroups[entry.urgency] = (urgencyGroups[entry.urgency] || 0) + 1
+              } else {
+                urgencyGroups["Not Recorded"] = (urgencyGroups["Not Recorded"] || 0) + 1
+              }
+            })
+
+            data = Object.entries(urgencyGroups).map(([urgency, count], index) => ({
+              label: urgency,
+              value: count,
+              color: `hsl(${index * 30}, 70%, 60%)`,
+            }))
+            break
+
+          case "concerns":
+            // Group by concerns
+            chartTitle = "Distribution by Reported Concerns"
+            const concernGroups: Record<string, number> = {}
+            let noConcernsCount = 0
+
+            filteredFlowEntries.forEach((entry) => {
+              if (entry.concerns && entry.concerns.length > 0) {
+                entry.concerns.forEach((concern) => {
+                  concernGroups[concern] = (concernGroups[concern] || 0) + 1
+                })
+              } else {
+                noConcernsCount++
+              }
+            })
+
+            if (noConcernsCount > 0) {
+              concernGroups["No Concerns"] = noConcernsCount
+            }
+
+            data = Object.entries(concernGroups).map(([concern, count], index) => ({
+              label: concern,
+              value: count,
+              color: `hsl(${index * 40}, 80%, 60%)`,
+            }))
+            break
+
+          default:
+            // For other metrics, group by ranges
+            const metricName = metricFilter === "rate" ? "Flow Rate" : metricFilter === "volume" ? "Volume" : "Duration"
+            chartTitle = `${metricName} Distribution`
+
+            // Determine ranges based on metric
+            let ranges: { min: number; max: number; label: string }[] = []
+
+            if (metricFilter === "rate") {
+              ranges = [
+                { min: 0, max: 5, label: "0-5 mL/s" },
+                { min: 5, max: 10, label: "5-10 mL/s" },
+                { min: 10, max: 15, label: "10-15 mL/s" },
+                { min: 15, max: 20, label: "15-20 mL/s" },
+                { min: 20, max: Number.POSITIVE_INFINITY, label: "20+ mL/s" },
+              ]
+            } else if (metricFilter === "volume") {
+              ranges = [
+                { min: 0, max: 100, label: "0-100 mL" },
+                { min: 100, max: 200, label: "100-200 mL" },
+                { min: 200, max: 300, label: "200-300 mL" },
+                { min: 300, max: 400, label: "300-400 mL" },
+                { min: 400, max: Number.POSITIVE_INFINITY, label: "400+ mL" },
+              ]
+            } else {
+              // duration
+              ranges = [
+                { min: 0, max: 15, label: "0-15 sec" },
+                { min: 15, max: 30, label: "15-30 sec" },
+                { min: 30, max: 45, label: "30-45 sec" },
+                { min: 45, max: 60, label: "45-60 sec" },
+                { min: 60, max: Number.POSITIVE_INFINITY, label: "60+ sec" },
+              ]
+            }
+
+            // Count entries in each range
+            const rangeCounts = ranges.map((range) => ({
+              label: range.label,
+              value: 0,
+              color: "",
+            }))
+
+            filteredFlowEntries.forEach((entry) => {
+              const value =
+                metricFilter === "rate" ? entry.flowRate : metricFilter === "volume" ? entry.volume : entry.duration
+
+              for (let i = 0; i < ranges.length; i++) {
+                if (value >= ranges[i].min && value < ranges[i].max) {
+                  rangeCounts[i].value++
+                  break
+                }
+              }
+            })
+
+            // Assign colors
+            const rangeColors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"]
+
+            data = rangeCounts
+              .map((item, index) => ({
+                ...item,
+                color: rangeColors[index % rangeColors.length],
+              }))
+              .filter((item) => item.value > 0) // Remove empty ranges
+            break
         }
+      } else if (dataTypeFilter === "intake") {
+        // For intake data, group by fluid type
+        chartTitle = "Distribution by Beverage Type"
+
+        const fluidGroups: Record<string, number> = {}
+        filteredFluidIntakeEntries.forEach((entry) => {
+          const type = entry.type === "Other" && entry.customType ? entry.customType : entry.type
+          fluidGroups[type] = (fluidGroups[type] || 0) + 1
+        })
+
+        // Generate colors for each group
+        const fluidColors = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#6366f1", "#14b8a6"]
+
+        data = Object.entries(fluidGroups).map(([type, count], index) => ({
+          label: type,
+          value: count,
+          color: fluidColors[index % fluidColors.length],
+        }))
       }
 
-      const title = "Flow Tracker Summary"
+      // Sort data by value (descending)
+      data.sort((a, b) => b.value - a.value)
 
-      // Check if Web Share API is likely to work
-      if (isShareAvailable()) {
-        try {
-          await navigator.share({
-            title,
-            text: summary,
-          })
-        } catch (error) {
-          console.error("Web Share API failed:", error)
-          // Fall back to clipboard
-          fallbackShare(title, summary)
+      // If no data, show message
+      if (data.length === 0) {
+        ctx.fillStyle = darkMode ? "#e5e7eb" : "#374151"
+        ctx.font = "14px Arial"
+        ctx.textAlign = "center"
+        ctx.fillText("No data available for the selected filters", canvas.width / 2, canvas.height / 2)
+        return
+      }
+
+      // Calculate total for percentages
+      const total = data.reduce((sum, item) => sum + item.value, 0)
+
+      // Draw pie chart
+      const centerX = canvas.width / 2
+      const centerY = canvas.height / 2
+      const radius = Math.min(canvas.width, canvas.height) / 2.5
+
+      let startAngle = 0
+
+      data.forEach((item) => {
+        const sliceAngle = (item.value / total) * 2 * Math.PI
+
+        // Draw slice
+        ctx.beginPath()
+        ctx.moveTo(centerX, centerY)
+        ctx.arc(centerX, centerY, radius, startAngle, startAngle + sliceAngle)
+        ctx.closePath()
+        ctx.fillStyle = item.color
+        ctx.fill()
+
+        // Draw slice border
+        ctx.strokeStyle = darkMode ? "#1f2937" : "#ffffff"
+        ctx.lineWidth = 2
+        ctx.stroke()
+
+        // Calculate position for label
+        const middleAngle = startAngle + sliceAngle / 2
+        const labelRadius = radius * 0.7
+        const labelX = centerX + Math.cos(middleAngle) * labelRadius
+        const labelY = centerY + Math.sin(middleAngle) * labelRadius
+
+        // Draw percentage if slice is big enough
+        if (sliceAngle > 0.15) {
+          ctx.fillStyle = "#ffffff"
+          ctx.font = "bold 12px Arial"
+          ctx.textAlign = "center"
+          ctx.textBaseline = "middle"
+          const percentage = Math.round((item.value / total) * 100)
+          ctx.fillText(`${percentage}%`, labelX, labelY)
         }
-      } else {
-        // Skip trying Web Share API and go straight to fallback
-        fallbackShare(title, summary)
-      }
-    } catch (error) {
-      console.error("Error sharing:", error)
-      fallbackShare(
-        "Flow Tracker Summary",
-        "Failed to share summary data. This text has been copied to your clipboard instead.",
+
+        startAngle += sliceAngle
+      })
+
+      // Draw legend
+      const legendX = canvas.width - 150
+      const legendY = 60
+      const legendItemHeight = 20
+
+      data.forEach((item, index) => {
+        const y = legendY + index * legendItemHeight
+
+        // Draw color box
+        ctx.fillStyle = item.color
+        ctx.fillRect(legendX, y, 15, 15)
+
+        // Draw border
+        ctx.strokeStyle = darkMode ? "#e5e7eb" : "#374151"
+        ctx.lineWidth = 1
+        ctx.strokeRect(legendX, y, 15, 15)
+
+        // Draw label
+        ctx.fillStyle = darkMode ? "#e5e7eb" : "#374151"
+        ctx.font = "12px Arial"
+        ctx.textAlign = "left"
+        ctx.textBaseline = "middle"
+
+        // Truncate long labels
+        let label = item.label
+        if (label.length > 15) {
+          label = label.substring(0, 12) + "..."
+        }
+
+        ctx.fillText(`${label} (${item.value})`, legendX + 20, y + 7.5)
+      })
+
+      // Draw title
+      ctx.fillStyle = darkMode ? "#ffffff" : "#000000"
+      ctx.font = "16px Arial"
+      ctx.textAlign = "center"
+      ctx.textBaseline = "top"
+      ctx.fillText(chartTitle, canvas.width / 2, 20)
+
+      // Draw time period
+      ctx.textAlign = "left"
+      ctx.fillStyle = darkMode ? "#cccccc" : "#666666"
+      ctx.font = "12px Arial"
+      ctx.fillText(
+        `Showing: ${timeFilter === "all" ? "All Time" : timeFilter === "week" ? "Last Week" : timeFilter === "month" ? "Last Month" : "Last Year"}`,
+        20,
+        20,
       )
+    }
+  }, [activeTab, filteredFlowEntries, filteredFluidIntakeEntries, timeFilter, dataTypeFilter, metricFilter, darkMode])
+
+  const shareChart = async (chartType: string, chartRef: React.RefObject<HTMLCanvasElement>) => {
+    if (!isShareAvailable()) {
+      alert("Sharing is not available on this device.")
+      return
+    }
+
+    if (chartRef.current) {
+      try {
+        chartRef.current.toBlob(async (blob) => {
+          if (blob) {
+            const files = [new File([blob], `fluid-stats-${chartType}.png`, { type: "image/png" })]
+            const shareData = {
+              title: `Fluid Stats ${chartType} Chart`,
+              text: "Check out my fluid stats!",
+              files,
+            }
+            await navigator.share(shareData)
+            console.log("Shared successfully")
+          } else {
+            console.error("Failed to create blob from canvas")
+          }
+        })
+      } catch (error) {
+        console.error("Error sharing:", error)
+      }
     }
   }
 
-  // Add this right after the return statement
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    )
+  const getColorClassValue = (color: string) => {
+    switch (color) {
+      case "Clear":
+        return "text-gray-500"
+      case "Pale Yellow":
+        return "text-yellow-300"
+      case "Yellow":
+        return "text-yellow-500"
+      case "Dark Yellow":
+        return "text-yellow-700"
+      case "Amber":
+        return "text-orange-500"
+      default:
+        return "text-gray-500"
+    }
+  }
+
+  const getUrgencyClassValue = (urgency: string) => {
+    switch (urgency) {
+      case "Normal":
+        return "text-green-500"
+      case "Urgent":
+        return "text-red-500"
+      default:
+        return "text-gray-500"
+    }
   }
 
   return (
-    <>
-      <div className="mb-4">
-        <div className="flex justify-between items-center">
-          <div className="flex border-b">
-            <button
-              className={`px-4 py-3 font-medium flex items-center ${
-                activeTab === "table"
-                  ? "border-b-2 border-blue-600 text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-t-lg"
-                  : "text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
-              }`}
-              onClick={() => setActiveTab("table")}
-              aria-selected={activeTab === "table"}
-              role="tab"
-              aria-controls="table-panel"
-            >
-              <BarChartIcon size={18} className="mr-2" />
-              Summary
-            </button>
-            <button
-              className={`px-4 py-2 font-medium flex items-center ${
-                activeTab === "line"
-                  ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-t-lg"
-                  : "text-gray-500 dark:text-gray-400"
-              }`}
-              onClick={() => setActiveTab("line")}
-            >
-              <LineChart size={16} className="mr-2" />
-              Line Chart
-            </button>
-            <button
-              className={`px-4 py-2 font-medium flex items-center ${
-                activeTab === "heatmap"
-                  ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-t-lg"
-                  : "text-gray-500 dark:text-gray-400"
-              }`}
-              onClick={() => setActiveTab("heatmap")}
-            >
-              <Grid size={16} className="mr-2" />
-              Heat Map
-            </button>
-            <button
-              className={`px-4 py-2 font-medium flex items-center ${
-                activeTab === "scatter"
-                  ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-t-lg"
-                  : "text-gray-500 dark:text-gray-400"
-              }`}
-              onClick={() => setActiveTab("scatter")}
-            >
-              <ScatterChart size={16} className="mr-2" />
-              Scatter Plot
-            </button>
-          </div>
-          <div className="flex">
-            {activeTab === "table" && (
-              <button
-                onClick={shareSummaryData}
-                className="ml-2 flex items-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700"
-                aria-label="Share summary data"
-              >
-                <Share2 size={16} className="mr-2" />
-                Share
-              </button>
-            )}
+    <div className="flex flex-col h-full">
+      {title2 && <div className="pb-4">{title2}</div>}
 
-            {activeTab === "line" && (
-              <button
-                onClick={() => shareChart("line", lineChartRef)}
-                className="ml-2 flex items-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700"
-                aria-label="Share line chart"
-              >
-                <Share2 size={16} className="mr-2" />
-                Share
-              </button>
-            )}
-
-            {activeTab === "heatmap" && (
-              <button
-                onClick={() => shareChart("heatmap", heatmapRef)}
-                className="ml-2 flex items-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700"
-                aria-label="Share heatmap"
-              >
-                <Share2 size={16} className="mr-2" />
-                Share
-              </button>
-            )}
-
-            {activeTab === "scatter" && (
-              <button
-                onClick={() => shareChart("scatter", scatterRef)}
-                className="ml-2 flex items-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700"
-                aria-label="Share scatter plot"
-              >
-                <Share2 size={16} className="mr-2" />
-                Share
-              </button>
-            )}
-          </div>
+      {/* Tab navigation */}
+      <div className="flex border-b">
+        <button
+          className={`px-4 py-2 rounded-t-lg ${
+            activeTab === "table"
+              ? "bg-blue-500 text-white"
+              : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+          }`}
+          onClick={() => setActiveTab("table")}
+        >
+          Detail
+        </button>
+        <button
+          className={`px-4 py-2 rounded-t-lg ${
+            activeTab === "line"
+              ? "bg-blue-500 text-white"
+              : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+          }`}
+          onClick={() => setActiveTab("line")}
+        >
+          Line Chart
+        </button>
+        <button
+          className={`px-4 py-2 rounded-t-lg ${
+            activeTab === "heatmap"
+              ? "bg-blue-500 text-white"
+              : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+          }`}
+          onClick={() => setActiveTab("heatmap")}
+        >
+          Heatmap
+        </button>
+        <button
+          className={`px-4 py-2 rounded-t-lg ${
+            activeTab === "bar"
+              ? "bg-blue-500 text-white"
+              : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+          }`}
+          onClick={() => setActiveTab("bar")}
+        >
+          Bar Chart
+        </button>
+        <button
+          className={`px-4 py-2 rounded-t-lg ${
+            activeTab === "pie"
+              ? "bg-blue-500 text-white"
+              : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+          }`}
+          onClick={() => setActiveTab("pie")}
+        >
+          Pie Chart
+        </button>
+        <button
+          className="ml-auto px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+          onClick={() => setShowFilterPanel(!showFilterPanel)}
+        >
+          <Filter className="h-5 w-5" />
+        </button>
+        {activeTab === "line" && (
           <button
-            className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700"
-            onClick={() => setShowFilterPanel(!showFilterPanel)}
+            className="ml-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+            onClick={() => shareChart("line", lineChartRef)}
           >
-            <Filter size={16} className="mr-2" />
-            Filters
+            <Share2 className="h-5 w-5" />
           </button>
-        </div>
-
-        {/* Filter panel */}
-        {showFilterPanel && (
-          <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Time period filter */}
-              <div>
-                <h4 className="text-sm font-medium mb-2">Time Period</h4>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    className={`px-3 py-1 text-xs rounded-full ${
-                      timeFilter === "week"
-                        ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-700"
-                        : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600"
-                    }`}
-                    onClick={() => setTimeFilter("week")}
-                  >
-                    Week
-                  </button>
-                  <button
-                    className={`px-3 py-1 text-xs rounded-full ${
-                      timeFilter === "month"
-                        ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-700"
-                        : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600"
-                    }`}
-                    onClick={() => setTimeFilter("month")}
-                  >
-                    Month
-                  </button>
-                  <button
-                    className={`px-3 py-1 text-xs rounded-full ${
-                      timeFilter === "year"
-                        ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-700"
-                        : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600"
-                    }`}
-                    onClick={() => setTimeFilter("year")}
-                  >
-                    Year
-                  </button>
-                  <button
-                    className={`px-3 py-1 text-xs rounded-full ${
-                      timeFilter === "all"
-                        ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-700"
-                        : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600"
-                    }`}
-                    onClick={() => setTimeFilter("all")}
-                  >
-                    All Time
-                  </button>
-                </div>
-              </div>
-
-              {/* Data type filter */}
-              <div>
-                <h4 className="text-sm font-medium mb-2">Data Type</h4>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    className={`px-3 py-1 text-xs rounded-full ${
-                      dataTypeFilter === "flow"
-                        ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-700"
-                        : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600"
-                    }`}
-                    onClick={() => setDataTypeFilter("flow")}
-                  >
-                    Flow
-                  </button>
-                  <button
-                    className={`px-3 py-1 text-xs rounded-full ${
-                      dataTypeFilter === "intake"
-                        ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-700"
-                        : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600"
-                    }`}
-                    onClick={() => setDataTypeFilter("intake")}
-                  >
-                    Intake
-                  </button>
-                  <button
-                    className={`px-3 py-1 text-xs rounded-full ${
-                      dataTypeFilter === "both"
-                        ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-700"
-                        : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600"
-                    }`}
-                    onClick={() => setDataTypeFilter("both")}
-                  >
-                    Both
-                  </button>
-                </div>
-              </div>
-
-              {/* Metric filter */}
-              <div>
-                <h4 className="text-sm font-medium mb-2">Metric</h4>
-                <div className="flex flex-wrap gap-2">
-                  {(dataTypeFilter === "flow" || dataTypeFilter === "both") && (
-                    <>
-                      <button
-                        className={`px-3 py-1 text-xs rounded-full ${
-                          metricFilter === "rate"
-                            ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-700"
-                            : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600"
-                        }`}
-                        onClick={() => setMetricFilter("rate")}
-                      >
-                        Flow Rate
-                      </button>
-                      <button
-                        className={`px-3 py-1 text-xs rounded-full ${
-                          metricFilter === "volume"
-                            ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-700"
-                            : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600"
-                        }`}
-                        onClick={() => setMetricFilter("volume")}
-                      >
-                        Volume
-                      </button>
-                    </>
-                  )}
-                  {dataTypeFilter === "intake" && (
-                    <button
-                      className={`px-3 py-1 text-xs rounded-full ${
-                        metricFilter === "beverage"
-                          ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-700"
-                          : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600"
-                      }`}
-                      onClick={() => setMetricFilter("beverage")}
-                    >
-                      Beverage Type
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+        )}
+        {activeTab === "heatmap" && (
+          <button
+            className="ml-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+            onClick={() => shareChart("heatmap", heatmapRef)}
+          >
+            <Share2 className="h-5 w-5" />
+          </button>
+        )}
+        {activeTab === "bar" && (
+          <button
+            className="ml-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+            onClick={() => shareChart("bar", barChartRef)}
+          >
+            <Share2 className="h-5 w-5" />
+          </button>
+        )}
+        {activeTab === "pie" && (
+          <button
+            className="ml-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+            onClick={() => shareChart("pie", pieChartRef)}
+          >
+            <Share2 className="h-5 w-5" />
+          </button>
         )}
       </div>
 
-      {/* Time period indicator for all views */}
-      <div className="mb-4 text-sm text-gray-500 dark:text-gray-400 flex items-center justify-end">
-        <Calendar className="mr-1" size={14} />
-        <span>
-          Showing:{" "}
-          {timeFilter === "all"
-            ? "All Time"
-            : timeFilter === "week"
-              ? "Last Week"
-              : timeFilter === "month"
-                ? "Last Month"
-                : "Last Year"}
-        </span>
-      </div>
+      {/* Filter panel */}
+      {showFilterPanel && (
+        <div className="p-4 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+          <div className="mb-2">
+            <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Time Period:</label>
+            <select
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-gray-300 dark:bg-gray-700 dark:border-gray-600 leading-tight focus:outline-none focus:shadow-outline"
+              value={timeFilter}
+              onChange={(e) => setTimeFilter(e.target.value as "week" | "month" | "year" | "all")}
+            >
+              <option value="week">Last Week</option>
+              <option value="month">Last Month</option>
+              <option value="year">Last Year</option>
+              <option value="all">All Time</option>
+            </select>
+          </div>
 
-      {activeTab === "table" && (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {(dataTypeFilter === "flow" || dataTypeFilter === "both") && (
+          <div className="mb-2">
+            <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Data Type:</label>
+            <select
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-gray-300 dark:bg-gray-700 dark:border-gray-600 leading-tight focus:outline-none focus:shadow-outline"
+              value={dataTypeFilter}
+              onChange={(e) => setDataTypeFilter(e.target.value as "flow" | "intake" | "both")}
+            >
+              <option value="flow">Flow</option>
+              <option value="intake">Intake</option>
+              <option value="both">Both</option>
+            </select>
+          </div>
+
+          {dataTypeFilter !== "intake" && (
+            <div className="mb-2">
+              <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Flow Metric:</label>
+              <select
+                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-gray-300 dark:bg-gray-700 dark:border-gray-600 leading-tight focus:outline-none focus:shadow-outline"
+                value={metricFilter}
+                onChange={(e) =>
+                  setMetricFilter(
+                    e.target.value as "volume" | "rate" | "color" | "urgency" | "concerns" | "beverage" | "duration",
+                  )
+                }
+                disabled={dataTypeFilter === "intake"}
+              >
+                <option value="rate">Flow Rate</option>
+                <option value="volume">Volume</option>
+                <option value="duration">Duration</option>
+                <option value="color">Color</option>
+                <option value="urgency">Urgency</option>
+                <option value="concerns">Concerns</option>
+              </select>
+            </div>
+          )}
+
+          {dataTypeFilter === "intake" && (
+            <div className="mb-2">
+              <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Intake Metric:</label>
+              <select
+                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-gray-300 dark:bg-gray-700 dark:border-gray-600 leading-tight focus:outline-none focus:shadow-outline"
+                value={metricFilter}
+                onChange={(e) =>
+                  setMetricFilter(
+                    e.target.value as "volume" | "rate" | "color" | "urgency" | "concerns" | "beverage" | "duration",
+                  )
+                }
+              >
+                <option value="volume">Volume</option>
+                <option value="beverage">Beverage Type</option>
+              </select>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Main content */}
+      <div className="p-4 flex-grow">
+        {isLoading ? (
+          <div className="flex items-center justify-center h-full">
+            <p>Loading...</p>
+          </div>
+        ) : activeTab === "table" ? (
+          <div>
+            {/* Flow Statistics - changed to UroLog */}
+            {dataTypeFilter !== "intake" && (
               <>
-                <div className="stats-card flex items-center p-4">
-                  <BarChartIcon className="mr-4 text-blue-600 dark:text-blue-400" size={28} />
-                  <div>
-                    <p className="stats-label text-gray-600 dark:text-gray-300">Average Flow Rate</p>
-                    <p className="stats-value text-blue-600 dark:text-blue-400">{averageFlowRate.toFixed(2)} mL/s</p>
-                    {recentFlowEntries.length > 0 && (
-                      <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
-                        Last 7 days: {recentAverageFlowRate.toFixed(2)} mL/s
-                      </p>
-                    )}
+                <h3 className="text-lg font-semibold mt-4 mb-2 text-gray-900 dark:text-gray-100">UroLog</h3>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                  <div className="bg-white dark:bg-gray-800 shadow rounded p-3 border border-gray-200 dark:border-gray-700">
+                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Today</h4>
+                    <p className="text-lg font-semibold">{getTodayFlowRate().toFixed(2)} mL/s</p>
+                    <p className="text-xs text-gray-500">{getTodayFlowCount()} entries</p>
+                  </div>
+                  <div className="bg-white dark:bg-gray-800 shadow rounded p-3 border border-gray-200 dark:border-gray-700">
+                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Week</h4>
+                    <p className="text-lg font-semibold">{getWeekFlowRate().toFixed(2)} mL/s</p>
+                    <p className="text-xs text-gray-500">{getWeekFlowCount()} entries</p>
+                  </div>
+                  <div className="bg-white dark:bg-gray-800 shadow rounded p-3 border border-gray-200 dark:border-gray-700">
+                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Month</h4>
+                    <p className="text-lg font-semibold">{getMonthFlowRate().toFixed(2)} mL/s</p>
+                    <p className="text-xs text-gray-500">{getMonthFlowCount()} entries</p>
+                  </div>
+                  <div className="bg-white dark:bg-gray-800 shadow rounded p-3 border border-gray-200 dark:border-gray-700">
+                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Year</h4>
+                    <p className="text-lg font-semibold">{getYearFlowRate().toFixed(2)} mL/s</p>
+                    <p className="text-xs text-gray-500">{getYearFlowCount()} entries</p>
                   </div>
                 </div>
-                <div className="stats-card flex items-center p-4">
-                  <Droplet className="mr-4 text-green-600 dark:text-green-400" size={28} />
-                  <div>
-                    <p className="stats-label text-gray-600 dark:text-gray-300">Average Volume</p>
-                    <p className="stats-value text-green-600 dark:text-green-400">{averageVolume.toFixed(0)} mL</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="bg-white dark:bg-gray-800 shadow rounded p-4 border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center mb-2">
+                      <Droplet className="text-blue-500 mr-2" />
+                      <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100">Average Flow Rate</h4>
+                    </div>
+                    <p className="text-gray-700 dark:text-gray-300">{averageFlowRate.toFixed(2)} mL/s</p>
+                  </div>
+
+                  <div className="bg-white dark:bg-gray-800 shadow rounded p-4 border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center mb-2">
+                      <Droplet className="text-blue-500 mr-2" />
+                      <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100">Average Volume</h4>
+                    </div>
+                    <p className="text-gray-700 dark:text-gray-300">{averageVolume.toFixed(2)} mL</p>
+                  </div>
+
+                  <div className="bg-white dark:bg-gray-800 shadow rounded p-4 border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center mb-2">
+                      <Clock className="text-blue-500 mr-2" />
+                      <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100">Average Duration</h4>
+                    </div>
+                    <p className="text-gray-700 dark:text-gray-300">{averageDuration.toFixed(2)} seconds</p>
+                  </div>
+
+                  <div className="bg-white dark:bg-gray-800 shadow rounded p-4 border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center mb-2">
+                      <TrendingUp className="text-green-500 mr-2" />
+                      <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100">
+                        Recent Average Flow Rate
+                      </h4>
+                    </div>
+                    <p className="text-gray-700 dark:text-gray-300">{recentAverageFlowRate.toFixed(2)} mL/s</p>
+                  </div>
+
+                  <div className="bg-white dark:bg-gray-800 shadow rounded p-4 border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center mb-2">
+                      <AlertTriangle className="text-yellow-500 mr-2" />
+                      <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100">Most Common Color</h4>
+                    </div>
+                    <p className={`text-gray-700 dark:text-gray-300 ${getColorClassValue(mostCommonColor)}`}>
+                      {mostCommonColor || "N/A"}
+                    </p>
+                  </div>
+
+                  <div className="bg-white dark:bg-gray-800 shadow rounded p-4 border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center mb-2">
+                      <AlertTriangle className="text-red-500 mr-2" />
+                      <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100">Most Common Urgency</h4>
+                    </div>
+                    <p className={`text-gray-700 dark:text-gray-300 ${getUrgencyClassValue(mostCommonUrgency)}`}>
+                      {mostCommonUrgency || "N/A"}
+                    </p>
+                  </div>
+
+                  <div className="bg-white dark:bg-gray-800 shadow rounded p-4 border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center mb-2">
+                      <AlertTriangle className="text-red-500 mr-2" />
+                      <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100">Most Common Concern</h4>
+                    </div>
+                    <p className="text-gray-700 dark:text-gray-300">{mostCommonConcern || "N/A"}</p>
                   </div>
                 </div>
-                <div className="stats-card flex items-center p-4">
-                  <Clock className="mr-4 text-purple-600 dark:text-purple-400" size={28} />
-                  <div>
-                    <p className="stats-label text-gray-600 dark:text-gray-300">Average Duration</p>
-                    <p className="stats-value text-purple-600 dark:text-purple-400">{averageDuration.toFixed(1)} sec</p>
+              </>
+            )}
+
+            {/* Fluid Intake Statistics - changed to HydroLog */}
+            {dataTypeFilter !== "flow" && (
+              <>
+                <h3 className="text-lg font-semibold mt-4 mb-2 text-gray-900 dark:text-gray-100">HydroLog</h3>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                  <div className="bg-white dark:bg-gray-800 shadow rounded p-3 border border-gray-200 dark:border-gray-700">
+                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Today</h4>
+                    <p className="text-lg font-semibold">{getTodayFluidIntake().toFixed(0)} mL</p>
+                    <p className="text-xs text-gray-500">{getTodayFluidCount()} entries</p>
+                  </div>
+                  <div className="bg-white dark:bg-gray-800 shadow rounded p-3 border border-gray-200 dark:border-gray-700">
+                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Week</h4>
+                    <p className="text-lg font-semibold">{getWeekFluidIntake().toFixed(0)} mL</p>
+                    <p className="text-xs text-gray-500">{getWeekFluidCount()} entries</p>
+                  </div>
+                  <div className="bg-white dark:bg-gray-800 shadow rounded p-3 border border-gray-200 dark:border-gray-700">
+                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Month</h4>
+                    <p className="text-lg font-semibold">{getMonthFluidIntake().toFixed(0)} mL</p>
+                    <p className="text-xs text-gray-500">{getMonthFluidCount()} entries</p>
+                  </div>
+                  <div className="bg-white dark:bg-gray-800 shadow rounded p-3 border border-gray-200 dark:border-gray-700">
+                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Year</h4>
+                    <p className="text-lg font-semibold">{getYearFluidIntake().toFixed(0)} mL</p>
+                    <p className="text-xs text-gray-500">{getYearFluidCount()} entries</p>
                   </div>
                 </div>
-                <div className="stats-card flex items-center p-4">
-                  <Calendar className="mr-4 text-amber-600 dark:text-amber-400" size={28} />
-                  <div>
-                    <p className="stats-label text-gray-600 dark:text-gray-300">Total Entries</p>
-                    <p className="stats-value text-amber-600 dark:text-amber-400">{filteredFlowEntries.length}</p>
-                    {recentFlowEntries.length > 0 && (
-                      <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
-                        Last 7 days: {recentFlowEntries.length}
-                      </p>
-                    )}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="bg-white dark:bg-gray-800 shadow rounded p-4 border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center mb-2">
+                      <Droplet className="text-blue-500 mr-2" />
+                      <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100">Average Fluid Intake</h4>
+                    </div>
+                    <p className="text-gray-700 dark:text-gray-300">{averageFluidIntake.toFixed(2)} mL</p>
+                  </div>
+
+                  <div className="bg-white dark:bg-gray-800 shadow rounded p-4 border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center mb-2">
+                      <Coffee className="text-orange-500 mr-2" />
+                      <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100">Most Common Fluid Type</h4>
+                    </div>
+                    <p className="text-gray-700 dark:text-gray-300">{mostCommonFluidType || "N/A"}</p>
+                  </div>
+
+                  <div className="bg-white dark:bg-gray-800 shadow rounded p-4 border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center mb-2">
+                      {fluidIntakeTrend === "up" ? (
+                        <TrendingUp className="text-green-500 mr-2" />
+                      ) : fluidIntakeTrend === "down" ? (
+                        <TrendingDown className="text-red-500 mr-2" />
+                      ) : (
+                        <TrendingUp className="text-gray-500 mr-2" />
+                      )}
+                      <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100">Fluid Intake Trend</h4>
+                    </div>
+                    <p className="text-gray-700 dark:text-gray-300">{fluidIntakeTrend}</p>
                   </div>
                 </div>
               </>
             )}
           </div>
-
-          {(dataTypeFilter === "intake" || dataTypeFilter === "both") && filteredFluidIntakeEntries.length > 0 && (
-            <div className="mt-4">
-              <h3 className="text-lg font-semibold mb-2">Fluid Intake Stats</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center p-3 bg-cyan-50 dark:bg-cyan-900/20 rounded-lg">
-                  <Coffee className="mr-3 text-cyan-500" size={24} />
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">Average Fluid Intake</p>
-                    <p className="text-xl font-bold">{averageFluidIntake.toFixed(0)} mL</p>
-                    <p className="text-xs text-gray-600 dark:text-gray-300">
-                      ({(averageFluidIntake / 29.5735).toFixed(1)} oz)
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
-                  {fluidIntakeTrend === "up" ? (
-                    <TrendingUp className="mr-3 text-green-500" size={24} />
-                  ) : fluidIntakeTrend === "down" ? (
-                    <TrendingDown className="mr-3 text-red-500" size={24} />
-                  ) : (
-                    <Coffee className="mr-3 text-indigo-500" size={24} />
-                  )}
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">Fluid Intake Trend</p>
-                    <p className="text-xl font-bold">
-                      {fluidIntakeTrend === "up" ? "Increasing" : fluidIntakeTrend === "down" ? "Decreasing" : "Stable"}
-                    </p>
-                    {mostCommonFluidType && (
-                      <p className="text-xs text-gray-600 dark:text-gray-300">Most common: {mostCommonFluidType}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {(dataTypeFilter === "flow" || dataTypeFilter === "both") && (
-            <div className="mt-6 space-y-4">
-              {entriesWithColor.length > 0 && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Color Distribution</h3>
-                  <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border">
-                    <div className="flex items-center mb-2">
-                      <Droplet className="mr-2" />
-                      <span className="font-medium">Most common color: </span>
-                      <span className="ml-2">{mostCommonColor}</span>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                      {Object.entries(colorCounts).map(([color, count]) => (
-                        <div
-                          key={color}
-                          className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded"
-                        >
-                          <span>{color}</span>
-                          <span className="font-medium">{count}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {entriesWithUrgency.length > 0 && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Urgency Distribution</h3>
-                  <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border">
-                    <div className="flex items-center mb-2">
-                      <Clock className="mr-2" />
-                      <span className="font-medium">Most common urgency: </span>
-                      <span className="ml-2">{mostCommonUrgency}</span>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                      {Object.entries(urgencyCounts).map(([urgency, count]) => (
-                        <div
-                          key={urgency}
-                          className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded"
-                        >
-                          <span>{urgency}</span>
-                          <span className="font-medium">{count}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {Object.keys(concernCounts).length > 0 && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Reported Concerns</h3>
-                  <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border">
-                    {maxConcernCount > 0 && (
-                      <div className="flex items-center mb-2">
-                        <AlertTriangle className="mr-2" />
-                        <span className="font-medium">Most common concern: </span>
-                        <span className="ml-2">{mostCommonConcern}</span>
-                      </div>
-                    )}
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                      {Object.entries(concernCounts).map(([concern, count]) => (
-                        <div
-                          key={concern}
-                          className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded"
-                        >
-                          <span>{concern}</span>
-                          <span className="font-medium">{count}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {(dataTypeFilter === "intake" || dataTypeFilter === "both") && filteredFluidIntakeEntries.length > 0 && (
-            <div className="mt-6">
-              <h3 className="text-lg font-semibold mb-2">Fluid Type Distribution</h3>
-              <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border">
-                <div className="flex items-center mb-2">
-                  <Coffee className="mr-2" />
-                  <span className="font-medium">Most common beverage: </span>
-                  <span className="ml-2">{mostCommonFluidType}</span>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                  {Object.entries(fluidTypeCounts).map(([type, count]) => (
-                    <div
-                      key={type}
-                      className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded"
-                    >
-                      <span>{type}</span>
-                      <span className="font-medium">{count}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-        </>
-      )}
-
-      {activeTab === "line" && (
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border">
-          <canvas ref={lineChartRef} width={800} height={400} className="w-full h-auto" />
-          {((dataTypeFilter === "flow" || dataTypeFilter === "both") && filteredFlowEntries.length === 0) ||
-            ((dataTypeFilter === "intake" || dataTypeFilter === "both") && filteredFluidIntakeEntries.length === 0 && (
-              <div className="text-center p-4 text-gray-600 dark:text-gray-300">
-                No data available for the selected filters. Try adjusting your filter settings.
-              </div>
-            ))}
-        </div>
-      )}
-
-      {activeTab === "heatmap" && (
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border">
-          <canvas ref={heatmapRef} width={800} height={400} className="w-full h-auto" />
-          {filteredFlowEntries.length === 0 && (
-            <div className="text-center p-4 text-gray-600 dark:text-gray-300">
-              No flow data available for the selected time period. Try adjusting your filter settings.
-            </div>
-          )}
-        </div>
-      )}
-
-      {activeTab === "scatter" && (
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border">
-          <canvas ref={scatterRef} width={800} height={400} className="w-full h-auto" />
-          {(filteredFlowEntries.length === 0 || filteredFluidIntakeEntries.length === 0) && (
-            <div className="text-center p-4 text-gray-600 dark:text-gray-300">
-              Not enough data available for scatter plot. Add both flow and fluid intake entries or adjust your filter
-              settings.
-            </div>
-          )}
-        </div>
-      )}
-    </>
+        ) : activeTab === "line" ? (
+          <canvas ref={lineChartRef} width={800} height={400} />
+        ) : activeTab === "heatmap" ? (
+          <canvas ref={heatmapRef} width={800} height={400} />
+        ) : activeTab === "bar" ? (
+          <canvas ref={barChartRef} width={800} height={400} />
+        ) : activeTab === "pie" ? (
+          <canvas ref={pieChartRef} width={800} height={400} />
+        ) : (
+          <p>Select a tab to view data.</p>
+        )}
+      </div>
+    </div>
   )
 }
 
-export default FluidStats
+export default Stats

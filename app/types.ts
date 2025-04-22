@@ -7,6 +7,7 @@ export interface UroLog {
   urgency?: string
   concerns?: string[]
   notes?: string
+  isDemo?: boolean // Add isDemo field
 }
 
 export interface HydroLogEntry {
@@ -16,6 +17,7 @@ export interface HydroLogEntry {
   amount: number
   unit: "oz" | "mL"
   notes?: string
+  isDemo?: boolean // Add isDemo field
 }
 
 export type HydroLogType = "Water" | "Juice" | "Tea" | "Soda" | "Coffee" | "Alcohol" | "Other" | ""
@@ -33,14 +35,7 @@ export type UrineColor =
   | "Foamy or Bubbly"
   | ""
 
-export type UrgencyRating =
-  | "Normal"
-  | "Hour < 60 min"
-  | "Hold < 15 min"
-  | "Hold < 5 minutes"
-  | "Had drips"
-  | "Couldn't hold it"
-  | ""
+export type UrgencyRating = "Normal" | "Hour < 60 min" | "Hold < 15 min" | "Had drips" | "Couldn't hold it" | ""
 
 export type ConcernType =
   | "Straining"

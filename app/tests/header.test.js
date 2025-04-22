@@ -1,12 +1,4 @@
 /**
- * Header Component Test Module
- *
- * This module contains tests for verifying the behavior of the Header component.
- * Specifically, it tests whether the header is sticky (fixed) when scrolling,
- * which is an important accessibility and UX consideration.
- */
-
-/**
  * Tests if the header is not sticky when scrolling.
  *
  * This function performs the following checks:
@@ -14,11 +6,9 @@
  * 2. Examines its computed style to determine if it has position: sticky or fixed
  * 3. Returns a result object indicating success or failure
  *
- * @returns {Object} Result object with success status and descriptive message
- * @property {boolean} success - Whether the test passed (true) or failed (false)
- * @property {string} message - Descriptive message about the test result
+ * @returns Result object with success status and descriptive message
  */
-export function testHeaderNotSticky(): { success: boolean; message: string } {
+export function testHeaderNotSticky() {
   try {
     // Find the header element in the DOM
     const header = document.querySelector("header")
@@ -57,3 +47,6 @@ export function testHeaderNotSticky(): { success: boolean; message: string } {
     }
   }
 }
+
+// Also export as default for compatibility
+export default { testHeaderNotSticky }

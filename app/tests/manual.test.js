@@ -1,4 +1,7 @@
-// This is a simple test to verify the Manual component works correctly
+/**
+ * Tests the Manual component by checking if the Manual.md file is accessible and contains valid content.
+ * @returns A promise that resolves to an object with success status and message
+ */
 export function testManualComponent() {
   // Check if the Manual.md file is accessible
   return fetch("/Manual.md")
@@ -28,7 +31,10 @@ export function testManualComponent() {
     .catch((error) => {
       return {
         success: false,
-        message: error.message,
+        message: error instanceof Error ? error.message : String(error),
       }
     })
 }
+
+// Also export as default for compatibility
+export default { testManualComponent }
