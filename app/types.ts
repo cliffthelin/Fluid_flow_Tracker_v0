@@ -8,16 +8,20 @@ export interface UroLog {
   concerns?: string[]
   notes?: string
   isDemo?: boolean
+  measurementType?: string // The type of measurement (e.g., "Urine Volume", "Heart Rate")
+  measurementUnit?: string // The unit used (e.g., "mL", "bpm")
+  guid?: string // Add GUID field
 }
 
 export interface HydroLogEntry {
   timestamp: string
-  type: HydroLogType
+  type: string
   customType?: string
   amount: number
   unit: "oz" | "mL"
   notes?: string
   isDemo?: boolean
+  guid?: string // Add GUID field
 }
 
 export interface KegelLog {
@@ -29,6 +33,7 @@ export interface KegelLog {
   completed: boolean
   notes?: string
   isDemo?: boolean
+  guid?: string // Add GUID field
 }
 
 export type HydroLogType = "Water" | "Juice" | "Tea" | "Soda" | "Coffee" | "Alcohol" | "Other" | ""

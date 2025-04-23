@@ -5,6 +5,8 @@ import { useState, useEffect, useRef } from "react"
 import { Droplet, Coffee, TrendingUp, TrendingDown, Dumbbell } from "lucide-react"
 import type { UroLog, HydroLog, KegelLog } from "../types"
 import { isShareAvailable } from "../services/share"
+import { useConfig } from "../context/ConfigContext"
+import CollapsibleSection from "./CollapsibleSection"
 
 interface FluidStatsProps {
   title2?: React.ReactNode
@@ -42,6 +44,9 @@ const Stats: React.FC<FluidStatsProps> = ({ title2 }) => {
   >("rate")
   const [showFilterPanel, setShowFilterPanel] = useState(false)
   const [darkMode, setDarkMode] = useState(false)
+
+  // Add this inside the Stats component, near the top with other state variables
+  const { uroLogMeasurement, uroLogUnit } = useConfig()
 
   // Add this to the beginning of the component, after the state declarations
   useEffect(() => {
@@ -275,6 +280,17 @@ const Stats: React.FC<FluidStatsProps> = ({ title2 }) => {
   const averageKegelHoldTime = calculateAverage(filteredKegelEntries.map((entry) => entry.holdTime))
   const averageKegelSets = calculateAverage(filteredKegelEntries.map((entry) => entry.sets))
   const averageKegelTotalTime = calculateAverage(filteredKegelEntries.map((entry) => entry.totalTime))
+
+  // Add this helper function inside the component
+  const getFlowRateUnit = () => {
+    if (uroLogMeasurement === "Urine Volume") {
+      return "mL/s"
+    }
+    if (uroLogUnit.includes("/")) {
+      return uroLogUnit
+    }
+    return `${uroLogUnit}/s`
+  }
 
   // Add these helper functions to filter data by time periods
   // Add these functions after the existing filter functions but before the useEffect hooks
@@ -799,484 +815,498 @@ const Stats: React.FC<FluidStatsProps> = ({ title2 }) => {
         <div className="space-y-8">
           {/* UroLog Statistics */}
           {(dataTypeFilter === "flow" || dataTypeFilter === "both") && (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-100 dark:border-gray-700 p-4">
-              <h2 className="text-xl font-semibold mb-4 flex items-center">
-                <Droplet className="mr-2 text-blue-500" size={22} /> UroLog Statistics
-              </h2>
+            <CollapsibleSection title="UroLog Statistics" defaultExpanded={true}>
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-100 dark:border-gray-700 p-4">
+                <h2 className="text-xl font-semibold mb-4 flex items-center">
+                  <Droplet className="mr-2 text-blue-500" size={22} /> {uroLogMeasurement} Statistics
+                </h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Today's Stats */}
-                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800/30">
-                  <h3 className="text-xl font-bold mb-2 text-center">Today</h3>
-                  <hr className="border-gray-200 dark:border-gray-700 mb-3" />
-                  <div className="space-y-0">
-                    <div className="flex justify-between py-2">
-                      <span className="text-gray-600 dark:text-gray-400">Flow Rate:</span>
-                      <span className="font-medium flex items-center">
-                        {getTodayFlowRate().toFixed(1)} mL/s
-                        {renderComparisonIndicator(getTodayFlowRate(), averageFlowRate)}
-                      </span>
-                    </div>
-                    {renderPreviousPeriodComparison(getTodayFlowRate(), getYesterdayFlowRate())}
-                    <hr className="border-gray-200 dark:border-gray-700 my-2" />
-
-                    {/* Top Colors */}
-                    {getTodayTopColors().length > 0 && (
-                      <div className="py-2">
-                        <span className="text-gray-600 dark:text-gray-400 text-sm">Top Colors:</span>
-                        <div className="mt-1 space-y-1">
-                          {getTodayTopColors().map(({ color, count }) => (
-                            <div key={color} className="flex justify-between text-sm">
-                              <span>{color}</span>
-                              <span className="font-medium">{count}</span>
-                            </div>
-                          ))}
-                        </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Today's Stats */}
+                  <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800/30">
+                    <h3 className="text-xl font-bold mb-2 text-center">Today</h3>
+                    <hr className="border-gray-200 dark:border-gray-700 mb-3" />
+                    <div className="space-y-0">
+                      <div className="flex justify-between py-2">
+                        <span className="text-gray-600 dark:text-gray-400">Flow Rate:</span>
+                        <span className="font-medium flex items-center">
+                          {getTodayFlowRate().toFixed(1)} {getFlowRateUnit()}
+                          {renderComparisonIndicator(getTodayFlowRate(), averageFlowRate)}
+                        </span>
                       </div>
-                    )}
+                      {renderPreviousPeriodComparison(getTodayFlowRate(), getYesterdayFlowRate(), getFlowRateUnit())}
+                      <hr className="border-gray-200 dark:border-gray-700 my-2" />
 
-                    {getTodayTopColors().length > 0 && <hr className="border-gray-200 dark:border-gray-700 my-2" />}
-
-                    {/* Top Concerns */}
-                    {getTodayTopConcerns().length > 0 && (
-                      <div className="py-2">
-                        <span className="text-gray-600 dark:text-gray-400 text-sm">Top Concerns:</span>
-                        <div className="mt-1 space-y-1">
-                          {getTodayTopConcerns().map(({ concern, count }) => (
-                            <div key={concern} className="flex justify-between text-sm">
-                              <span>{concern}</span>
-                              <span className="font-medium">{count}</span>
-                            </div>
-                          ))}
+                      {/* Top Colors */}
+                      {getTodayTopColors().length > 0 && (
+                        <div className="py-2">
+                          <span className="text-gray-600 dark:text-gray-400 text-sm">Top Colors:</span>
+                          <div className="mt-1 space-y-1">
+                            {getTodayTopColors().map(({ color, count }) => (
+                              <div key={color} className="flex justify-between text-sm">
+                                <span>{color}</span>
+                                <span className="font-medium">{count}</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {getTodayTopConcerns().length > 0 && <hr className="border-gray-200 dark:border-gray-700 my-2" />}
+                      {getTodayTopColors().length > 0 && <hr className="border-gray-200 dark:border-gray-700 my-2" />}
 
-                    <div className="flex justify-between pt-2">
-                      <span className="text-gray-600 dark:text-gray-400">Entries:</span>
-                      <span className="font-medium">{getTodayFlowCount()}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Week Stats */}
-                <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-100 dark:border-green-800/30">
-                  <h3 className="text-xl font-bold mb-2 text-center">Week</h3>
-                  <hr className="border-gray-200 dark:border-gray-700 mb-3" />
-                  <div className="space-y-0">
-                    <div className="flex justify-between py-2">
-                      <span className="text-gray-600 dark:text-gray-400">Flow Rate:</span>
-                      <span className="font-medium flex items-center">
-                        {getWeekFlowRate().toFixed(1)} mL/s
-                        {renderComparisonIndicator(getWeekFlowRate(), averageFlowRate)}
-                      </span>
-                    </div>
-                    {renderPreviousPeriodComparison(getWeekFlowRate(), getPreviousWeekFlowRate())}
-                    <hr className="border-gray-200 dark:border-gray-700 my-2" />
-
-                    {/* Top Colors */}
-                    {getWeekTopColors().length > 0 && (
-                      <div className="py-2">
-                        <span className="text-gray-600 dark:text-gray-400 text-sm">Top Colors:</span>
-                        <div className="mt-1 space-y-1">
-                          {getWeekTopColors().map(({ color, count }) => (
-                            <div key={color} className="flex justify-between text-sm">
-                              <span>{color}</span>
-                              <span className="font-medium">{count}</span>
-                            </div>
-                          ))}
+                      {/* Top Concerns */}
+                      {getTodayTopConcerns().length > 0 && (
+                        <div className="py-2">
+                          <span className="text-gray-600 dark:text-gray-400 text-sm">Top Concerns:</span>
+                          <div className="mt-1 space-y-1">
+                            {getTodayTopConcerns().map(({ concern, count }) => (
+                              <div key={concern} className="flex justify-between text-sm">
+                                <span>{concern}</span>
+                                <span className="font-medium">{count}</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
+                      )}
+
+                      {getTodayTopConcerns().length > 0 && <hr className="border-gray-200 dark:border-gray-700 my-2" />}
+
+                      <div className="flex justify-between pt-2">
+                        <span className="text-gray-600 dark:text-gray-400">Entries:</span>
+                        <span className="font-medium">{getTodayFlowCount()}</span>
                       </div>
-                    )}
-
-                    {getWeekTopColors().length > 0 && <hr className="border-gray-200 dark:border-gray-700 my-2" />}
-
-                    {/* Top Concerns */}
-                    {getWeekTopConcerns().length > 0 && (
-                      <div className="py-2">
-                        <span className="text-gray-600 dark:text-gray-400 text-sm">Top Concerns:</span>
-                        <div className="mt-1 space-y-1">
-                          {getWeekTopConcerns().map(({ concern, count }) => (
-                            <div key={concern} className="flex justify-between text-sm">
-                              <span>{concern}</span>
-                              <span className="font-medium">{count}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {getWeekTopConcerns().length > 0 && <hr className="border-gray-200 dark:border-gray-700 my-2" />}
-
-                    <div className="flex justify-between pt-2">
-                      <span className="text-gray-600 dark:text-gray-400">Entries:</span>
-                      <span className="font-medium">{getWeekFlowCount()}</span>
                     </div>
                   </div>
-                </div>
 
-                {/* Month Stats */}
-                <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-100 dark:border-purple-800/30">
-                  <h3 className="text-xl font-bold mb-2 text-center">Month</h3>
-                  <hr className="border-gray-200 dark:border-gray-700 mb-3" />
-                  <div className="space-y-0">
-                    <div className="flex justify-between py-2">
-                      <span className="text-gray-600 dark:text-gray-400">Flow Rate:</span>
-                      <span className="font-medium flex items-center">
-                        {getMonthFlowRate().toFixed(1)} mL/s
-                        {renderComparisonIndicator(getMonthFlowRate(), averageFlowRate)}
-                      </span>
-                    </div>
-                    {renderPreviousPeriodComparison(getMonthFlowRate(), getPreviousMonthFlowRate())}
-                    <hr className="border-gray-200 dark:border-gray-700 my-2" />
-
-                    {/* Top Colors */}
-                    {getMonthTopColors().length > 0 && (
-                      <div className="py-2">
-                        <span className="text-gray-600 dark:text-gray-400 text-sm">Top Colors:</span>
-                        <div className="mt-1 space-y-1">
-                          {getMonthTopColors().map(({ color, count }) => (
-                            <div key={color} className="flex justify-between text-sm">
-                              <span>{color}</span>
-                              <span className="font-medium">{count}</span>
-                            </div>
-                          ))}
-                        </div>
+                  {/* Week Stats */}
+                  <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-100 dark:border-green-800/30">
+                    <h3 className="text-xl font-bold mb-2 text-center">Week</h3>
+                    <hr className="border-gray-200 dark:border-gray-700 mb-3" />
+                    <div className="space-y-0">
+                      <div className="flex justify-between py-2">
+                        <span className="text-gray-600 dark:text-gray-400">Flow Rate:</span>
+                        <span className="font-medium flex items-center">
+                          {getWeekFlowRate().toFixed(1)} {getFlowRateUnit()}
+                          {renderComparisonIndicator(getWeekFlowRate(), averageFlowRate)}
+                        </span>
                       </div>
-                    )}
+                      {renderPreviousPeriodComparison(getWeekFlowRate(), getPreviousWeekFlowRate(), getFlowRateUnit())}
+                      <hr className="border-gray-200 dark:border-gray-700 my-2" />
 
-                    {getMonthTopColors().length > 0 && <hr className="border-gray-200 dark:border-gray-700 my-2" />}
-
-                    {/* Top Concerns */}
-                    {getMonthTopConcerns().length > 0 && (
-                      <div className="py-2">
-                        <span className="text-gray-600 dark:text-gray-400 text-sm">Top Concerns:</span>
-                        <div className="mt-1 space-y-1">
-                          {getMonthTopConcerns().map(({ concern, count }) => (
-                            <div key={concern} className="flex justify-between text-sm">
-                              <span>{concern}</span>
-                              <span className="font-medium">{count}</span>
-                            </div>
-                          ))}
+                      {/* Top Colors */}
+                      {getWeekTopColors().length > 0 && (
+                        <div className="py-2">
+                          <span className="text-gray-600 dark:text-gray-400 text-sm">Top Colors:</span>
+                          <div className="mt-1 space-y-1">
+                            {getWeekTopColors().map(({ color, count }) => (
+                              <div key={color} className="flex justify-between text-sm">
+                                <span>{color}</span>
+                                <span className="font-medium">{count}</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
+                      )}
+
+                      {getWeekTopColors().length > 0 && <hr className="border-gray-200 dark:border-gray-700 my-2" />}
+
+                      {/* Top Concerns */}
+                      {getWeekTopConcerns().length > 0 && (
+                        <div className="py-2">
+                          <span className="text-gray-600 dark:text-gray-400 text-sm">Top Concerns:</span>
+                          <div className="mt-1 space-y-1">
+                            {getWeekTopConcerns().map(({ concern, count }) => (
+                              <div key={concern} className="flex justify-between text-sm">
+                                <span>{concern}</span>
+                                <span className="font-medium">{count}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {getWeekTopConcerns().length > 0 && <hr className="border-gray-200 dark:border-gray-700 my-2" />}
+
+                      <div className="flex justify-between pt-2">
+                        <span className="text-gray-600 dark:text-gray-400">Entries:</span>
+                        <span className="font-medium">{getWeekFlowCount()}</span>
                       </div>
-                    )}
-
-                    {getMonthTopConcerns().length > 0 && <hr className="border-gray-200 dark:border-gray-700 my-2" />}
-
-                    <div className="flex justify-between pt-2">
-                      <span className="text-gray-600 dark:text-gray-400">Entries:</span>
-                      <span className="font-medium">{getMonthFlowCount()}</span>
                     </div>
                   </div>
-                </div>
 
-                {/* Year Stats */}
-                <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-100 dark:border-amber-800/30">
-                  <h3 className="text-xl font-bold mb-2 text-center">Year</h3>
-                  <hr className="border-gray-200 dark:border-gray-700 mb-3" />
-                  <div className="space-y-0">
-                    <div className="flex justify-between py-2">
-                      <span className="text-gray-600 dark:text-gray-400">Flow Rate:</span>
-                      <span className="font-medium flex items-center">
-                        {getYearFlowRate().toFixed(1)} mL/s
-                        {renderComparisonIndicator(getYearFlowRate(), averageFlowRate)}
-                      </span>
+                  {/* Month Stats */}
+                  <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-100 dark:border-purple-800/30">
+                    <h3 className="text-xl font-bold mb-2 text-center">Month</h3>
+                    <hr className="border-gray-200 dark:border-gray-700 mb-3" />
+                    <div className="space-y-0">
+                      <div className="flex justify-between py-2">
+                        <span className="text-gray-600 dark:text-gray-400">Flow Rate:</span>
+                        <span className="font-medium flex items-center">
+                          {getMonthFlowRate().toFixed(1)} {getFlowRateUnit()}
+                          {renderComparisonIndicator(getMonthFlowRate(), averageFlowRate)}
+                        </span>
+                      </div>
+                      {renderPreviousPeriodComparison(
+                        getMonthFlowRate(),
+                        getPreviousMonthFlowRate(),
+                        getFlowRateUnit(),
+                      )}
+                      <hr className="border-gray-200 dark:border-gray-700 my-2" />
+
+                      {/* Top Colors */}
+                      {getMonthTopColors().length > 0 && (
+                        <div className="py-2">
+                          <span className="text-gray-600 dark:text-gray-400 text-sm">Top Colors:</span>
+                          <div className="mt-1 space-y-1">
+                            {getMonthTopColors().map(({ color, count }) => (
+                              <div key={color} className="flex justify-between text-sm">
+                                <span>{color}</span>
+                                <span className="font-medium">{count}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {getMonthTopColors().length > 0 && <hr className="border-gray-200 dark:border-gray-700 my-2" />}
+
+                      {/* Top Concerns */}
+                      {getMonthTopConcerns().length > 0 && (
+                        <div className="py-2">
+                          <span className="text-gray-600 dark:text-gray-400 text-sm">Top Concerns:</span>
+                          <div className="mt-1 space-y-1">
+                            {getMonthTopConcerns().map(({ concern, count }) => (
+                              <div key={concern} className="flex justify-between text-sm">
+                                <span>{concern}</span>
+                                <span className="font-medium">{count}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {getMonthTopConcerns().length > 0 && <hr className="border-gray-200 dark:border-gray-700 my-2" />}
+
+                      <div className="flex justify-between pt-2">
+                        <span className="text-gray-600 dark:text-gray-400">Entries:</span>
+                        <span className="font-medium">{getMonthFlowCount()}</span>
+                      </div>
                     </div>
-                    {renderPreviousPeriodComparison(getYearFlowRate(), getPreviousYearFlowRate())}
-                    <hr className="border-gray-200 dark:border-gray-700 my-2" />
+                  </div>
 
-                    {/* Top Colors */}
-                    {getYearTopColors().length > 0 && (
-                      <div className="py-2">
-                        <span className="text-gray-600 dark:text-gray-400 text-sm">Top Colors:</span>
-                        <div className="mt-1 space-y-1">
-                          {getYearTopColors().map(({ color, count }) => (
-                            <div key={color} className="flex justify-between text-sm">
-                              <span>{color}</span>
-                              <span className="font-medium">{count}</span>
-                            </div>
-                          ))}
-                        </div>
+                  {/* Year Stats */}
+                  <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-100 dark:border-amber-800/30">
+                    <h3 className="text-xl font-bold mb-2 text-center">Year</h3>
+                    <hr className="border-gray-200 dark:border-gray-700 mb-3" />
+                    <div className="space-y-0">
+                      <div className="flex justify-between py-2">
+                        <span className="text-gray-600 dark:text-gray-400">Flow Rate:</span>
+                        <span className="font-medium flex items-center">
+                          {getYearFlowRate().toFixed(1)} {getFlowRateUnit()}
+                          {renderComparisonIndicator(getYearFlowRate(), averageFlowRate)}
+                        </span>
                       </div>
-                    )}
+                      {renderPreviousPeriodComparison(getYearFlowRate(), getPreviousYearFlowRate(), getFlowRateUnit())}
+                      <hr className="border-gray-200 dark:border-gray-700 my-2" />
 
-                    {getYearTopColors().length > 0 && <hr className="border-gray-200 dark:border-gray-700 my-2" />}
-
-                    {/* Top Concerns */}
-                    {getYearTopConcerns().length > 0 && (
-                      <div className="py-2">
-                        <span className="text-gray-600 dark:text-gray-400 text-sm">Top Concerns:</span>
-                        <div className="mt-1 space-y-1">
-                          {getYearTopConcerns().map(({ concern, count }) => (
-                            <div key={concern} className="flex justify-between text-sm">
-                              <span>{concern}</span>
-                              <span className="font-medium">{count}</span>
-                            </div>
-                          ))}
+                      {/* Top Colors */}
+                      {getYearTopColors().length > 0 && (
+                        <div className="py-2">
+                          <span className="text-gray-600 dark:text-gray-400 text-sm">Top Colors:</span>
+                          <div className="mt-1 space-y-1">
+                            {getYearTopColors().map(({ color, count }) => (
+                              <div key={color} className="flex justify-between text-sm">
+                                <span>{color}</span>
+                                <span className="font-medium">{count}</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
+                      )}
+
+                      {getYearTopColors().length > 0 && <hr className="border-gray-200 dark:border-gray-700 my-2" />}
+
+                      {/* Top Concerns */}
+                      {getYearTopConcerns().length > 0 && (
+                        <div className="py-2">
+                          <span className="text-gray-600 dark:text-gray-400 text-sm">Top Concerns:</span>
+                          <div className="mt-1 space-y-1">
+                            {getYearTopConcerns().map(({ concern, count }) => (
+                              <div key={concern} className="flex justify-between text-sm">
+                                <span>{concern}</span>
+                                <span className="font-medium">{count}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {getYearTopConcerns().length > 0 && <hr className="border-gray-200 dark:border-gray-700 my-2" />}
+
+                      <div className="flex justify-between pt-2">
+                        <span className="text-gray-600 dark:text-gray-400">Entries:</span>
+                        <span className="font-medium">{getYearFlowCount()}</span>
                       </div>
-                    )}
-
-                    {getYearTopConcerns().length > 0 && <hr className="border-gray-200 dark:border-gray-700 my-2" />}
-
-                    <div className="flex justify-between pt-2">
-                      <span className="text-gray-600 dark:text-gray-400">Entries:</span>
-                      <span className="font-medium">{getYearFlowCount()}</span>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </CollapsibleSection>
           )}
 
           {/* HydroLog Statistics */}
-          {(dataTypeFilter === "intake" || dataTypeFilter === "both") && (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-100 dark:border-gray-700 p-4">
-              <h2 className="text-xl font-semibold mb-4 flex items-center">
-                <Coffee className="mr-2 text-cyan-500" size={22} /> HydroLog Statistics
-              </h2>
+          {(dataTypeFilter === "intake" || dataTypeFilter === "both") && filteredFluidIntakeEntries.length > 0 && (
+            <CollapsibleSection title="HydroLog Statistics" defaultExpanded={true}>
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-100 dark:border-gray-700 p-4">
+                <h2 className="text-xl font-semibold mb-4 flex items-center">
+                  <Coffee className="mr-2 text-cyan-500" size={22} /> HydroLog Statistics
+                </h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Today's Stats */}
-                <div className="bg-cyan-50 dark:bg-cyan-900/20 p-4 rounded-lg border border-cyan-100 dark:border-cyan-800/30">
-                  <h3 className="text-xl font-bold mb-2 text-center">Today</h3>
-                  <hr className="border-gray-200 dark:border-gray-700 mb-3" />
-                  <div className="space-y-0">
-                    <div className="flex justify-between py-2">
-                      <span className="text-gray-600 dark:text-gray-400">Intake:</span>
-                      <span className="font-medium flex items-center">
-                        {getTodayFluidIntake().toFixed(0)} mL
-                        {renderComparisonIndicator(getTodayFluidIntake(), averageFluidIntake)}
-                      </span>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Today's Stats */}
+                  <div className="bg-cyan-50 dark:bg-cyan-900/20 p-4 rounded-lg border border-cyan-100 dark:border-cyan-800/30">
+                    <h3 className="text-xl font-bold mb-2 text-center">Today</h3>
+                    <hr className="border-gray-200 dark:border-gray-700 mb-3" />
+                    <div className="space-y-0">
+                      <div className="flex justify-between py-2">
+                        <span className="text-gray-600 dark:text-gray-400">Intake:</span>
+                        <span className="font-medium flex items-center">
+                          {getTodayFluidIntake().toFixed(0)} mL
+                          {renderComparisonIndicator(getTodayFluidIntake(), averageFluidIntake)}
+                        </span>
+                      </div>
+                      {renderPreviousPeriodComparison(getTodayFluidIntake(), getYesterdayFluidIntake(), "mL")}
+                      <hr className="border-gray-200 dark:border-gray-700 my-2" />
+                      <div className="flex justify-between pt-2">
+                        <span className="text-gray-600 dark:text-gray-400">Entries:</span>
+                        <span className="font-medium">{getTodayFluidCount()}</span>
+                      </div>
                     </div>
-                    {renderPreviousPeriodComparison(getTodayFluidIntake(), getYesterdayFluidIntake(), "mL")}
-                    <hr className="border-gray-200 dark:border-gray-700 my-2" />
-                    <div className="flex justify-between pt-2">
-                      <span className="text-gray-600 dark:text-gray-400">Entries:</span>
-                      <span className="font-medium">{getTodayFluidCount()}</span>
+                  </div>
+
+                  {/* Week Stats */}
+                  <div className="bg-teal-50 dark:bg-teal-900/20 p-4 rounded-lg border border-teal-100 dark:border-teal-800/30">
+                    <h3 className="text-xl font-bold mb-2 text-center">Week</h3>
+                    <hr className="border-gray-200 dark:border-gray-700 mb-3" />
+                    <div className="space-y-0">
+                      <div className="flex justify-between py-2">
+                        <span className="text-gray-600 dark:text-gray-400">Intake:</span>
+                        <span className="font-medium flex items-center">
+                          {getWeekFluidIntake().toFixed(0)} mL
+                          {renderComparisonIndicator(getWeekFluidIntake(), averageFluidIntake)}
+                        </span>
+                      </div>
+                      {renderPreviousPeriodComparison(getWeekFluidIntake(), getPreviousWeekFluidIntake(), "mL")}
+                      <hr className="border-gray-200 dark:border-gray-700 my-2" />
+                      <div className="flex justify-between pt-2">
+                        <span className="text-gray-600 dark:text-gray-400">Entries:</span>
+                        <span className="font-medium">{getWeekFluidCount()}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Month Stats */}
+                  <div className="bg-sky-50 dark:bg-sky-900/20 p-4 rounded-lg border border-sky-100 dark:border-sky-800/30">
+                    <h3 className="text-xl font-bold mb-2 text-center">Month</h3>
+                    <hr className="border-gray-200 dark:border-gray-700 mb-3" />
+                    <div className="space-y-0">
+                      <div className="flex justify-between py-2">
+                        <span className="text-gray-600 dark:text-gray-400">Intake:</span>
+                        <span className="font-medium flex items-center">
+                          {getMonthFluidIntake().toFixed(0)} mL
+                          {renderComparisonIndicator(getMonthFluidIntake(), averageFluidIntake)}
+                        </span>
+                      </div>
+                      {renderPreviousPeriodComparison(getMonthFluidIntake(), getPreviousMonthFluidIntake(), "mL")}
+                      <hr className="border-gray-200 dark:border-gray-700 my-2" />
+                      <div className="flex justify-between pt-2">
+                        <span className="text-gray-600 dark:text-gray-400">Entries:</span>
+                        <span className="font-medium">{getMonthFluidCount()}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Year Stats */}
+                  <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg border border-indigo-100 dark:border-indigo-800/30">
+                    <h3 className="text-xl font-bold mb-2 text-center">Year</h3>
+                    <hr className="border-gray-200 dark:border-gray-700 mb-3" />
+                    <div className="space-y-0">
+                      <div className="flex justify-between py-2">
+                        <span className="text-gray-600 dark:text-gray-400">Intake:</span>
+                        <span className="font-medium flex items-center">
+                          {getYearFluidIntake().toFixed(0)} mL
+                          {renderComparisonIndicator(getYearFluidIntake(), averageFluidIntake)}
+                        </span>
+                      </div>
+                      {renderPreviousPeriodComparison(getYearFluidIntake(), getPreviousYearFluidIntake(), "mL")}
+                      <hr className="border-gray-200 dark:border-gray-700 my-2" />
+                      <div className="flex justify-between pt-2">
+                        <span className="text-gray-600 dark:text-gray-400">Entries:</span>
+                        <span className="font-medium">{getYearFluidCount()}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Week Stats */}
-                <div className="bg-teal-50 dark:bg-teal-900/20 p-4 rounded-lg border border-teal-100 dark:border-teal-800/30">
-                  <h3 className="text-xl font-bold mb-2 text-center">Week</h3>
-                  <hr className="border-gray-200 dark:border-gray-700 mb-3" />
-                  <div className="space-y-0">
-                    <div className="flex justify-between py-2">
-                      <span className="text-gray-600 dark:text-gray-400">Intake:</span>
-                      <span className="font-medium flex items-center">
-                        {getWeekFluidIntake().toFixed(0)} mL
-                        {renderComparisonIndicator(getWeekFluidIntake(), averageFluidIntake)}
-                      </span>
-                    </div>
-                    {renderPreviousPeriodComparison(getWeekFluidIntake(), getPreviousWeekFluidIntake(), "mL")}
-                    <hr className="border-gray-200 dark:border-gray-700 my-2" />
-                    <div className="flex justify-between pt-2">
-                      <span className="text-gray-600 dark:text-gray-400">Entries:</span>
-                      <span className="font-medium">{getWeekFluidCount()}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Month Stats */}
-                <div className="bg-sky-50 dark:bg-sky-900/20 p-4 rounded-lg border border-sky-100 dark:border-sky-800/30">
-                  <h3 className="text-xl font-bold mb-2 text-center">Month</h3>
-                  <hr className="border-gray-200 dark:border-gray-700 mb-3" />
-                  <div className="space-y-0">
-                    <div className="flex justify-between py-2">
-                      <span className="text-gray-600 dark:text-gray-400">Intake:</span>
-                      <span className="font-medium flex items-center">
-                        {getMonthFluidIntake().toFixed(0)} mL
-                        {renderComparisonIndicator(getMonthFluidIntake(), averageFluidIntake)}
-                      </span>
-                    </div>
-                    {renderPreviousPeriodComparison(getMonthFluidIntake(), getPreviousMonthFluidIntake(), "mL")}
-                    <hr className="border-gray-200 dark:border-gray-700 my-2" />
-                    <div className="flex justify-between pt-2">
-                      <span className="text-gray-600 dark:text-gray-400">Entries:</span>
-                      <span className="font-medium">{getMonthFluidCount()}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Year Stats */}
-                <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg border border-indigo-100 dark:border-indigo-800/30">
-                  <h3 className="text-xl font-bold mb-2 text-center">Year</h3>
-                  <hr className="border-gray-200 dark:border-gray-700 mb-3" />
-                  <div className="space-y-0">
-                    <div className="flex justify-between py-2">
-                      <span className="text-gray-600 dark:text-gray-400">Intake:</span>
-                      <span className="font-medium flex items-center">
-                        {getYearFluidIntake().toFixed(0)} mL
-                        {renderComparisonIndicator(getYearFluidIntake(), averageFluidIntake)}
-                      </span>
-                    </div>
-                    {renderPreviousPeriodComparison(getYearFluidIntake(), getPreviousYearFluidIntake(), "mL")}
-                    <hr className="border-gray-200 dark:border-gray-700 my-2" />
-                    <div className="flex justify-between pt-2">
-                      <span className="text-gray-600 dark:text-gray-400">Entries:</span>
-                      <span className="font-medium">{getYearFluidCount()}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Additional HydroLog Stats */}
-              <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
-                  <h4 className="font-medium mb-2">Average Intake</h4>
-                  <p className="text-2xl font-bold">{averageFluidIntake.toFixed(0)} mL</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    ({(averageFluidIntake / 29.5735).toFixed(1)} oz)
-                  </p>
-                </div>
-
-                <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
-                  <h4 className="font-medium mb-2">Trend</h4>
-                  <div className="flex items-center">
-                    {fluidIntakeTrend === "up" ? (
-                      <TrendingUp className="mr-2 text-green-500" size={20} />
-                    ) : fluidIntakeTrend === "down" ? (
-                      <TrendingDown className="mr-2 text-red-500" size={20} />
-                    ) : (
-                      <span className="mr-2">→</span>
-                    )}
-                    <p className="text-xl font-bold">
-                      {fluidIntakeTrend === "up" ? "Increasing" : fluidIntakeTrend === "down" ? "Decreasing" : "Stable"}
+                {/* Additional HydroLog Stats */}
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                    <h4 className="font-medium mb-2">Average Intake</h4>
+                    <p className="text-2xl font-bold">{averageFluidIntake.toFixed(0)} mL</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      ({(averageFluidIntake / 29.5735).toFixed(1)} oz)
                     </p>
                   </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Based on recent entries</p>
-                </div>
 
-                <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
-                  <h4 className="font-medium mb-2">Most Common Type</h4>
-                  <p className="text-xl font-bold">{mostCommonFluidType || "N/A"}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Based on {Object.keys(fluidTypeCounts).length} types
-                  </p>
+                  <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                    <h4 className="font-medium mb-2">Trend</h4>
+                    <div className="flex items-center">
+                      {fluidIntakeTrend === "up" ? (
+                        <TrendingUp className="mr-2 text-green-500" size={20} />
+                      ) : fluidIntakeTrend === "down" ? (
+                        <TrendingDown className="mr-2 text-red-500" size={20} />
+                      ) : (
+                        <span className="mr-2">→</span>
+                      )}
+                      <p className="text-xl font-bold">
+                        {fluidIntakeTrend === "up"
+                          ? "Increasing"
+                          : fluidIntakeTrend === "down"
+                            ? "Decreasing"
+                            : "Stable"}
+                      </p>
+                    </div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Based on recent entries</p>
+                  </div>
+
+                  <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                    <h4 className="font-medium mb-2">Most Common Type</h4>
+                    <p className="text-xl font-bold">{mostCommonFluidType || "N/A"}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Based on {Object.keys(fluidTypeCounts).length} types
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            </CollapsibleSection>
           )}
 
           {/* KegelLog Statistics */}
           {(dataTypeFilter === "kegel" || dataTypeFilter === "both") && (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-100 dark:border-gray-700 p-4">
-              <h2 className="text-xl font-semibold mb-4 flex items-center">
-                <Dumbbell className="mr-2 text-purple-500" size={22} /> KegelLog Statistics
-              </h2>
+            <CollapsibleSection title="KegelLog Statistics" defaultExpanded={true}>
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-100 dark:border-gray-700 p-4">
+                <h2 className="text-xl font-semibold mb-4 flex items-center">
+                  <Dumbbell className="mr-2 text-purple-500" size={22} /> KegelLog Statistics
+                </h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Today's Stats */}
-                <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-100 dark:border-purple-800/30">
-                  <h3 className="text-xl font-bold mb-2 text-center">Today</h3>
-                  <hr className="border-gray-200 dark:border-gray-700 mb-3" />
-                  <div className="space-y-0">
-                    <div className="flex justify-between py-2">
-                      <span className="text-gray-600 dark:text-gray-400">Reps:</span>
-                      <span className="font-medium flex items-center">
-                        {getTodayKegelReps().toFixed(0)}
-                        {renderComparisonIndicator(getTodayKegelReps(), averageKegelReps)}
-                      </span>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Today's Stats */}
+                  <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-100 dark:border-purple-800/30">
+                    <h3 className="text-xl font-bold mb-2 text-center">Today</h3>
+                    <hr className="border-gray-200 dark:border-gray-700 mb-3" />
+                    <div className="space-y-0">
+                      <div className="flex justify-between py-2">
+                        <span className="text-gray-600 dark:text-gray-400">Reps:</span>
+                        <span className="font-medium flex items-center">
+                          {getTodayKegelReps().toFixed(0)}
+                          {renderComparisonIndicator(getTodayKegelReps(), averageKegelReps)}
+                        </span>
+                      </div>
+                      {renderPreviousPeriodComparison(getTodayKegelReps(), getYesterdayKegelReps(), "")}
+                      <hr className="border-gray-200 dark:border-gray-700 my-2" />
+                      <div className="flex justify-between pt-2">
+                        <span className="text-gray-600 dark:text-gray-400">Entries:</span>
+                        <span className="font-medium">{getTodayKegelCount()}</span>
+                      </div>
                     </div>
-                    {renderPreviousPeriodComparison(getTodayKegelReps(), getYesterdayKegelReps(), "")}
-                    <hr className="border-gray-200 dark:border-gray-700 my-2" />
-                    <div className="flex justify-between pt-2">
-                      <span className="text-gray-600 dark:text-gray-400">Entries:</span>
-                      <span className="font-medium">{getTodayKegelCount()}</span>
+                  </div>
+
+                  {/* Week Stats */}
+                  <div className="bg-fuchsia-50 dark:bg-fuchsia-900/20 p-4 rounded-lg border border-fuchsia-100 dark:border-fuchsia-800/30">
+                    <h3 className="text-xl font-bold mb-2 text-center">Week</h3>
+                    <hr className="border-gray-200 dark:border-gray-700 mb-3" />
+                    <div className="space-y-0">
+                      <div className="flex justify-between py-2">
+                        <span className="text-gray-600 dark:text-gray-400">Reps:</span>
+                        <span className="font-medium flex items-center">
+                          {getWeekKegelReps().toFixed(0)}
+                          {renderComparisonIndicator(getWeekKegelReps(), averageKegelReps)}
+                        </span>
+                      </div>
+                      {renderPreviousPeriodComparison(getWeekKegelReps(), getPreviousWeekKegelReps(), "")}
+                      <hr className="border-gray-200 dark:border-gray-700 my-2" />
+                      <div className="flex justify-between pt-2">
+                        <span className="text-gray-600 dark:text-gray-400">Entries:</span>
+                        <span className="font-medium">{getWeekKegelCount()}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Month Stats */}
+                  <div className="bg-pink-50 dark:bg-pink-900/20 p-4 rounded-lg border border-pink-100 dark:border-pink-800/30">
+                    <h3 className="text-xl font-bold mb-2 text-center">Month</h3>
+                    <hr className="border-gray-200 dark:border-gray-700 mb-3" />
+                    <div className="space-y-0">
+                      <div className="flex justify-between py-2">
+                        <span className="text-gray-600 dark:text-gray-400">Reps:</span>
+                        <span className="font-medium flex items-center">
+                          {getMonthKegelReps().toFixed(0)}
+                          {renderComparisonIndicator(getMonthKegelReps(), averageKegelReps)}
+                        </span>
+                      </div>
+                      {renderPreviousPeriodComparison(getMonthKegelReps(), getPreviousMonthKegelReps(), "")}
+                      <hr className="border-gray-200 dark:border-gray-700 my-2" />
+                      <div className="flex justify-between pt-2">
+                        <span className="text-gray-600 dark:text-gray-400">Entries:</span>
+                        <span className="font-medium">{getMonthKegelCount()}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Year Stats */}
+                  <div className="bg-rose-50 dark:bg-rose-900/20 p-4 rounded-lg border border-rose-100 dark:border-rose-800/30">
+                    <h3 className="text-xl font-bold mb-2 text-center">Year</h3>
+                    <hr className="border-gray-200 dark:border-gray-700 mb-3" />
+                    <div className="space-y-0">
+                      <div className="flex justify-between py-2">
+                        <span className="text-gray-600 dark:text-gray-400">Reps:</span>
+                        <span className="font-medium flex items-center">
+                          {getYearKegelReps().toFixed(0)}
+                          {renderComparisonIndicator(getYearKegelReps(), averageKegelReps)}
+                        </span>
+                      </div>
+                      {renderPreviousPeriodComparison(getYearKegelReps(), getPreviousYearKegelReps(), "")}
+                      <hr className="border-gray-200 dark:border-gray-700 my-2" />
+                      <div className="flex justify-between pt-2">
+                        <span className="text-gray-600 dark:text-gray-400">Entries:</span>
+                        <span className="font-medium">{getYearKegelCount()}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Week Stats */}
-                <div className="bg-fuchsia-50 dark:bg-fuchsia-900/20 p-4 rounded-lg border border-fuchsia-100 dark:border-fuchsia-800/30">
-                  <h3 className="text-xl font-bold mb-2 text-center">Week</h3>
-                  <hr className="border-gray-200 dark:border-gray-700 mb-3" />
-                  <div className="space-y-0">
-                    <div className="flex justify-between py-2">
-                      <span className="text-gray-600 dark:text-gray-400">Reps:</span>
-                      <span className="font-medium flex items-center">
-                        {getWeekKegelReps().toFixed(0)}
-                        {renderComparisonIndicator(getWeekKegelReps(), averageKegelReps)}
-                      </span>
-                    </div>
-                    {renderPreviousPeriodComparison(getWeekKegelReps(), getPreviousWeekKegelReps(), "")}
-                    <hr className="border-gray-200 dark:border-gray-700 my-2" />
-                    <div className="flex justify-between pt-2">
-                      <span className="text-gray-600 dark:text-gray-400">Entries:</span>
-                      <span className="font-medium">{getWeekKegelCount()}</span>
-                    </div>
+                {/* Additional KegelLog Stats */}
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                    <h4 className="font-medium mb-2">Hold Time</h4>
+                    <p className="text-2xl font-bold">{averageKegelHoldTime.toFixed(1)} sec</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Average hold time</p>
                   </div>
-                </div>
 
-                {/* Month Stats */}
-                <div className="bg-pink-50 dark:bg-pink-900/20 p-4 rounded-lg border border-pink-100 dark:border-pink-800/30">
-                  <h3 className="text-xl font-bold mb-2 text-center">Month</h3>
-                  <hr className="border-gray-200 dark:border-gray-700 mb-3" />
-                  <div className="space-y-0">
-                    <div className="flex justify-between py-2">
-                      <span className="text-gray-600 dark:text-gray-400">Reps:</span>
-                      <span className="font-medium flex items-center">
-                        {getMonthKegelReps().toFixed(0)}
-                        {renderComparisonIndicator(getMonthKegelReps(), averageKegelReps)}
-                      </span>
-                    </div>
-                    {renderPreviousPeriodComparison(getMonthKegelReps(), getPreviousMonthKegelReps(), "")}
-                    <hr className="border-gray-200 dark:border-gray-700 my-2" />
-                    <div className="flex justify-between pt-2">
-                      <span className="text-gray-600 dark:text-gray-400">Entries:</span>
-                      <span className="font-medium">{getMonthKegelCount()}</span>
-                    </div>
+                  <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                    <h4 className="font-medium mb-2">Sets</h4>
+                    <p className="text-2xl font-bold">{averageKegelSets.toFixed(1)}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Average sets per session</p>
                   </div>
-                </div>
 
-                {/* Year Stats */}
-                <div className="bg-rose-50 dark:bg-rose-900/20 p-4 rounded-lg border border-rose-100 dark:border-rose-800/30">
-                  <h3 className="text-xl font-bold mb-2 text-center">Year</h3>
-                  <hr className="border-gray-200 dark:border-gray-700 mb-3" />
-                  <div className="space-y-0">
-                    <div className="flex justify-between py-2">
-                      <span className="text-gray-600 dark:text-gray-400">Reps:</span>
-                      <span className="font-medium flex items-center">
-                        {getYearKegelReps().toFixed(0)}
-                        {renderComparisonIndicator(getYearKegelReps(), averageKegelReps)}
-                      </span>
-                    </div>
-                    {renderPreviousPeriodComparison(getYearKegelReps(), getPreviousYearKegelReps(), "")}
-                    <hr className="border-gray-200 dark:border-gray-700 my-2" />
-                    <div className="flex justify-between pt-2">
-                      <span className="text-gray-600 dark:text-gray-400">Entries:</span>
-                      <span className="font-medium">{getYearKegelCount()}</span>
-                    </div>
+                  <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                    <h4 className="font-medium mb-2">Total Time</h4>
+                    <p className="text-2xl font-bold">{averageKegelTotalTime.toFixed(0)} sec</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Average total exercise time</p>
                   </div>
                 </div>
               </div>
-
-              {/* Additional KegelLog Stats */}
-              <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
-                  <h4 className="font-medium mb-2">Hold Time</h4>
-                  <p className="text-2xl font-bold">{averageKegelHoldTime.toFixed(1)} sec</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Average hold time</p>
-                </div>
-
-                <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
-                  <h4 className="font-medium mb-2">Sets</h4>
-                  <p className="text-2xl font-bold">{averageKegelSets.toFixed(1)}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Average sets per session</p>
-                </div>
-
-                <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
-                  <h4 className="font-medium mb-2">Total Time</h4>
-                  <p className="text-2xl font-bold">{averageKegelTotalTime.toFixed(0)} sec</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Average total exercise time</p>
-                </div>
-              </div>
-            </div>
+            </CollapsibleSection>
           )}
         </div>
       )}

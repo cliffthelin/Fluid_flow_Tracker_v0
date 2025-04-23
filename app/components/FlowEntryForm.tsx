@@ -18,6 +18,7 @@ import {
   Dumbbell,
 } from "lucide-react"
 import type { UroLog, UrineColor, UrgencyRating, ConcernType, FluidType, HydroLog, KegelLog } from "../types"
+import { useConfig } from "../context/ConfigContext"
 
 interface FlowEntryFormProps {
   addUroLog: (entry: UroLog) => void
@@ -27,6 +28,9 @@ interface FlowEntryFormProps {
 }
 
 const FlowEntryForm: React.FC<FlowEntryFormProps> = ({ addUroLog, addHydroLog, addKegelLog, title2 }) => {
+  // Get measurement configuration from context
+  const { uroLogMeasurement, uroLogUnit } = useConfig()
+
   // Add this near the top of the component
   const [dbUroLogs, setDbUroLogs] = useState<UroLog[]>([])
   const [dbHydroLogs, setDbHydroLogs] = useState<HydroLog[]>([])
@@ -306,6 +310,9 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({ addUroLog, addHydroLog, a
         urgency: urgency || undefined,
         concerns: concerns.length > 0 ? concerns : undefined,
         notes: flowNotes || undefined,
+        // Add measurement type and unit
+        measurementType: uroLogMeasurement,
+        measurementUnit: uroLogUnit,
       }
 
       addUroLog(uroLog)
@@ -464,6 +471,33 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({ addUroLog, addHydroLog, a
   const isKegelDataValid = Number(kegelReps) > 0 && Number(kegelHoldTime) > 0 && Number(kegelSets) > 0
   const isSaveEnabled = isFlowDataValid || isFluidDataValid || isKegelDataValid
 
+  // Get the label for the volume field based on the selected measurement
+  const getVolumeLabel = () => {
+    if (uroLogMeasurement === "Urine Volume") {
+      return `Volume (${uroLogUnit})`
+    }
+    return `${uroLogMeasurement} (${uroLogUnit})`
+  }
+
+  // Get the label for the flow rate based on the selected measurement
+  const getFlowRateLabel = () => {
+    if (uroLogMeasurement === "Urine Volume") {
+      return "Flow Rate"
+    }
+    return "Rate"
+  }
+
+  // Get the unit for the flow rate based on the selected measurement
+  const getFlowRateUnit = () => {
+    if (uroLogMeasurement === "Urine Volume") {
+      return "mL/s"
+    }
+    if (uroLogUnit.includes("/")) {
+      return uroLogUnit
+    }
+    return `${uroLogUnit}/s`
+  }
+
   return (
     <>
       {/* Save button and success/error message */}
@@ -507,7 +541,8 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({ addUroLog, addHydroLog, a
             } transition-colors`}
             onClick={() => setActiveTab("basic")}
           >
-            UroLog Entry
+            {/* Dynamically change the tab name based on the selected measurement */}
+            {uroLogMeasurement === "Urine Volume" ? "UroLog Entry" : `${uroLogMeasurement} Entry`}
           </button>
           <button
             className={`px-4 py-3 font-medium text-lg flex items-center ${
@@ -598,7 +633,7 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({ addUroLog, addHydroLog, a
                   {calculatedFlowRate !== null && (
                     <div className="mt-2 flex flex-col items-center">
                       <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-                        {calculatedFlowRate.toFixed(1)} mL/s
+                        {calculatedFlowRate.toFixed(1)} {getFlowRateUnit()}
                       </div>
 
                       <div className="flex items-center justify-center gap-4 mt-1">
@@ -705,10 +740,10 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({ addUroLog, addHydroLog, a
                 </div>
               </div>
 
-              {/* Volume Field */}
+              {/* Volume Field - Dynamically labeled based on measurement type */}
               <div className="mb-4">
                 <label htmlFor="volume" className="block mb-2 text-lg font-medium text-gray-800 dark:text-gray-300">
-                  Volume (mL)
+                  {getVolumeLabel()}
                 </label>
                 <input
                   type="number"
@@ -722,107 +757,114 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({ addUroLog, addHydroLog, a
                     duration && !volume ? "border-blue-500 ring-2 ring-blue-200 dark:ring-blue-800 animate-pulse" : ""
                   }`}
                   required
-                  placeholder="mL"
+                  placeholder={uroLogUnit}
                   max={800}
-                  aria-label="Volume in milliliters"
+                  aria-label={`${uroLogMeasurement} in ${uroLogUnit}`}
                 />
               </div>
 
-              {/* Dividing line after Volume */}
-              <div className="my-6 border-t-2 border-gray-200 dark:border-gray-700"></div>
+              {/* Only show these fields for Urine Volume measurement */}
+              {uroLogMeasurement === "Urine Volume" && (
+                <>
+                  {/* Dividing line after Volume */}
+                  <div className="my-6 border-t-2 border-gray-200 dark:border-gray-700"></div>
 
-              {/* Urgency Rating */}
-              <div className="mb-4">
-                <label
-                  htmlFor="urgency"
-                  className="block mb-2 flex items-center text-lg font-medium text-gray-800 dark:text-gray-300"
-                >
-                  <Clock size={20} className="mr-2 text-purple-500" />
-                  Urgency Rating
-                </label>
-                <select
-                  id="urgency"
-                  value={urgency}
-                  onChange={(e) => setUrgency(e.target.value as UrgencyRating)}
-                  className="w-full p-2.5 border rounded-lg appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200 enhanced-select"
-                >
-                  {urgencyOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Urine Color */}
-              <div className="mb-4">
-                <label
-                  htmlFor="color"
-                  className="block mb-2 flex items-center text-lg font-medium text-gray-800 dark:text-gray-300"
-                >
-                  Urine Color
-                </label>
-                <div className="relative">
-                  <select
-                    id="color"
-                    value={color}
-                    onChange={(e) => setColor(e.target.value as UrineColor)}
-                    className="w-full p-2.5 pl-10 border rounded-lg appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200 enhanced-select"
-                    style={{
-                      colorScheme: "light dark",
-                    }}
-                  >
-                    {colorOptions.map((option) => (
-                      <option
-                        key={option.value}
-                        value={option.value}
-                        className={`${option.value ? option.bgColor : ""} ${option.value ? option.textColor : ""}`}
-                      >
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <div
-                      className={`w-5 h-5 rounded ${
-                        color ? colorOptions.find((o) => o.value === color)?.bgColor || "bg-gray-200" : "bg-gray-200"
-                      }`}
-                    ></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Concerns - One per row */}
-              <div className="mb-4">
-                <label className="block mb-2 flex items-center text-lg font-medium text-gray-800 dark:text-gray-300">
-                  <AlertTriangle size={20} className="mr-2 text-amber-500" />
-                  Concerns
-                </label>
-                <div className="space-y-2">
-                  {concernOptions.map((concern) => (
-                    <div
-                      key={concern}
-                      className={`flex items-center p-2 border rounded-lg hover:bg-blue-50 dark:hover:bg-gray-600 cursor-pointer transition-colors text-lg ${
-                        concerns.includes(concern)
-                          ? "bg-blue-100 border-blue-300 dark:bg-blue-900/30 dark:border-blue-800 text-blue-800 dark:text-blue-200"
-                          : "bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
-                      }`}
-                      onClick={() => toggleConcern(concern)}
+                  {/* Urgency Rating */}
+                  <div className="mb-4">
+                    <label
+                      htmlFor="urgency"
+                      className="block mb-2 flex items-center text-lg font-medium text-gray-800 dark:text-gray-300"
                     >
-                      <input
-                        type="checkbox"
-                        id={`concern-${concern}`}
-                        checked={concerns.includes(concern)}
-                        onChange={() => toggleConcern(concern)}
-                        className="mr-2 h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <label htmlFor={`concern-${concern}`} className="cursor-pointer flex-1">
-                        {concern}
-                      </label>
+                      <Clock size={20} className="mr-2 text-purple-500" />
+                      Urgency Rating
+                    </label>
+                    <select
+                      id="urgency"
+                      value={urgency}
+                      onChange={(e) => setUrgency(e.target.value as UrgencyRating)}
+                      className="w-full p-2.5 border rounded-lg appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200 enhanced-select"
+                    >
+                      {urgencyOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Urine Color */}
+                  <div className="mb-4">
+                    <label
+                      htmlFor="color"
+                      className="block mb-2 flex items-center text-lg font-medium text-gray-800 dark:text-gray-300"
+                    >
+                      Urine Color
+                    </label>
+                    <div className="relative">
+                      <select
+                        id="color"
+                        value={color}
+                        onChange={(e) => setColor(e.target.value as UrineColor)}
+                        className="w-full p-2.5 pl-10 border rounded-lg appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200 enhanced-select"
+                        style={{
+                          colorScheme: "light dark",
+                        }}
+                      >
+                        {colorOptions.map((option) => (
+                          <option
+                            key={option.value}
+                            value={option.value}
+                            className={`${option.value ? option.bgColor : ""} ${option.value ? option.textColor : ""}`}
+                          >
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <div
+                          className={`w-5 h-5 rounded ${
+                            color
+                              ? colorOptions.find((o) => o.value === color)?.bgColor || "bg-gray-200"
+                              : "bg-gray-200"
+                          }`}
+                        ></div>
+                      </div>
                     </div>
-                  ))}
-                </div>
-              </div>
+                  </div>
+
+                  {/* Concerns - One per row */}
+                  <div className="mb-4">
+                    <label className="block mb-2 flex items-center text-lg font-medium text-gray-800 dark:text-gray-300">
+                      <AlertTriangle size={20} className="mr-2 text-amber-500" />
+                      Concerns
+                    </label>
+                    <div className="space-y-2">
+                      {concernOptions.map((concern) => (
+                        <div
+                          key={concern}
+                          className={`flex items-center p-2 border rounded-lg hover:bg-blue-50 dark:hover:bg-gray-600 cursor-pointer transition-colors text-lg ${
+                            concerns.includes(concern)
+                              ? "bg-blue-100 border-blue-300 dark:bg-blue-900/30 dark:border-blue-800 text-blue-800 dark:text-blue-200"
+                              : "bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                          }`}
+                          onClick={() => toggleConcern(concern)}
+                        >
+                          <input
+                            type="checkbox"
+                            id={`concern-${concern}`}
+                            checked={concerns.includes(concern)}
+                            onChange={() => toggleConcern(concern)}
+                            className="mr-2 h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <label htmlFor={`concern-${concern}`} className="cursor-pointer flex-1">
+                            {concern}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
 
               {/* Notes Field - Full Width */}
               <div className="mb-4">
@@ -928,7 +970,7 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({ addUroLog, addHydroLog, a
                     type="checkbox"
                     id="custom-amount"
                     checked={useCustomAmount}
-                    onChange={() => setUseCustomAmount(!useCustomAmount)}
+                    onChange={(e) => setUseCustomAmount(!useCustomAmount)}
                     className="mr-2 h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
                   <label htmlFor="custom-amount" className="cursor-pointer text-gray-800 dark:text-gray-300 text-lg">
@@ -1050,7 +1092,7 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({ addUroLog, addHydroLog, a
                   <input
                     type="checkbox"
                     checked={kegelGuidedTimer}
-                    onChange={() => setKegelGuidedTimer(!kegelGuidedTimer)}
+                    onChange={(e) => setKegelGuidedTimer(!kegelGuidedTimer)}
                     className="mr-2 h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
                   Use Guided Timer
@@ -1119,7 +1161,7 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({ addUroLog, addHydroLog, a
                   <input
                     type="checkbox"
                     checked={kegelCompleted}
-                    onChange={() => setKegelCompleted(!kegelCompleted)}
+                    onChange={(e) => setKegelCompleted(!kegelCompleted)}
                     className="mr-2 h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
                   Completed All Sets

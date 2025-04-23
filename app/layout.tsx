@@ -2,6 +2,7 @@ import type React from "react"
 import type { Metadata } from "next"
 import "./globals.css"
 import { BuilderLogProvider } from "./context/BuilderLogContext"
+import { ConfigProvider } from "./context/ConfigContext"
 
 export const metadata: Metadata = {
   title: "My Uro Log",
@@ -43,7 +44,9 @@ export default function RootLayout({
         <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png" />
       </head>
       <body className="min-h-screen antialiased">
-        <BuilderLogProvider>{children}</BuilderLogProvider>
+        <BuilderLogProvider>
+          <ConfigProvider>{children}</ConfigProvider>
+        </BuilderLogProvider>
       </body>
     </html>
   )

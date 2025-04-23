@@ -7,6 +7,7 @@ import { Download, Upload, Trash2, Database, Share2, Check, AlertTriangle, Refre
 import type { UroLog, HydroLog, KegelLog } from "../types"
 import { isShareAvailable, safeShare } from "../services/share"
 import AutoBackupSettings from "./AutoBackupSettings"
+import ImportWizard from "./ImportWizard"
 
 // Add the hasDemoDataState prop to the interface
 interface DataManagementProps {
@@ -320,6 +321,26 @@ const DataManagement: React.FC<DataManagementProps> = ({ title2, hasDemoDataStat
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
   const [isGeneratingData, setIsGeneratingData] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // New import wizard state
+  const [showImportWizard, setShowImportWizard] = useState(false)
+
+  // Handle opening the import wizard
+  const handleOpenImportWizard = () => {
+    setShowImportWizard(true)
+  }
+
+  // Handle completing the import
+  const handleImportComplete = () => {
+    setShowImportWizard(false)
+    // Refresh the data
+    window.location.reload()
+  }
+
+  // Handle canceling the import
+  const handleImportCancel = () => {
+    setShowImportWizard(false)
+  }
 
   // Fetch data from the database
   useEffect(() => {
@@ -759,11 +780,13 @@ Data from ${new Date(Math.min(...uroLogs.map((log) => new Date(log.timestamp).ge
           Export Data (CSV)
         </button>
 
-        <label className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center cursor-pointer">
+        <button
+          onClick={handleOpenImportWizard}
+          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center"
+        >
           <Upload size={18} className="mr-2" />
-          Import Data (CSV)
-          <input type="file" accept=".csv" onChange={importData} className="hidden" ref={fileInputRef} />
-        </label>
+          Import Data
+        </button>
 
         <button
           onClick={shareData}
@@ -1016,6 +1039,15 @@ Data from ${new Date(Math.min(...uroLogs.map((log) => new Date(log.timestamp).ge
           ))
         )}
       </div>
+
+      {/* Import Wizard */}
+      {showImportWizard && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <ImportWizard onComplete={handleImportComplete} onCancel={handleImportCancel} />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

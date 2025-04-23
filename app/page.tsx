@@ -10,9 +10,10 @@ import Help from "./components/Help"
 import InstallPrompt from "./components/InstallPrompt"
 import PWARegistration from "./components/PWARegistration"
 import BottomNav from "./components/BottomNav"
-import type { UroLog, HydroLog } from "./types"
+import type { UroLog, HydroLog, KegelLog } from "./types"
 import { addUroLog as dbAddUroLog, addHydroLog as dbAddHydroLog } from "./services/db"
 import { Plus, BarChart, Database, BookMarked, BookOpen, Trash } from "lucide-react"
+import ImportPage from "./components/ImportPage"
 
 // Add imports for auto-backup system
 import { createAutoBackup, restoreFromAutoBackup, hasAutoBackup } from "./services/autoBackup"
@@ -23,7 +24,9 @@ export default function Home() {
   const [fontSize, setFontSize] = useState(0) // 0 is default, negative is smaller, positive is larger
   const [isLoading, setIsLoading] = useState(true)
   const [dataInitialized, setDataInitialized] = useState(false)
-  const [activeSection, setActiveSection] = useState<"entry" | "stats" | "data" | "resources" | "help">("entry")
+  const [activeSection, setActiveSection] = useState<"entry" | "stats" | "data" | "resources" | "help" | "import">(
+    "entry",
+  )
   const [dbCounts, setDbCounts] = useState<{ uroLogs: number; hydroLogs: number }>({ uroLogs: 0, hydroLogs: 0 })
   const [hasDemoDataState, setHasDemoDataState] = useState(false)
 
@@ -209,6 +212,20 @@ export default function Home() {
     }
   }
 
+  const addKegelLog = async (entry: KegelLog) => {
+    try {
+      // Add to IndexedDB
+      // await dbAddKegelLog(entry) // Assuming you have a function for KegelLog
+      // Create a backup after adding new data
+      createAutoBackup()
+      // Navigate to stats page after saving
+      setActiveSection("stats")
+    } catch (error) {
+      console.error("Error adding KegelLog entry:", error)
+      alert("Error saving entry. Please try again.")
+    }
+  }
+
   const fontSizeClass = `font-size-${fontSize}`
 
   // Render the components directly without CollapsibleSection wrappers
@@ -257,7 +274,7 @@ export default function Home() {
                     <Plus className="mr-2 text-blue-500" size={24} />
                     <h2 className="text-xl font-semibold">Add New Entry</h2>
                   </div>
-                  <FlowEntryForm addUroLog={addUroLog} addHydroLog={addHydroLog} />
+                  <FlowEntryForm addUroLog={addUroLog} addHydroLog={addHydroLog} addKegelLog={addKegelLog} />
                 </div>
               )}
 
@@ -298,6 +315,12 @@ export default function Home() {
                     <h2 className="text-xl font-semibold">Help</h2>
                   </div>
                   <Help />
+                </div>
+              )}
+
+              {activeSection === "import" && (
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-100 dark:border-gray-700 p-4">
+                  <ImportPage onBack={() => setActiveSection("data")} />
                 </div>
               )}
             </div>
