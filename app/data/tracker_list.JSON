@@ -1,0 +1,4053 @@
+{
+  "Treatments": {
+    "Accupuncture Treatments": [
+      {
+        "DisplayOrder": 1,
+        "IsActive": false,
+        "Name": "Treatment Date",
+        "Acronym": "Date",
+        "Common Units": "YYYY-MM-DD",
+        "Common Units Full Name": "Year-Month-Day",
+        "Entry Text": "Enter the date of your acupuncture treatment."
+      },
+      {
+        "DisplayOrder": 2,
+        "IsActive": false,
+        "Name": "Practitioner Name",
+        "Acronym": "Practitioner",
+        "Common Units": "Text",
+        "Common Units Full Name": "Text description",
+        "Entry Text": "Enter the name of the acupuncturist who performed the treatment."
+      },
+      {
+        "DisplayOrder": 3,
+        "IsActive": false,
+        "Name": "Treatment Focus/Primary Complaint",
+        "Acronym": "Focus",
+        "Common Units": "Text, Dropdown (Pain Management, Stress Reduction, Digestive Issues, etc.)",
+        "Common Units Full Name": "Text description or selection from a predefined list",
+        "Entry Text": "Describe the main reason for this acupuncture session."
+      },
+      {
+        "DisplayOrder": 4,
+        "IsActive": false,
+        "Name": "Points Used (Optional)",
+        "Acronym": "Points",
+        "Common Units": "Text (e.g., LI4, SP6, GB20)",
+        "Common Units Full Name": "Acupuncture point names or codes",
+        "Entry Text": "Optionally list some of the acupuncture points that were used during the session."
+      },
+      {
+        "DisplayOrder": 5,
+        "IsActive": false,
+        "Name": "Needle Sensation",
+        "Acronym": "Sensation",
+        "Common Units": "Descriptive (e.g., dull ache, tingling, heavy, no sensation)",
+        "Common Units Full Name": "Descriptive words",
+        "Entry Text": "Describe the sensations you experienced upon needle insertion."
+      },
+      {
+        "DisplayOrder": 6,
+        "IsActive": false,
+        "Name": "Relaxation Level During Treatment",
+        "Acronym": "Relax",
+        "Common Units": "Scale 1-10",
+        "Common Units Full Name": "Scale from 1 (not relaxed) to 10 (deeply relaxed)",
+        "Entry Text": "Rate your level of relaxation during the acupuncture session."
+      },
+      {
+        "DisplayOrder": 7,
+        "IsActive": false,
+        "Name": "Pain Level Before Treatment (if applicable)",
+        "Acronym": "Pain Before",
+        "Common Units": "Scale 0-10",
+        "Common Units Full Name": "Scale from 0 (no pain) to 10 (worst possible pain)",
+        "Entry Text": "If you were experiencing pain, rate your pain level before the treatment."
+      },
+      {
+        "DisplayOrder": 8,
+        "IsActive": false,
+        "Name": "Pain Level After Treatment (if applicable)",
+        "Acronym": "Pain After",
+        "Common Units": "Scale 0-10",
+        "Common Units Full Name": "Scale from 0 (no pain) to 10 (worst possible pain)",
+        "Entry Text": "If you were experiencing pain, rate your pain level immediately after the treatment."
+      },
+      {
+        "DisplayOrder": 9,
+        "IsActive": false,
+        "Name": "Immediate Symptom Changes",
+        "Acronym": "Imm. Change",
+        "Common Units": "Descriptive (e.g., felt lighter, less tense, no change)",
+        "Common Units Full Name": "Descriptive words",
+        "Entry Text": "Describe any immediate changes in your symptoms or how you felt right after the treatment."
+      },
+      {
+        "DisplayOrder": 10,
+        "IsActive": false,
+        "Name": "Symptom Changes Hours Later",
+        "Acronym": "Hours Later",
+        "Common Units": "Descriptive",
+        "Common Units Full Name": "Descriptive words",
+        "Entry Text": "Describe any changes in your symptoms or how you felt several hours after the treatment."
+      },
+      {
+        "DisplayOrder": 11,
+        "IsActive": false,
+        "Name": "Symptom Changes the Next Day",
+        "Acronym": "Next Day",
+        "Common Units": "Descriptive",
+        "Common Units Full Name": "Descriptive words",
+        "Entry Text": "Describe any changes in your symptoms or how you felt the day after the treatment."
+      },
+      {
+        "DisplayOrder": 12,
+        "IsActive": false,
+        "Name": "Overall Effectiveness of Treatment",
+        "Acronym": "Effectiveness",
+        "Common Units": "Scale 1-5 (Stars), Scale 1-10",
+        "Common Units Full Name": "Rating scale from 1 to 5 stars or 1 to 10",
+        "Entry Text": "Rate the overall effectiveness of this particular acupuncture session."
+      },
+      {
+        "DisplayOrder": 13,
+        "IsActive": false,
+        "Name": "Side Effects (if any)",
+        "Acronym": "Side Effects",
+        "Common Units": "Descriptive (e.g., slight bruising, fatigue, emotional release)",
+        "Common Units Full Name": "Descriptive words",
+        "Entry Text": "Note any side effects you experienced after the treatment."
+      },
+      {
+        "DisplayOrder": 14,
+        "IsActive": false,
+        "Name": "Notes/Observations",
+        "Acronym": "Notes",
+        "Common Units": "Text",
+        "Common Units Full Name": "Free text description",
+        "Entry Text": "Add any other relevant notes about the treatment or your experience."
+      }
+    ],
+    "Acupuncture Areas Treatment": [
+      {
+        "DisplayOrder": 1,
+        "IsActive": false,
+        "Name": "Treatment Date",
+        "Acronym": "Date",
+        "Common Units": "YYYY-MM-DD",
+        "Common Units Full Name": "Year-Month-Day",
+        "Entry Text": "Enter the date of your acupuncture treatment."
+      },
+      {
+        "DisplayOrder": 2,
+        "IsActive": false,
+        "Name": "Practitioner Focus (Channel/Meridian)",
+        "Acronym": "Channel Focus",
+        "Common Units": "Custom Entry, [Lung Meridian, Large Intestine Meridian, Stomach Meridian, Spleen Meridian, Heart Meridian, Small Intestine Meridian, Urinary Bladder Meridian, Kidney Meridian, Pericardium Meridian, Triple Heater Meridian, Gallbladder Meridian, Liver Meridian, Governing Vessel, Conception Vessel, Du Meridian, Ren Meridian, Chong Meridian, Dai Meridian, Wei Qi, Ying Qi, ...] (add more as needed)",
+        "Common Units Full Name": "Custom text entry or selection from a list of channels and meridians",
+        "Entry Text": "Note the primary channels or meridians your practitioner focused on during this session, or enter a custom term."
+      },
+      {
+        "DisplayOrder": 3,
+        "IsActive": false,
+        "Name": "Specific Points Used (with Channel Association)",
+        "Acronym": "Points & Channels",
+        "Common Units": "Custom Entry, [LU 1 (Lung), LU 2 (Lung), LU 3 (Lung), LU 5 (Lung), LU 6 (Lung), LU 7 (Lung), LU 8 (Lung), LU 9 (Lung), LU 10 (Lung), LU 11 (Lung), LI 1 (Large Intestine), LI 2 (Large Intestine), LI 3 (Large Intestine), LI 4 (Large Intestine), LI 5 (Large Intestine), LI 6 (Large Intestine), LI 7 (Large Intestine), LI 10 (Large Intestine), LI 11 (Large Intestine), LI 15 (Large Intestine), LI 20 (Large Intestine), ST 1 (Stomach), ST 2 (Stomach), ST 3 (Stomach), ST 4 (Stomach), ST 6 (Stomach), ST 9 (Stomach), ST 25 (Stomach), ST 36 (Stomach), ST 40 (Stomach), ST 44 (Stomach), SP 1 (Spleen), SP 2 (Spleen), SP 3 (Spleen), SP 4 (Spleen), SP 6 (Spleen), SP 8 (Spleen), SP 9 (Spleen), SP 10 (Spleen), SP 15 (Spleen), SP 21 (Spleen), HT 1 (Heart), HT 3 (Heart), HT 5 (Heart), HT 6 (Heart), HT 7 (Heart), HT 8 (Heart), HT 9 (Heart), SI 1 (Small Intestine), SI 2 (Small Intestine), SI 3 (Small Intestine), SI 4 (Small Intestine), SI 5 (Small Intestine), SI 6 (Small Intestine), SI 7 (Small Intestine), SI 8 (Small Intestine), SI 9 (Small Intestine), SI 19 (Small Intestine), UB 1 (Urinary Bladder), UB 2 (Urinary Bladder), UB 13 (Urinary Bladder), UB 15 (Urinary Bladder), UB 20 (Urinary Bladder), UB 23 (Urinary Bladder), UB 40 (Urinary Bladder), UB 60 (Urinary Bladder), UB 67 (Urinary Bladder), KI 1 (Kidney), KI 2 (Kidney), KI 3 (Kidney), KI 6 (Kidney), KI 7 (Kidney), KI 9 (Kidney), KI 27 (Kidney), PC 1 (Pericardium), PC 3 (Pericardium), PC 6 (Pericardium), PC 7 (Pericardium), PC 8 (Pericardium), PC 9 (Pericardium), TE 1 (Triple Heater), TE 2 (Triple Heater), TE 3 (Triple Heater), TE 5 (Triple Heater), TE 6 (Triple Heater), TE 10 (Triple Heater), TE 17 (Triple Heater), TE 23 (Triple Heater), GB 1 (Gallbladder), GB 20 (Gallbladder), GB 21 (Gallbladder), GB 24 (Gallbladder), GB 30 (Gallbladder), GB 34 (Gallbladder), GB 39 (Gallbladder), GB 40 (Gallbladder), GB 41 (Gallbladder), GB 43 (Gallbladder), GB 44 (Gallbladder), LV 1 (Liver), LV 2 (Liver), LV 3 (Liver), LV 8 (Liver), LV 13 (Liver), LV 14 (Liver), GV 1 (Governing Vessel), GV 4 (Governing Vessel), GV 14 (Governing Vessel), GV 20 (Governing Vessel), GV 24 (Governing Vessel), GV 26 (Governing Vessel), CV 1 (Conception Vessel), CV 4 (Conception Vessel), CV 6 (Conception Vessel), CV 12 (Conception Vessel), CV 17 (Conception Vessel), CV 22 (Conception Vessel), CV 24 (Conception Vessel), ...] (add more as needed)",
+        "Common Units Full Name": "Custom text entry or selection from a more comprehensive list of acupuncture points with their associated channel",
+        "Entry Text": "List the specific acupuncture points used and their corresponding channel or meridian, or enter custom points."
+      },
+      {
+        "DisplayOrder": 4,
+        "IsActive": false,
+        "Name": "Five Element Focus (if applicable)",
+        "Acronym": "5 Element",
+        "Common Units": "Custom Entry, [Wood, Fire, Earth, Metal, Water]",
+        "Common Units Full Name": "Custom text entry or selection from the Five Elements",
+        "Entry Text": "If your treatment was based on Five Element theory, note the primary element(s) addressed, or enter a custom element."
+      },
+      {
+        "DisplayOrder": 5,
+        "IsActive": false,
+        "Name": "Zang-Fu Organ System Focus (if applicable)",
+        "Acronym": "Zang-Fu",
+        "Common Units": "Custom Entry, [Liver, Gallbladder, Heart, Small Intestine, Spleen, Stomach, Lung, Large Intestine, Kidney, Urinary Bladder, Pericardium, Triple Heater]",
+        "Common Units Full Name": "Custom text entry or selection from the Zang (Yin) and Fu (Yang) organs",
+        "Entry Text": "If your treatment focused on specific organ systems, note which ones, or enter a custom organ."
+      },
+      {
+        "DisplayOrder": 6,
+        "IsActive": false,
+        "Name": "Eight Principle Diagnosis (if discussed)",
+        "Acronym": "8 Principles",
+        "Common Units": "Custom Entry, [Exterior, Interior, Cold, Heat, Deficiency, Excess, Yin, Yang]",
+        "Common Units Full Name": "Custom text entry or selection from the Eight Principles",
+        "Entry Text": "If your practitioner discussed your condition in terms of the Eight Principles, note the relevant patterns, or enter custom principles."
+      },
+      {
+        "DisplayOrder": 7,
+        "IsActive": false,
+        "Name": "Substances Addressed (Qi, Blood, Fluid, etc.)",
+        "Acronym": "Substances",
+        "Common Units": "Custom Entry, [Qi Stagnation, Qi Deficiency, Blood Stasis, Blood Deficiency, Phlegm, Dampness, Dryness, Fire, Jing, Shen, Jin Ye]",
+        "Common Units Full Name": "Custom text entry or selection from fundamental substances in TCM",
+        "Entry Text": "Note any imbalances of Qi, Blood, Body Fluids, etc., that your treatment aimed to address, or enter custom substances."
+      },
+      {
+        "DisplayOrder": 8,
+        "IsActive": false,
+        "Name": "Treatment Techniques (Beyond Needles)",
+        "Acronym": "Techniques",
+        "Common Units": "Custom Entry, [Moxibustion, Cupping, Gua Sha, Electro-acupuncture, Tuina, Auricular Acupuncture, Scalp Acupuncture, Herbal Application, Dietary Therapy Advice, Lifestyle Advice]",
+        "Common Units Full Name": "Custom text entry or selection from a list of TCM techniques",
+        "Entry Text": "Note any other Traditional Chinese Medicine techniques used during the session, or enter a custom technique."
+      },
+      {
+        "DisplayOrder": 9,
+        "IsActive": false,
+        "Name": "Rationale for Point Selection (if explained)",
+        "Acronym": "Point Rationale",
+        "Common Units": "Text",
+        "Common Units Full Name": "Free text explanation",
+        "Entry Text": "If your practitioner explained the reasoning behind the choice of specific points, jot down the key points."
+      },
+      {
+        "DisplayOrder": 10,
+        "IsActive": false,
+        "Name": "Changes Related to Specific Areas/Channels",
+        "Acronym": "Channel Changes",
+        "Common Units": "Custom Entry, Descriptive",
+        "Common Units Full Name": "Custom text entry or descriptive words related to specific channels or areas",
+        "Entry Text": "Note any changes or sensations you felt along specific channels or in particular areas of your body during or after the treatment, using custom terms or descriptions."
+      },
+      {
+        "DisplayOrder": 11,
+        "IsActive": false,
+        "Name": "Overall Impression of TCM Diagnosis",
+        "Acronym": "TCM Impression",
+        "Common Units": "Custom Entry, Scale 1-5, Descriptive",
+        "Common Units Full Name": "Custom text entry, scale, and descriptive words",
+        "Entry Text": "Rate your understanding and agreement with the TCM diagnosis provided, or add custom notes."
+      }
+    ],
+    "Resources": [
+      {
+        "DisplayOrder": 1,
+        "IsActive": true,
+        "Name": "NIH National Center for Complementary and Integrative Health (NCCIH)",
+        "Link": "https://www.nccih.nih.gov/",
+        "Summary": "Provides evidence-based information on complementary and integrative health approaches, including acupuncture."
+      },
+      {
+        "DisplayOrder": 2,
+        "IsActive": true,
+        "Name": "American Academy of Medical Acupuncture (AAMA)",
+        "Link": "https://medicalacupuncture.org/",
+        "Summary": "Professional organization for physician acupuncturists, offering research, education, and practitioner finder."
+      },
+      {
+        "DisplayOrder": 3,
+        "IsActive": true,
+        "Name": "PubMed Central",
+        "Link": "https://pubmed.ncbi.nlm.nih.gov/?term=acupuncture+therapy",
+        "Summary": "Database of biomedical literature; search for clinical studies and reviews on various treatments including acupuncture."
+      },
+      {
+        "DisplayOrder": 4,
+        "IsActive": true,
+        "Name": "Mayo Clinic - Complementary and Alternative Medicine",
+        "Link": "https://www.mayoclinic.org/tests-procedures/complementary-alternative-medicine/about/pac-20393581",
+        "Summary": "Patient-focused information on various CAM therapies, including potential benefits and risks."
+      }
+    ]
+  },
+  "Skills": {
+    "Musical Instrument Practice Tracking": [
+      {
+        "DisplayOrder": 1,
+        "IsActive": false,
+        "Name": "Date",
+        "Acronym": "Date",
+        "Common Units": "YYYY-MM-DD",
+        "Common Units Full Name": "Year-Month-Day",
+        "Entry Text": "Enter the date of your practice session."
+      },
+      {
+        "DisplayOrder": 2,
+        "IsActive": false,
+        "Name": "Instrument",
+        "Acronym": "Instrument",
+        "Common Units": "Text, Dropdown (e.g., Guitar, Piano, Violin, Drums)",
+        "Common Units Full Name": "The musical instrument you are practicing",
+        "Entry Text": "Specify the instrument you practiced today."
+      },
+      {
+        "DisplayOrder": 3,
+        "IsActive": false,
+        "Name": "Duration",
+        "Acronym": "Duration",
+        "Common Units": "minutes",
+        "Common Units Full Name": "Total time spent practicing in minutes",
+        "Entry Text": "Record the total duration of your practice session."
+      },
+      {
+        "DisplayOrder": 4,
+        "IsActive": false,
+        "Name": "Specific Exercises/Pieces Practiced",
+        "Acronym": "Practice Items",
+        "Common Units": "Text",
+        "Common Units Full Name": "List of the specific songs, scales, exercises, etc., you worked on",
+        "Entry Text": "List the specific musical pieces or exercises you practiced."
+      },
+      {
+        "DisplayOrder": 5,
+        "IsActive": false,
+        "Name": "Focus Area(s)",
+        "Acronym": "Focus",
+        "Common Units": "Checkbox (Technique, Rhythm, Theory, Ear Training, Sight-Reading, Song Repertoire)",
+        "Common Units Full Name": "The main areas you concentrated on during practice",
+        "Entry Text": "Check the main areas you focused on during this session."
+      },
+      {
+        "DisplayOrder": 6,
+        "IsActive": false,
+        "Name": "Tempo (if applicable)",
+        "Acronym": "Tempo",
+        "Common Units": "BPM (Beats Per Minute)",
+        "Common Units Full Name": "The tempo you practiced at for specific pieces",
+        "Entry Text": "If applicable, note the tempo you used for specific exercises or songs."
+      },
+      {
+        "DisplayOrder": 7,
+        "IsActive": false,
+        "Name": "Accuracy/Mistakes",
+        "Acronym": "Accuracy",
+        "Common Units": "Scale 1-5 (Many Mistakes to Very Accurate), Descriptive",
+        "Common Units Full Name": "Your assessment of your accuracy",
+        "Entry Text": "Rate your accuracy or describe the types of mistakes you made."
+      },
+      {
+        "DisplayOrder": 8,
+        "IsActive": false,
+        "Name": "Rhythm/Timing",
+        "Acronym": "Rhythm",
+        "Common Units": "Scale 1-5 (Poor to Excellent), Descriptive",
+        "Common Units Full Name": "Your assessment of your rhythmic precision",
+        "Entry Text": "Rate your rhythmic accuracy or describe any timing issues."
+      },
+      {
+        "DisplayOrder": 9,
+        "IsActive": false,
+        "Name": "Tone/Sound Quality",
+        "Acronym": "Tone",
+        "Common Units": "Scale 1-5 (Poor to Excellent), Descriptive",
+        "Common Units Full Name": "Your assessment of the quality of your sound",
+        "Entry Text": "Rate the quality of your tone or describe any issues with your sound."
+      },
+      {
+        "DisplayOrder": 10,
+        "IsActive": false,
+        "Name": "Enjoyment Level",
+        "Acronym": "Enjoyment",
+        "Common Units": "Scale 1-5 (Low to High)",
+        "Common Units Full Name": "How much you enjoyed the practice session",
+        "Entry Text": "Rate how much you enjoyed your practice session."
+      },
+      {
+        "DisplayOrder": 11,
+        "IsActive": false,
+        "Name": "Frustration Level",
+        "Acronym": "Frustration",
+        "Common Units": "Scale 1-5 (Low to High)",
+        "Common Units Full Name": "How frustrated you felt during practice",
+        "Entry Text": "Rate your level of frustration during the session."
+      },
+      {
+        "DisplayOrder": 12,
+        "IsActive": false,
+        "Name": "Progress Made Today",
+        "Acronym": "Progress",
+        "Common Units": "Scale 1-5 (No Progress to Significant Progress), Descriptive",
+        "Common Units Full Name": "Your overall assessment of the progress you made",
+        "Entry Text": "Rate the progress you feel you made today or describe any breakthroughs."
+      },
+      {
+        "DisplayOrder": 13,
+        "IsActive": false,
+        "Name": "Challenges Encountered",
+        "Acronym": "Challenges",
+        "Common Units": "Text",
+        "Common Units Full Name": "Specific difficulties you faced during practice",
+        "Entry Text": "Note any specific challenges you encountered."
+      },
+      {
+        "DisplayOrder": 14,
+        "IsActive": false,
+        "Name": "Learnings/Insights",
+        "Acronym": "Learnings",
+        "Common Units": "Text",
+        "Common Units Full Name": "Any new things you learned or understood during practice",
+        "Entry Text": "Note any new insights or understandings you gained."
+      },
+      {
+        "DisplayOrder": 15,
+        "IsActive": false,
+        "Name": "Next Steps/Goals for Next Session",
+        "Acronym": "Next Steps",
+        "Common Units": "Text",
+        "Common Units Full Name": "What you plan to work on in your next practice session",
+        "Entry Text": "Outline what you want to focus on during your next practice."
+      },
+      {
+        "DisplayOrder": 16,
+        "IsActive": false,
+        "Name": "Notes/Observations",
+        "Acronym": "Notes",
+        "Common Units": "Text",
+        "Common Units Full Name": "Free text description",
+        "Entry Text": "Add any other relevant notes about your practice session."
+      }
+    ],
+    "Writers": [
+      {
+        "DisplayOrder": 1,
+        "IsActive": false,
+        "Name": "Writing Duration",
+        "Acronym": "Write Dur",
+        "Common Units": "minutes",
+        "Common Units Full Name": "minutes",
+        "Entry Text": "Record the total time you spent writing today in minutes."
+      },
+      {
+        "DisplayOrder": 2,
+        "IsActive": false,
+        "Name": "Words Written",
+        "Acronym": "Words",
+        "Common Units": "count",
+        "Common Units Full Name": "number of words",
+        "Entry Text": "Record the total number of words you wrote today."
+      },
+      {
+        "DisplayOrder": 3,
+        "IsActive": false,
+        "Name": "Writing Focus Level",
+        "Acronym": "Write Focus",
+        "Common Units": "Scale 1-10, Descriptive",
+        "Common Units Full Name": "Scale from 1 (highly distracted) to 10 (deeply focused), Descriptive words (e.g., in the zone, struggling, interrupted)",
+        "Entry Text": "Rate your level of focus and concentration during your writing session."
+      },
+      {
+        "DisplayOrder": 4,
+        "IsActive": false,
+        "Name": "Flow State (Writing)",
+        "Acronym": "Write Flow",
+        "Common Units": "Scale 1-10, Descriptive",
+        "Common Units Full Name": "Scale from 1 (no flow) to 10 (deep flow), Descriptive words (e.g., effortless, engaged, blocked)",
+        "Entry Text": "Rate your experience of being in a state of flow while writing."
+      },
+      {
+        "DisplayOrder": 5,
+        "IsActive": false,
+        "Name": "Scenes/Sections Completed",
+        "Acronym": "Scenes Done",
+        "Common Units": "count",
+        "Common Units Full Name": "number of scenes or sections",
+        "Entry Text": "Record the number of scenes or sections you completed in your writing today."
+      },
+      {
+        "DisplayOrder": 6,
+        "IsActive": false,
+        "Name": "Editing/Revision Time",
+        "Acronym": "Edit Time",
+        "Common Units": "minutes",
+        "Common Units Full Name": "minutes",
+        "Entry Text": "Record the total time you spent editing or revising your writing today in minutes."
+      },
+      {
+        "DisplayOrder": 7,
+        "IsActive": false,
+        "Name": "Ideas/Inspiration Level",
+        "Acronym": "Idea Level",
+        "Common Units": "Scale 1-10, Descriptive",
+        "Common Units Full Name": "Scale from 1 (no ideas) to 10 (abundant ideas), Descriptive words (e.g., inspired, stagnant, brainstorming)",
+        "Entry Text": "Rate your level of ideas and inspiration for your writing today."
+      },
+      {
+        "DisplayOrder": 8,
+        "IsActive": false,
+        "Name": "Satisfaction with Writing",
+        "Acronym": "Write Sat",
+        "Common Units": "Scale 1-10, Descriptive",
+        "Common Units Full Name": "Scale from 1 (very dissatisfied) to 10 (very satisfied), Descriptive words (e.g., proud, frustrated, content)",
+        "Entry Text": "Rate your overall satisfaction with your writing session today."
+      },
+      {
+        "DisplayOrder": 9,
+        "IsActive": false,
+        "Name": "Time Spent Planning/Outlining",
+        "Acronym": "Plan Time",
+        "Common Units": "minutes",
+        "Common Units Full Name": "minutes",
+        "Entry Text": "Record the total time you spent planning or outlining your writing today in minutes."
+      },
+      {
+        "DisplayOrder": 10,
+        "IsActive": false,
+        "Name": "Research Time",
+        "Acronym": "Research Time",
+        "Common Units": "minutes",
+        "Common Units Full Name": "minutes",
+        "Entry Text": "Record the total time you spent on research related to your writing today in minutes."
+      }
+    ],
+    "Resources": [
+      {
+        "DisplayOrder": 1,
+        "IsActive": true,
+        "Name": "Coursera",
+        "Link": "https://www.coursera.org/",
+        "Summary": "Online learning platform offering courses, specializations, and degrees in various skills from universities and companies."
+      },
+      {
+        "DisplayOrder": 2,
+        "IsActive": true,
+        "Name": "edX",
+        "Link": "https://www.edx.org/",
+        "Summary": "Offers massive open online courses (MOOCs) from top universities worldwide across a wide range of disciplines."
+      },
+      {
+        "DisplayOrder": 3,
+        "IsActive": true,
+        "Name": "Khan Academy",
+        "Link": "https://www.khanacademy.org/",
+        "Summary": "Free educational resources covering math, science, computing, history, art history, economics, and more."
+      },
+      {
+        "DisplayOrder": 4,
+        "IsActive": true,
+        "Name": "NaNoWriMo (National Novel Writing Month)",
+        "Link": "https://nanowrimo.org/",
+        "Summary": "Community and resources for writers, focusing on completing a novel draft in November, but offers year-round support."
+      },
+      {
+        "DisplayOrder": 5,
+        "IsActive": true,
+        "Name": "JustinGuitar.com",
+        "Link": "https://www.justinguitar.com/",
+        "Summary": "Popular free online guitar lessons for various levels, covering technique, theory, and songs."
+      }
+    ]
+  },
+  "Exercise": {
+    "Swimming Activity Tracking": [
+      {
+        "DisplayOrder": 1,
+        "IsActive": false,
+        "Name": "Date",
+        "Acronym": "Date",
+        "Common Units": "YYYY-MM-DD",
+        "Common Units Full Name": "Year-Month-Day",
+        "Entry Text": "Enter the date of your swim."
+      },
+      {
+        "DisplayOrder": 2,
+        "IsActive": false,
+        "Name": "Pool/Location",
+        "Acronym": "Location",
+        "Common Units": "Text",
+        "Common Units Full Name": "Name of the pool or swimming location",
+        "Entry Text": "Enter the name or type of location where you swam (e.g., YMCA, lake)."
+      },
+      {
+        "DisplayOrder": 3,
+        "IsActive": false,
+        "Name": "Duration",
+        "Acronym": "Duration",
+        "Common Units": "minutes",
+        "Common Units Full Name": "Total time spent swimming in minutes",
+        "Entry Text": "Record the total duration of your swimming session."
+      },
+      {
+        "DisplayOrder": 4,
+        "IsActive": false,
+        "Name": "Distance",
+        "Acronym": "Distance",
+        "Common Units": "meters, yards",
+        "Common Units Full Name": "Distance swum in meters or yards",
+        "Entry Text": "Record the total distance you swam. Specify the units."
+      },
+      {
+        "DisplayOrder": 5,
+        "IsActive": false,
+        "Name": "Laps",
+        "Acronym": "Laps",
+        "Common Units": "Count",
+        "Common Units Full Name": "Number of laps completed",
+        "Entry Text": "Record the number of laps you swam."
+      },
+      {
+        "DisplayOrder": 6,
+        "IsActive": false,
+        "Name": "Stroke(s) Used",
+        "Acronym": "Stroke",
+        "Common Units": "Text, Dropdown (Freestyle, Backstroke, Breaststroke, Butterfly, Mixed)",
+        "Common Units Full Name": "Swimming stroke(s) performed",
+        "Entry Text": "List the swimming stroke(s) you used during your session."
+      },
+      {
+        "DisplayOrder": 7,
+        "IsActive": false,
+        "Name": "Interval Training (if applicable)",
+        "Acronym": "Intervals",
+        "Common Units": "Yes/No, Description",
+        "Common Units Full Name": "Indicate if you did interval training and optionally describe it",
+        "Entry Text": "Indicate if you incorporated interval training and optionally provide details (e.g., 4 x 50m freestyle on 1:00)."
+      },
+      {
+        "DisplayOrder": 8,
+        "IsActive": false,
+        "Name": "Perceived Exertion",
+        "Acronym": "Exertion",
+        "Common Units": "Scale 1-10 (Borg Scale)",
+        "Common Units Full Name": "Rating of Perceived Exertion on a scale of 1 to 10",
+        "Entry Text": "Rate how hard the swim felt on a scale of 1 (very light) to 10 (maximal)."
+      },
+      {
+        "DisplayOrder": 9,
+        "IsActive": false,
+        "Name": "Energy Level Before Swim",
+        "Acronym": "Energy Before",
+        "Common Units": "Scale 1-5 (Low to High)",
+        "Common Units Full Name": "Rating of your energy level before swimming",
+        "Entry Text": "Rate your energy level before starting your swim."
+      },
+      {
+        "DisplayOrder": 10,
+        "IsActive": false,
+        "Name": "Energy Level After Swim",
+        "Acronym": "Energy After",
+        "Common Units": "Scale 1-5 (Low to High)",
+        "Common Units Full Name": "Rating of your energy level after swimming",
+        "Entry Text": "Rate your energy level after finishing your swim."
+      },
+      {
+        "DisplayOrder": 11,
+        "IsActive": false,
+        "Name": "Enjoyment Level",
+        "Acronym": "Enjoyment",
+        "Common Units": "Scale 1-5 (Low to High)",
+        "Common Units Full Name": "Rating of how much you enjoyed the swim",
+        "Entry Text": "Rate how much you enjoyed your swimming session."
+      },
+      {
+        "DisplayOrder": 12,
+        "IsActive": false,
+        "Name": "Focus/Purpose of Swim",
+        "Acronym": "Purpose",
+        "Common Units": "Text, Dropdown (Cardio, Recovery, Technique, Fun)",
+        "Common Units Full Name": "The main goal or focus of your swim",
+        "Entry Text": "Note the primary reason for your swim (e.g., endurance, working on breaststroke technique)."
+      },
+      {
+        "DisplayOrder": 13,
+        "IsActive": false,
+        "Name": "Water Temperature (Optional)",
+        "Acronym": "Water Temp",
+        "Common Units": "°C, °F",
+        "Common Units Full Name": "Water temperature in Celsius or Fahrenheit",
+        "Entry Text": "Optionally record the water temperature."
+      },
+      {
+        "DisplayOrder": 14,
+        "IsActive": false,
+        "Name": "Notes/Observations",
+        "Acronym": "Notes",
+        "Common Units": "Text",
+        "Common Units Full Name": "Free text description",
+        "Entry Text": "Add any other relevant notes about your swim, such as how you felt, specific drills, or observations about the environment."
+      }
+    ],
+    "Rehabilitation Exercise Tracking": [
+      {
+        "DisplayOrder": 1,
+        "IsActive": false,
+        "Name": "Exercise Name",
+        "Acronym": "Exercise",
+        "Common Units": "Text",
+        "Common Units Full Name": "Name of the exercise",
+        "Entry Text": "Enter the name of the rehabilitation exercise."
+      },
+      {
+        "DisplayOrder": 2,
+        "IsActive": false,
+        "Name": "Target Area/Body Part",
+        "Acronym": "Target",
+        "Common Units": "Text, Dropdown (Shoulder, Knee, Back, Ankle, etc.)",
+        "Common Units Full Name": "Specific body part or area the exercise targets",
+        "Entry Text": "Specify the main body part or area this exercise is for."
+      },
+      {
+        "DisplayOrder": 3,
+        "IsActive": false,
+        "Name": "Sets",
+        "Acronym": "Sets",
+        "Common Units": "Count",
+        "Common Units Full Name": "Number of sets performed",
+        "Entry Text": "Enter the number of sets you completed for this exercise."
+      },
+      {
+        "DisplayOrder": 4,
+        "IsActive": false,
+        "Name": "Repetitions",
+        "Acronym": "Reps",
+        "Common Units": "Count",
+        "Common Units Full Name": "Number of repetitions per set",
+        "Entry Text": "Enter the number of repetitions you completed in each set."
+      },
+      {
+        "DisplayOrder": 5,
+        "IsActive": false,
+        "Name": "Resistance/Weight (if applicable)",
+        "Acronym": "Weight",
+        "Common Units": "lbs, kg, Resistance Band Color/Level",
+        "Common Units Full Name": "Pounds, kilograms, or description of resistance band",
+        "Entry Text": "If the exercise uses weight or resistance bands, record the amount or level."
+      },
+      {
+        "DisplayOrder": 6,
+        "IsActive": false,
+        "Name": "Hold Time (if applicable)",
+        "Acronym": "Hold",
+        "Common Units": "seconds",
+        "Common Units Full Name": "Duration of hold in seconds",
+        "Entry Text": "If the exercise involves holding a position, record the hold time."
+      },
+      {
+        "DisplayOrder": 7,
+        "IsActive": false,
+        "Name": "Pain Level During Exercise",
+        "Acronym": "Pain During",
+        "Common Units": "Scale 0-10",
+        "Common Units Full Name": "Scale from 0 (no pain) to 10 (worst possible pain)",
+        "Entry Text": "Rate your pain level while performing the exercise."
+      },
+      {
+        "DisplayOrder": 8,
+        "IsActive": false,
+        "Name": "Pain Level After Exercise",
+        "Acronym": "Pain After",
+        "Common Units": "Scale 0-10",
+        "Common Units Full Name": "Scale from 0 (no pain) to 10 (worst possible pain)",
+        "Entry Text": "Rate your pain level after completing the exercise."
+      },
+      {
+        "DisplayOrder": 9,
+        "IsActive": false,
+        "Name": "Effort Level",
+        "Acronym": "Effort",
+        "Common Units": "Scale 1-5 (Easy to Hard)",
+        "Common Units Full Name": "Scale indicating the perceived exertion",
+        "Entry Text": "Rate how difficult the exercise felt on a scale of 1 (easy) to 5 (hard)."
+      },
+      {
+        "DisplayOrder": 10,
+        "IsActive": false,
+        "Name": "Form/Technique",
+        "Acronym": "Form",
+        "Common Units": "Scale 1-5 (Poor to Excellent), Descriptive",
+        "Common Units Full Name": "Scale indicating the quality of your form, or descriptive notes",
+        "Entry Text": "Rate your form during the exercise or add notes about your technique."
+      },
+      {
+        "DisplayOrder": 11,
+        "IsActive": false,
+        "Name": "Modifications (if any)",
+        "Acronym": "Modifications",
+        "Common Units": "Text",
+        "Common Units Full Name": "Description of any changes made to the exercise",
+        "Entry Text": "Note any modifications you made to the exercise (e.g., reduced range of motion, using support)."
+      },
+      {
+        "DisplayOrder": 12,
+        "IsActive": false,
+        "Name": "Notes/Observations",
+        "Acronym": "Notes",
+        "Common Units": "Text",
+        "Common Units Full Name": "Free text description",
+        "Entry Text": "Add any other relevant notes about the exercise or how it felt."
+      }
+    ],
+    "Common Weightlifting Machines Tracking": [
+      {
+        "DisplayOrder": 1,
+        "IsActive": false,
+        "Name": "Lat Pulldown Machine",
+        "Acronym": "Lat Pulldown",
+        "Common Units": "lbs, kg",
+        "Common Units Full Name": "Pounds or kilograms of weight used",
+        "Entry Text": "Record the weight used for your lat pulldown sets."
+      },
+      {
+        "DisplayOrder": 2,
+        "IsActive": false,
+        "Name": "Seated Cable Row Machine",
+        "Acronym": "Cable Row",
+        "Common Units": "lbs, kg",
+        "Common Units Full Name": "Pounds or kilograms of weight used",
+        "Entry Text": "Record the weight used for your seated cable row sets."
+      },
+      {
+        "DisplayOrder": 3,
+        "IsActive": false,
+        "Name": "Chest Press Machine",
+        "Acronym": "Chest Press",
+        "Common Units": "lbs, kg",
+        "Common Units Full Name": "Pounds or kilograms of weight used",
+        "Entry Text": "Record the weight used for your chest press sets."
+      },
+      {
+        "DisplayOrder": 4,
+        "IsActive": false,
+        "Name": "Shoulder Press Machine",
+        "Acronym": "Shoulder Press",
+        "Common Units": "lbs, kg",
+        "Common Units Full Name": "Pounds or kilograms of weight used",
+        "Entry Text": "Record the weight used for your shoulder press sets."
+      },
+      {
+        "DisplayOrder": 5,
+        "IsActive": false,
+        "Name": "Leg Press Machine",
+        "Acronym": "Leg Press",
+        "Common Units": "lbs, kg",
+        "Common Units Full Name": "Pounds or kilograms of weight used",
+        "Entry Text": "Record the weight used for your leg press sets."
+      },
+      {
+        "DisplayOrder": 6,
+        "IsActive": false,
+        "Name": "Leg Extension Machine",
+        "Acronym": "Leg Extension",
+        "Common Units": "lbs, kg",
+        "Common Units Full Name": "Pounds or kilograms of weight used",
+        "Entry Text": "Record the weight used for your leg extension sets."
+      },
+      {
+        "DisplayOrder": 7,
+        "IsActive": false,
+        "Name": "Leg Curl Machine (Seated or Lying)",
+        "Acronym": "Leg Curl",
+        "Common Units": "lbs, kg",
+        "Common Units Full Name": "Pounds or kilograms of weight used",
+        "Entry Text": "Record the weight used for your leg curl sets."
+      },
+      {
+        "DisplayOrder": 8,
+        "IsActive": false,
+        "Name": "Bicep Curl Machine",
+        "Acronym": "Bicep Curl Machine",
+        "Common Units": "lbs, kg",
+        "Common Units Full Name": "Pounds or kilograms of weight used",
+        "Entry Text": "Record the weight used for your bicep curl machine sets."
+      },
+      {
+        "DisplayOrder": 9,
+        "IsActive": false,
+        "Name": "Tricep Extension Machine",
+        "Acronym": "Tricep Extension Machine",
+        "Common Units": "lbs, kg",
+        "Common Units Full Name": "Pounds or kilograms of weight used",
+        "Entry Text": "Record the weight used for your tricep extension machine sets."
+      },
+      {
+        "DisplayOrder": 10,
+        "IsActive": false,
+        "Name": "Pec Deck/Rear Delt Fly Machine",
+        "Acronym": "Pec Deck/Rear Delt",
+        "Common Units": "lbs, kg",
+        "Common Units Full Name": "Pounds or kilograms of weight used",
+        "Entry Text": "Record the weight used for your pec deck or rear delt fly sets."
+      },
+      {
+        "DisplayOrder": 11,
+        "IsActive": false,
+        "Name": "Abdominal Crunch Machine",
+        "Acronym": "Ab Crunch",
+        "Common Units": "lbs, kg",
+        "Common Units Full Name": "Pounds or kilograms of resistance used",
+        "Entry Text": "Record the resistance used for your abdominal crunch sets."
+      },
+      {
+        "DisplayOrder": 12,
+        "IsActive": false,
+        "Name": "Back Extension Machine",
+        "Acronym": "Back Extension",
+        "Common Units": "lbs, kg",
+        "Common Units Full Name": "Pounds or kilograms of resistance used",
+        "Entry Text": "Record the resistance used for your back extension sets."
+      },
+      {
+        "DisplayOrder": 13,
+        "IsActive": false,
+        "Name": "Hip Abductor Machine",
+        "Acronym": "Hip Abductor",
+        "Common Units": "lbs, kg",
+        "Common Units Full Name": "Pounds or kilograms of weight used",
+        "Entry Text": "Record the weight used for your hip abductor sets."
+      },
+      {
+        "DisplayOrder": 14,
+        "IsActive": false,
+        "Name": "Hip Adductor Machine",
+        "Acronym": "Hip Adductor",
+        "Common Units": "lbs, kg",
+        "Common Units Full Name": "Pounds or kilograms of weight used",
+        "Entry Text": "Record the weight used for your hip adductor sets."
+      },
+      {
+        "DisplayOrder": 15,
+        "IsActive": false,
+        "Name": "Calf Raise Machine (Seated or Standing)",
+        "Acronym": "Calf Raise Machine",
+        "Common Units": "lbs, kg",
+        "Common Units Full Name": "Pounds or kilograms of weight used",
+        "Entry Text": "Record the weight used for your calf raise machine sets."
+      }
+    ],
+    "Non-Weightlifting Gym Machines Tracking": [
+      {
+        "DisplayOrder": 1,
+        "IsActive": false,
+        "Name": "Treadmill",
+        "Acronym": "Treadmill",
+        "Common Units": "minutes, miles, km, speed (mph/kph), incline (%)",
+        "Common Units Full Name": "Duration in minutes, distance in miles or kilometers, speed in miles per hour or kilometers per hour, incline percentage",
+        "Entry Text": "Record your time, distance, average speed, and incline used."
+      },
+      {
+        "DisplayOrder": 2,
+        "IsActive": false,
+        "Name": "Elliptical Trainer",
+        "Acronym": "Elliptical",
+        "Common Units": "minutes, resistance level",
+        "Common Units Full Name": "Duration in minutes, resistance level setting",
+        "Entry Text": "Record your time and the average resistance level."
+      },
+      {
+        "DisplayOrder": 3,
+        "IsActive": false,
+        "Name": "Stationary Bike (Upright or Recumbent)",
+        "Acronym": "Bike",
+        "Common Units": "minutes, resistance level, distance (miles/km), RPM",
+        "Common Units Full Name": "Duration in minutes, resistance level setting, distance in miles or kilometers, revolutions per minute",
+        "Entry Text": "Record your time, average resistance, distance (if tracked), and average RPM."
+      },
+      {
+        "DisplayOrder": 4,
+        "IsActive": false,
+        "Name": "Rowing Machine",
+        "Acronym": "Rower",
+        "Common Units": "minutes, meters, split time (time per 500m), stroke rate (spm)",
+        "Common Units Full Name": "Duration in minutes, distance in meters, average time per 500 meters, average strokes per minute",
+        "Entry Text": "Record your time, total meters rowed, average split time, and average stroke rate."
+      },
+      {
+        "DisplayOrder": 5,
+        "IsActive": false,
+        "Name": "Stair Climber/Stepmill",
+        "Acronym": "Stair Climber",
+        "Common Units": "minutes, level/speed",
+        "Common Units Full Name": "Duration in minutes, intensity level or steps per minute",
+        "Entry Text": "Record your time and the average level or speed setting."
+      },
+      {
+        "DisplayOrder": 6,
+        "IsActive": false,
+        "Name": "Spin Bike",
+        "Acronym": "Spin Bike",
+        "Common Units": "minutes, resistance level, RPM",
+        "Common Units Full Name": "Duration in minutes, resistance level setting, revolutions per minute",
+        "Entry Text": "Record your time, average resistance, and average RPM."
+      },
+      {
+        "DisplayOrder": 7,
+        "IsActive": false,
+        "Name": "Arc Trainer",
+        "Acronym": "Arc Trainer",
+        "Common Units": "minutes, resistance level, incline",
+        "Common Units Full Name": "Duration in minutes, resistance level setting, incline level",
+        "Entry Text": "Record your time, average resistance, and average incline."
+      },
+      {
+        "DisplayOrder": 8,
+        "IsActive": false,
+        "Name": "Ski Ergometer (SkiErg)",
+        "Acronym": "SkiErg",
+        "Common Units": "minutes, meters, average power (watts), stroke rate (spm)",
+        "Common Units Full Name": "Duration in minutes, distance in meters, average power output in watts, average strokes per minute",
+        "Entry Text": "Record your time, total meters skied, average power, and average stroke rate."
+      },
+      {
+        "DisplayOrder": 9,
+        "IsActive": false,
+        "Name": "Jacob's Ladder",
+        "Acronym": "Jacob's Ladder",
+        "Common Units": "minutes, level/speed",
+        "Common Units Full Name": "Duration in minutes, intensity level or steps per minute",
+        "Entry Text": "Record your time and the average level or speed setting."
+      },
+      {
+        "DisplayOrder": 10,
+        "IsActive": false,
+        "Name": "Flexibility/Stretching Area (e.g., Mat Work)",
+        "Acronym": "Flexibility",
+        "Common Units": "minutes, specific stretches performed",
+        "Common Units Full Name": "Duration in minutes, list of specific stretches or exercises",
+        "Entry Text": "Record the duration of your stretching session and note the main stretches you did."
+      },
+      {
+        "DisplayOrder": 11,
+        "IsActive": false,
+        "Name": "Foam Rolling/Massage Gun",
+        "Acronym": "Recovery",
+        "Common Units": "minutes, body parts targeted",
+        "Common Units Full Name": "Duration in minutes, list of body parts you worked on",
+        "Entry Text": "Record the duration of your foam rolling or massage gun session and the main muscle groups you targeted."
+      }
+    ],
+    "Resources": [
+      {
+        "DisplayOrder": 1,
+        "IsActive": true,
+        "Name": "American College of Sports Medicine (ACSM)",
+        "Link": "https://www.acsm.org/education-resources/trending-topics-resources/physical-activity-guidelines",
+        "Summary": "Provides evidence-based physical activity guidelines for different age groups and populations."
+      },
+      {
+        "DisplayOrder": 2,
+        "IsActive": true,
+        "Name": "CDC Physical Activity Basics",
+        "Link": "https://www.cdc.gov/physicalactivity/basics/index.htm",
+        "Summary": "Information from the Centers for Disease Control and Prevention on the benefits of exercise and activity recommendations."
+      },
+      {
+        "DisplayOrder": 3,
+        "IsActive": true,
+        "Name": "ExRx.net",
+        "Link": "https://exrx.net/",
+        "Summary": "Comprehensive exercise library with instructions, muscle directories, and fitness calculators."
+      },
+      {
+        "DisplayOrder": 4,
+        "IsActive": true,
+        "Name": "Mayo Clinic - Fitness",
+        "Link": "https://www.mayoclinic.org/healthy-lifestyle/fitness/basics/fitness-basics/hlv-20049447",
+        "Summary": "Articles and tips on various aspects of fitness, including strength training, cardio, and flexibility."
+      },
+       {
+        "DisplayOrder": 5,
+        "IsActive": true,
+        "Name": "U.S. Masters Swimming",
+        "Link": "https://www.usms.org/fitness-and-training/articles-and-videos",
+        "Summary": "Resources for adult swimmers, including workout ideas, technique tips, and training articles."
+      }
+    ]
+  },
+  "Behavior": {
+    "Breaking Bad Habits Tracking": [
+      {
+        "DisplayOrder": 1,
+        "IsActive": false,
+        "Name": "Date",
+        "Acronym": "Date",
+        "Common Units": "YYYY-MM-DD",
+        "Common Units Full Name": "Year-Month-Day",
+        "Entry Text": "Enter the date of the tracking entry."
+      },
+      {
+        "DisplayOrder": 2,
+        "IsActive": false,
+        "Name": "Target Habit",
+        "Acronym": "Habit",
+        "Common Units": "Text",
+        "Common Units Full Name": "The specific bad habit you are working on breaking",
+        "Entry Text": "Clearly identify the bad habit you are tracking (e.g., nail biting, excessive phone use, smoking)."
+      },
+      {
+        "DisplayOrder": 3,
+        "IsActive": false,
+        "Name": "Triggers",
+        "Acronym": "Triggers",
+        "Common Units": "Text, Dropdown (e.g., Stress, Boredom, Specific Times, Locations, People)",
+        "Common Units Full Name": "Situations, emotions, or cues that lead to the habit",
+        "Entry Text": "Note any triggers that preceded the urge or the occurrence of the habit."
+      },
+      {
+        "DisplayOrder": 4,
+        "IsActive": false,
+        "Name": "Urge Level (if applicable)",
+        "Acronym": "Urge",
+        "Common Units": "Scale 1-10 (Low to High)",
+        "Common Units Full Name": "Rating of the intensity of the urge to perform the habit",
+        "Entry Text": "If you experienced an urge, rate its intensity."
+      },
+      {
+        "DisplayOrder": 5,
+        "IsActive": false,
+        "Name": "Occurrence Today?",
+        "Acronym": "Occurred",
+        "Common Units": "Yes/No, Count",
+        "Common Units Full Name": "Indicate if the habit occurred today, or the number of times",
+        "Entry Text": "Did the habit occur today? If yes, how many times?"
+      },
+      {
+        "DisplayOrder": 6,
+        "IsActive": false,
+        "Name": "Severity/Duration (if applicable)",
+        "Acronym": "Severity",
+        "Common Units": "Scale 1-5 (Mild to Severe), minutes",
+        "Common Units Full Name": "Rating of the severity of the occurrence, or the duration in minutes",
+        "Entry Text": "If the habit occurred, rate its severity or record its duration."
+      },
+      {
+        "DisplayOrder": 7,
+        "IsActive": false,
+        "Name": "Strategies Used",
+        "Acronym": "Strategies",
+        "Common Units": "Text, Checkbox (e.g., Avoid Triggers, Replacement Behavior, Mindfulness)",
+        "Common Units Full Name": "Techniques you used to resist the habit",
+        "Entry Text": "Note any strategies you consciously employed to avoid or resist the habit."
+      },
+      {
+        "DisplayOrder": 8,
+        "IsActive": false,
+        "Name": "Success in Resisting Urge?",
+        "Acronym": "Resisted",
+        "Common Units": "Yes/No",
+        "Common Units Full Name": "Indicate if you were successful in resisting the urge",
+        "Entry Text": "Were you successful in resisting the urge to perform the habit?"
+      },
+      {
+        "DisplayOrder": 9,
+        "IsActive": false,
+        "Name": "Feelings After Occurrence",
+        "Acronym": "Feelings",
+        "Common Units": "Text, Dropdown (e.g., Guilt, Shame, Relief, Neutral)",
+        "Common Units Full Name": "Emotions experienced after the habit occurred",
+        "Entry Text": "Describe how you felt after the habit occurred."
+      },
+      {
+        "DisplayOrder": 10,
+        "IsActive": false,
+        "Name": "Progress Today",
+        "Acronym": "Progress",
+        "Common Units": "Scale 1-5 (Setback to Improvement), Descriptive",
+        "Common Units Full Name": "Your overall assessment of your progress today",
+        "Entry Text": "Rate your overall progress in breaking the habit today or describe any significant changes."
+      },
+      {
+        "DisplayOrder": 11,
+        "IsActive": false,
+        "Name": "Learnings/Insights",
+        "Acronym": "Learnings",
+        "Common Units": "Text",
+        "Common Units Full Name": "Any new understandings about your triggers or the habit",
+        "Entry Text": "Note any new things you learned about your triggers, urges, or the habit itself."
+      },
+      {
+        "DisplayOrder": 12,
+        "IsActive": false,
+        "Name": "Support Received (if any)",
+        "Acronym": "Support",
+        "Common Units": "Text",
+        "Common Units Full Name": "Any support you received from others",
+        "Entry Text": "Note any support you received from friends, family, or support groups."
+      },
+      {
+        "DisplayOrder": 13,
+        "IsActive": false,
+        "Name": "Notes/Observations",
+        "Acronym": "Notes",
+        "Common Units": "Text",
+        "Common Units Full Name": "Free text description",
+        "Entry Text": "Add any other relevant notes about your experience today."
+      }
+    ],
+    "Starting Good Habits Tracking": [
+      {
+        "DisplayOrder": 1,
+        "IsActive": false,
+        "Name": "Date",
+        "Acronym": "Date",
+        "Common Units": "YYYY-MM-DD",
+        "Common Units Full Name": "Year-Month-Day",
+        "Entry Text": "Enter the date of the tracking entry."
+      },
+      {
+        "DisplayOrder": 2,
+        "IsActive": false,
+        "Name": "Target Habit",
+        "Acronym": "Habit",
+        "Common Units": "Text",
+        "Common Units Full Name": "The specific good habit you are working on starting",
+        "Entry Text": "Clearly identify the good habit you are tracking (e.g., daily meditation, regular exercise, reading every day)."
+      },
+      {
+        "DisplayOrder": 3,
+        "IsActive": false,
+        "Name": "Why This Habit?",
+        "Acronym": "Why",
+        "Common Units": "Text",
+        "Common Units Full Name": "Your reasons and motivations for starting this habit",
+        "Entry Text": "Briefly explain why you want to start this habit and what benefits you expect."
+      },
+      {
+        "DisplayOrder": 4,
+        "IsActive": false,
+        "Name": "Desired Frequency",
+        "Acronym": "Desired",
+        "Common Units": "e.g., Daily, 3 times/week, Once a week",
+        "Common Units Full Name": "How often you aim to perform this habit",
+        "Entry Text": "State your goal for how often you want to do this habit."
+      },
+      {
+        "DisplayOrder": 5,
+        "IsActive": false,
+        "Name": "Current Frequency (Initial)",
+        "Acronym": "Current",
+        "Common Units": "e.g., Never, Once a week",
+        "Common Units Full Name": "How often you currently perform this habit",
+        "Entry Text": "Note your current frequency of performing this habit before actively trying to start it."
+      },
+      {
+        "DisplayOrder": 6,
+        "IsActive": false,
+        "Name": "Strategies Used Today",
+        "Acronym": "Strategies",
+        "Common Units": "Text, Checkbox (e.g., Setting Reminders, Pairing with Existing Habit, Visual Cues)",
+        "Common Units Full Name": "Techniques you used to try and perform the habit today",
+        "Entry Text": "Note any specific strategies you used today to help you do the habit."
+      },
+      {
+        "DisplayOrder": 7,
+        "IsActive": false,
+        "Name": "Success Today?",
+        "Acronym": "Success",
+        "Common Units": "Yes/No",
+        "Common Units Full Name": "Indicate if you successfully performed the habit today",
+        "Entry Text": "Did you successfully perform the target habit today?"
+      },
+      {
+        "DisplayOrder": 8,
+        "IsActive": false,
+        "Name": "Enjoyment Level",
+        "Acronym": "Enjoyment",
+        "Common Units": "Scale 1-5 (Low to High)",
+        "Common Units Full Name": "Rating of how much you enjoyed performing the habit",
+        "Entry Text": "Rate how enjoyable it was to do the habit today."
+      },
+      {
+        "DisplayOrder": 9,
+        "IsActive": false,
+        "Name": "Difficulty Level",
+        "Acronym": "Difficulty",
+        "Common Units": "Scale 1-5 (Easy to Hard)",
+        "Common Units Full Name": "Rating of how difficult it was to perform the habit",
+        "Entry Text": "Rate how difficult it was to do the habit today."
+      },
+      {
+        "DisplayOrder": 10,
+        "IsActive": false,
+        "Name": "Progress Today",
+        "Acronym": "Progress",
+        "Common Units": "Scale 1-5 (Setback to Improvement), Descriptive",
+        "Common Units Full Name": "Your overall assessment of your progress in establishing the habit today",
+        "Entry Text": "Rate your overall progress in establishing the habit today or describe any significant steps."
+      },
+      {
+        "DisplayOrder": 11,
+        "IsActive": false,
+        "Name": "Obstacles/Challenges",
+        "Acronym": "Obstacles",
+        "Common Units": "Text",
+        "Common Units Full Name": "Any difficulties or roadblocks you encountered",
+        "Entry Text": "Note any obstacles or challenges that made it difficult to do the habit."
+      },
+      {
+        "DisplayOrder": 12,
+        "IsActive": false,
+        "Name": "Learnings/Insights",
+        "Acronym": "Learnings",
+        "Common Units": "Text",
+        "Common Units Full Name": "Any new understandings about what helps or hinders the habit formation",
+        "Entry Text": "Note any new things you learned about what helps you stick to the habit or what makes it difficult."
+      },
+      {
+        "DisplayOrder": 13,
+        "IsActive": false,
+        "Name": "Support Received (if any)",
+        "Acronym": "Support",
+        "Common Units": "Text",
+        "Common Units Full Name": "Any support you received from others",
+        "Entry Text": "Note any support you received from friends, family, or resources."
+      },
+      {
+        "DisplayOrder": 14,
+        "IsActive": false,
+        "Name": "Notes/Observations",
+        "Acronym": "Notes",
+        "Common Units": "Text",
+        "Common Units Full Name": "Free text description",
+        "Entry Text": "Add any other relevant notes about your experience today."
+      }
+    ],
+    "ADHD Moment Tracking": [
+      {
+        "DisplayOrder": 1,
+        "IsActive": false,
+        "Name": "Date",
+        "Acronym": "Date",
+        "Common Units": "YYYY-MM-DD",
+        "Common Units Full Name": "Year-Month-Day",
+        "Entry Text": "Enter the date of the moment."
+      },
+      {
+        "DisplayOrder": 2,
+        "IsActive": false,
+        "Name": "Time of Day",
+        "Acronym": "Time",
+        "Common Units": "HH:MM (24-hour format), Morning, Afternoon, Evening, Night",
+        "Common Units Full Name": "Specific time or general time period",
+        "Entry Text": "Note the time of day when the moment occurred."
+      },
+      {
+        "DisplayOrder": 3,
+        "IsActive": false,
+        "Name": "Situation/Context",
+        "Acronym": "Context",
+        "Common Units": "Text",
+        "Common Units Full Name": "Description of the environment and what was happening",
+        "Entry Text": "Describe the situation or context in which the ADHD moment occurred."
+      },
+      {
+        "DisplayOrder": 4,
+        "IsActive": false,
+        "Name": "Trigger (if known)",
+        "Acronym": "Trigger",
+        "Common Units": "Text, Dropdown (e.g., Noise, Stress, Boredom, Specific Task)",
+        "Common Units Full Name": "Any identifiable trigger that may have contributed",
+        "Entry Text": "Note any potential triggers that preceded the moment."
+      },
+      {
+        "DisplayOrder": 5,
+        "IsActive": false,
+        "Name": "Description of ADHD Moment",
+        "Acronym": "Description",
+        "Common Units": "Text",
+        "Common Units Full Name": "Detailed account of what happened",
+        "Entry Text": "Describe the specific thoughts, feelings, or behaviors you experienced."
+      },
+      {
+        "DisplayOrder": 6,
+        "IsActive": false,
+        "Name": "Hyperfocus?",
+        "Acronym": "Hyperfocus",
+        "Common Units": "Yes/No",
+        "Common Units Full Name": "Indicate if hyperfocus was involved",
+        "Entry Text": "Did you experience intense focus on one thing to the exclusion of others?"
+      },
+      {
+        "DisplayOrder": 7,
+        "IsActive": false,
+        "Name": "Impulsivity?",
+        "Acronym": "Impulsivity",
+        "Common Units": "Yes/No, Description",
+        "Common Units Full Name": "Indicate if impulsivity was present, and describe it",
+        "Entry Text": "Did you act without thinking? If yes, briefly describe the impulsive behavior."
+      },
+      {
+        "DisplayOrder": 8,
+        "IsActive": false,
+        "Name": "Inattention?",
+        "Acronym": "Inattention",
+        "Common Units": "Yes/No, Description",
+        "Common Units Full Name": "Indicate if inattention was prominent, and describe it",
+        "Entry Text": "Did you struggle to focus or stay on task? If yes, briefly describe the inattention."
+      },
+      {
+        "DisplayOrder": 9,
+        "IsActive": false,
+        "Name": "Hyperactivity?",
+        "Acronym": "Hyperactivity",
+        "Common Units": "Yes/No, Description",
+        "Common Units Full Name": "Indicate if physical restlessness was present, and describe it",
+        "Entry Text": "Did you feel overly restless or fidgety? If yes, briefly describe the hyperactivity."
+      },
+      {
+        "DisplayOrder": 10,
+        "IsActive": false,
+        "Name": "Emotional Dysregulation?",
+        "Acronym": "Emotions",
+        "Common Units": "Yes/No, Description",
+        "Common Units Full Name": "Indicate if emotions felt overwhelming or disproportionate, and describe it",
+        "Entry Text": "Did you experience intense or difficult-to-manage emotions? If yes, briefly describe them."
+      },
+      {
+        "DisplayOrder": 11,
+        "IsActive": false,
+        "Name": "Strategies Used (if any)",
+        "Acronym": "Strategies",
+        "Common Units": "Text, Checkbox (e.g., Deep breathing, Task switching, Medication)",
+        "Common Units Full Name": "Any coping mechanisms or strategies you employed",
+        "Entry Text": "Note any strategies you used to manage the situation."
+      },
+      {
+        "DisplayOrder": 12,
+        "IsActive": false,
+        "Name": "Success of Strategies",
+        "Acronym": "Success",
+        "Common Units": "Scale 1-5 (Not Effective to Very Effective)",
+        "Common Units Full Name": "Rating of how well the strategies worked",
+        "Entry Text": "Rate how effective your strategies were in managing the moment."
+      },
+      {
+        "DisplayOrder": 13,
+        "IsActive": false,
+        "Name": "Impact/Consequences",
+        "Acronym": "Impact",
+        "Common Units": "Text",
+        "Common Units Full Name": "The result or outcome of the moment",
+        "Entry Text": "Note any impact or consequences of the ADHD moment."
+      },
+      {
+        "DisplayOrder": 14,
+        "IsActive": false,
+        "Name": "Notes/Observations",
+        "Acronym": "Notes",
+        "Common Units": "Text",
+        "Common Units Full Name": "Free text description",
+        "Entry Text": "Add any other relevant notes about the experience."
+      }
+    ],
+    "Resources": [
+       {
+        "DisplayOrder": 1,
+        "IsActive": true,
+        "Name": "American Psychological Association (APA) - Psychology Topics",
+        "Link": "https://www.apa.org/topics",
+        "Summary": "Information on various psychological topics including behavior change, habits, and ADHD."
+      },
+      {
+        "DisplayOrder": 2,
+        "IsActive": true,
+        "Name": "NIMH - Health Topics",
+        "Link": "https://www.nimh.nih.gov/health/topics",
+        "Summary": "National Institute of Mental Health resources on mental disorders, including ADHD, and related behavioral topics."
+      },
+      {
+        "DisplayOrder": 3,
+        "IsActive": true,
+        "Name": "CHADD (Children and Adults with ADHD)",
+        "Link": "https://chadd.org/",
+        "Summary": "National resource center providing support, education, and advocacy for individuals with ADHD."
+      },
+      {
+        "DisplayOrder": 4,
+        "IsActive": true,
+        "Name": "James Clear - Atomic Habits",
+        "Link": "https://jamesclear.com/atomic-habits",
+        "Summary": "Resources based on the book 'Atomic Habits', focusing on building good habits and breaking bad ones."
+      },
+      {
+        "DisplayOrder": 5,
+        "IsActive": true,
+        "Name": "Smokefree.gov",
+        "Link": "https://smokefree.gov/",
+        "Summary": "Resources and support for quitting smoking, an example of breaking a specific bad habit."
+      }
+    ]
+  },
+  "Medical": {
+    "Medication Tracking": [
+      {
+        "DisplayOrder": 1,
+        "IsActive": false,
+        "Name": "Medication Name",
+        "Acronym": "Name",
+        "Common Units": "Text",
+        "Common Units Full Name": "Full name of the medication",
+        "Entry Text": "Enter the name of the medication."
+      },
+      {
+        "DisplayOrder": 2,
+        "IsActive": false,
+        "Name": "Dosage",
+        "Acronym": "Dosage",
+        "Common Units": "mg, mcg, mL, units",
+        "Common Units Full Name": "Milligrams, micrograms, milliliters, units (specify if needed)",
+        "Entry Text": "Enter the prescribed dosage (e.g., 50mg, 10 mcg, 10 mL)."
+      },
+      {
+        "DisplayOrder": 3,
+        "IsActive": false,
+        "Name": "Frequency",
+        "Acronym": "Frequency",
+        "Common Units": "e.g., Daily, BID (twice a day), TID (three times a day), Weekly",
+        "Common Units Full Name": "How often the medication is taken",
+        "Entry Text": "Enter how often you take the medication."
+      },
+      {
+        "DisplayOrder": 4,
+        "IsActive": false,
+        "Name": "Last Filled Date",
+        "Acronym": "Filled",
+        "Common Units": "YYYY-MM-DD",
+        "Common Units Full Name": "Year-Month-Day of the last refill",
+        "Entry Text": "Enter the date you last filled this prescription."
+      },
+      {
+        "DisplayOrder": 5,
+        "IsActive": false,
+        "Name": "Refill Due Date (Estimated)",
+        "Acronym": "Refill Due",
+        "Common Units": "YYYY-MM-DD",
+        "Common Units Full Name": "Estimated date for the next refill",
+        "Entry Text": "Estimate or calculate the date you'll need to refill this medication."
+      },
+      {
+        "DisplayOrder": 6,
+        "IsActive": false,
+        "Name": "Pharmacy",
+        "Acronym": "Pharmacy",
+        "Common Units": "Text",
+        "Common Units Full Name": "Name of the pharmacy where filled",
+        "Entry Text": "Enter the name of the pharmacy."
+      },
+      {
+        "DisplayOrder": 7,
+        "IsActive": false,
+        "Name": "Side Effects Experienced",
+        "Acronym": "Side Effects",
+        "Common Units": "Text, Checkbox (e.g., Nausea, Headache, Drowsiness)",
+        "Common Units Full Name": "Any side effects you have noticed",
+        "Entry Text": "Note any side effects you believe are related to this medication."
+      },
+      {
+        "DisplayOrder": 8,
+        "IsActive": false,
+        "Name": "Side Effect Start Date (if applicable)",
+        "Acronym": "SE Start",
+        "Common Units": "YYYY-MM-DD",
+        "Common Units Full Name": "Date when side effects began",
+        "Entry Text": "If you experience side effects, note when they started."
+      },
+      {
+        "DisplayOrder": 9,
+        "IsActive": false,
+        "Name": "Notes/Observations",
+        "Acronym": "Notes",
+        "Common Units": "Text",
+        "Common Units Full Name": "Free text description",
+        "Entry Text": "Add any other relevant notes about this medication, such as effectiveness or changes in how you feel."
+      }
+    ],
+    "Common Health Ailments": [
+      {
+        "DisplayOrder": 1,
+        "IsActive": false,
+        "Name": "Systolic Blood Pressure",
+        "Acronym": "SBP",
+        "Common Units": "mmHg",
+        "Common Units Full Name": "millimeters of mercury",
+        "Entry Text": "Record the top number of your blood pressure reading."
+      },
+      {
+        "DisplayOrder": 2,
+        "IsActive": false,
+        "Name": "Diastolic Blood Pressure",
+        "Acronym": "DBP",
+        "Common Units": "mmHg",
+        "Common Units Full Name": "millimeters of mercury",
+        "Entry Text": "Record the bottom number of your blood pressure reading."
+      },
+      {
+        "DisplayOrder": 3,
+        "IsActive": false,
+        "Name": "Heart Rate",
+        "Acronym": "HR",
+        "Common Units": "bpm",
+        "Common Units Full Name": "beats per minute",
+        "Entry Text": "Count your pulse or use a heart rate monitor and enter the value in beats per minute."
+      },
+      {
+        "DisplayOrder": 4,
+        "IsActive": false,
+        "Name": "Blood Glucose",
+        "Acronym": "BG",
+        "Common Units": "mg/dL, mmol/L",
+        "Common Units Full Name": "milligrams per deciliter, millimoles per liter",
+        "Entry Text": "Record your blood glucose level as measured by your glucometer. Specify the units."
+      },
+      {
+        "DisplayOrder": 5,
+        "IsActive": false,
+        "Name": "HbA1c",
+        "Acronym": "A1c",
+        "Common Units": "%",
+        "Common Units Full Name": "percent",
+        "Entry Text": "Record your most recent HbA1c test result."
+      },
+      {
+        "DisplayOrder": 6,
+        "IsActive": false,
+        "Name": "Weight",
+        "Acronym": "WT",
+        "Common Units": "kg, lbs",
+        "Common Units Full Name": "kilograms, pounds",
+        "Entry Text": "Weigh yourself using a scale and enter the value in kilograms or pounds."
+      },
+      {
+        "DisplayOrder": 7,
+        "IsActive": false,
+        "Name": "Body Mass Index",
+        "Acronym": "BMI",
+        "Common Units": "kg/m², -",
+        "Common Units Full Name": "kilograms per square meter, unitless",
+        "Entry Text": "BMI is automatically calculated from height and weight."
+      },
+      {
+        "DisplayOrder": 8,
+        "IsActive": false,
+        "Name": "Waist Circumference",
+        "Acronym": "WC",
+        "Common Units": "cm, inches",
+        "Common Units Full Name": "centimeters, inches",
+        "Entry Text": "Measure around your natural waistline and record the measurement. Specify the units."
+      },
+      {
+        "DisplayOrder": 9,
+        "IsActive": false,
+        "Name": "Mood",
+        "Acronym": "Mood",
+        "Common Units": "Scale 1-10, Descriptive",
+        "Common Units Full Name": "Scale from 1 to 10, Descriptive words (e.g., happy, sad, anxious)",
+        "Entry Text": "Rate your overall mood on a scale of 1 to 10, or briefly describe how you are feeling."
+      },
+      {
+        "DisplayOrder": 10,
+        "IsActive": false,
+        "Name": "Anxiety Level",
+        "Acronym": "Anxiety",
+        "Common Units": "Scale 1-10, Descriptive",
+        "Common Units Full Name": "Scale from 1 to 10, Descriptive words (e.g., calm, worried, panicky)",
+        "Entry Text": "Rate your current level of anxiety on a scale of 1 to 10, or briefly describe your anxiety."
+      },
+      {
+        "DisplayOrder": 11,
+        "IsActive": false,
+        "Name": "Pain Level",
+        "Acronym": "Pain",
+        "Common Units": "Scale 0-10",
+        "Common Units Full Name": "Scale from 0 (no pain) to 10 (worst possible pain)",
+        "Entry Text": "Rate your current pain level on a scale of 0 to 10."
+      },
+      {
+        "DisplayOrder": 12,
+        "IsActive": false,
+        "Name": "Joint Swelling",
+        "Acronym": "JS",
+        "Common Units": "Yes/No, Location",
+        "Common Units Full Name": "Yes or No, Specific joint location",
+        "Entry Text": "Indicate if you have any joint swelling and, if so, specify the location(s)."
+      },
+      {
+        "DisplayOrder": 13,
+        "IsActive": false,
+        "Name": "Fatigue Level",
+        "Acronym": "Fatigue",
+        "Common Units": "Scale 1-10, Descriptive",
+        "Common Units Full Name": "Scale from 1 (no fatigue) to 10 (severe fatigue), Descriptive words (e.g., energetic, tired, exhausted)",
+        "Entry Text": "Rate your current level of fatigue on a scale of 1 to 10, or briefly describe your fatigue."
+      },
+      {
+        "DisplayOrder": 14,
+        "IsActive": false,
+        "Name": "Medication Adherence",
+        "Acronym": "MA",
+        "Common Units": "Yes/No, %",
+        "Common Units Full Name": "Yes or No (took all prescribed medications), Percentage of doses taken",
+        "Entry Text": "Indicate if you took all your prescribed medications today, or record the percentage of doses taken."
+      },
+      {
+        "DisplayOrder": 15,
+        "IsActive": false,
+        "Name": "Asthma Symptoms",
+        "Acronym": "Asthma Sx",
+        "Common Units": "Descriptive",
+        "Common Units Full Name": "Descriptive words (e.g., wheezing, coughing, shortness of breath)",
+        "Entry Text": "Describe any asthma symptoms you are experiencing."
+      },
+      {
+        "DisplayOrder": 16,
+        "IsActive": false,
+        "Name": "Peak Expiratory Flow",
+        "Acronym": "PEF",
+        "Common Units": "L/min",
+        "Common Units Full Name": "liters per minute",
+        "Entry Text": "Record your peak expiratory flow reading."
+      },
+      {
+        "DisplayOrder": 17,
+        "IsActive": false,
+        "Name": "COPD Symptoms",
+        "Acronym": "COPD Sx",
+        "Common Units": "Descriptive",
+        "Common Units Full Name": "Descriptive words (e.g., breathlessness, mucus production, chest tightness)",
+        "Entry Text": "Describe any COPD symptoms you are experiencing."
+      },
+      {
+        "DisplayOrder": 18,
+        "IsActive": false,
+        "Name": "Oxygen Saturation",
+        "Acronym": "SpO2",
+        "Common Units": "%",
+        "Common Units Full Name": "percent",
+        "Entry Text": "Use a pulse oximeter and enter the oxygen saturation percentage."
+      },
+      {
+        "DisplayOrder": 19,
+        "IsActive": false,
+        "Name": "Height",
+        "Acronym": "HT",
+        "Common Units": "cm, ft/in",
+        "Common Units Full Name": "centimeters, feet and inches",
+        "Entry Text": "Measure your height using a tape measure or wall scale and enter the value in centimeters or feet and inches."
+      },
+      {
+        "DisplayOrder": 20,
+        "IsActive": false,
+        "Name": "Body Temperature",
+        "Acronym": "Temp",
+        "Common Units": "°C, °F",
+        "Common Units Full Name": "degrees Celsius, degrees Fahrenheit",
+        "Entry Text": "Use a digital thermometer and enter your body temperature in degrees Celsius or Fahrenheit."
+      },
+      {
+        "DisplayOrder": 21,
+        "IsActive": false,
+        "Name": "Respiratory Rate",
+        "Acronym": "RR",
+        "Common Units": "breaths/min",
+        "Common Units Full Name": "breaths per minute",
+        "Entry Text": "Count your breaths for one minute and enter the total."
+      },
+      {
+        "DisplayOrder": 22,
+        "IsActive": false,
+        "Name": "Blood Pressure",
+        "Acronym": "BP",
+        "Common Units": "mmHg",
+        "Common Units Full Name": "millimeters of mercury",
+        "Entry Text": "Use a home blood pressure monitor and enter systolic/diastolic pressure in mmHg."
+      },
+      {
+        "DisplayOrder": 23,
+        "IsActive": false,
+        "Name": "Steps",
+        "Acronym": "Steps",
+        "Common Units": "steps",
+        "Common Units Full Name": "steps",
+        "Entry Text": "Enter the total number of steps taken today from a pedometer or fitness app."
+      },
+      {
+        "DisplayOrder": 24,
+        "IsActive": false,
+        "Name": "Distance",
+        "Acronym": "Dist",
+        "Common Units": "km, miles",
+        "Common Units Full Name": "kilometers, miles",
+        "Entry Text": "Enter the distance walked or run in kilometers or miles from a fitness app or GPS tracker."
+      },
+      {
+        "DisplayOrder": 25,
+        "IsActive": false,
+        "Name": "Active Minutes",
+        "Acronym": "AM",
+        "Common Units": "minutes",
+        "Common Units Full Name": "minutes",
+        "Entry Text": "Enter the total active minutes recorded during the day."
+      },
+      {
+        "DisplayOrder": 26,
+        "IsActive": false,
+        "Name": "Calories Burned",
+        "Acronym": "Cal",
+        "Common Units": "kcal",
+        "Common Units Full Name": "kilocalories",
+        "Entry Text": "Enter the number of kilocalories burned from your fitness tracker or estimate."
+      },
+      {
+        "DisplayOrder": 27,
+        "IsActive": false,
+        "Name": "Sleep Duration",
+        "Acronym": "Sleep",
+        "Common Units": "hours",
+        "Common Units Full Name": "hours",
+        "Entry Text": "Enter the total number of hours you slept last night."
+      },
+      {
+        "DisplayOrder": 28,
+        "IsActive": false,
+        "Name": "Urine Color",
+        "Acronym": "UC",
+        "Common Units": "visual scale",
+        "Common Units Full Name": "a color chart scale (pale yellow to dark amber)",
+        "Entry Text": "Compare your urine color to a hydration color chart and select the closest match."
+      },
+      {
+        "DisplayOrder": 29,
+        "IsActive": false,
+        "Name": "Urine Volume",
+        "Acronym": "UV",
+        "Common Units": "mL, L",
+        "Common Units Full Name": "milliliters, liters",
+        "Entry Text": "Measure the amount of urine using a marked container and enter in mL or liters."
+      },
+      {
+        "DisplayOrder": 30,
+        "IsActive": false,
+        "Name": "Bowel Movements",
+        "Acronym": "BMF",
+        "Common Units": "times/day",
+        "Common Units Full Name": "times per day",
+        "Entry Text": "Enter the number of bowel movements you had today."
+      },
+      {
+        "DisplayOrder": 31,
+        "IsActive": false,
+        "Name": "Sleep Quality",
+        "Acronym": "SQ",
+        "Common Units": "score",
+        "Common Units Full Name": "a numeric or qualitative score",
+        "Entry Text": "Rate your sleep quality using a score from 1 to 10 or as Good, Fair, Poor."
+      },
+      {
+        "DisplayOrder": 32,
+        "IsActive": false,
+        "Name": "Heart Rate Variability",
+        "Acronym": "HRV",
+        "Common Units": "ms",
+        "Common Units Full Name": "milliseconds",
+        "Entry Text": "Enter your HRV value in milliseconds from a fitness tracker or monitoring device."
+      },
+      {
+        "DisplayOrder": 33,
+        "IsActive": false,
+        "Name": "Breathing Patterns",
+        "Acronym": "BPS",
+        "Common Units": "events/hour",
+        "Common Units Full Name": "events per hour",
+        "Entry Text": "Record abnormal breathing events per hour, typically from a sleep tracker."
+      },
+      {
+        "DisplayOrder": 34,
+        "IsActive": false,
+        "Name": "Skin Irritation Level",
+        "Acronym": "SIL",
+        "Common Units": "scale 0-5",
+        "Common Units Full Name": "scale from 0 (none) to 5 (severe)",
+        "Entry Text": "Rate any skin irritation from 0 (none) to 5 (severe)."
+      },
+      {
+        "DisplayOrder": 35,
+        "IsActive": false,
+        "Name": "Stomach Sensitivity",
+        "Acronym": "SS",
+        "Common Units": "scale 0-5",
+        "Common Units Full Name": "scale from 0 (none) to 5 (very sensitive)",
+        "Entry Text": "Rate your stomach sensitivity or discomfort from 0 (none) to 5 (very sensitive)."
+      }
+    ],
+    "Sleep Apnea and Snoring Tracking": [
+      {
+        "DisplayOrder": 1,
+        "IsActive": false,
+        "Name": "Date",
+        "Acronym": "Date",
+        "Common Units": "YYYY-MM-DD",
+        "Common Units Full Name": "Year-Month-Day",
+        "Entry Text": "Enter the date of your sleep."
+      },
+      {
+        "DisplayOrder": 2,
+        "IsActive": false,
+        "Name": "Time to Bed",
+        "Acronym": "Bedtime",
+        "Common Units": "HH:MM (24-hour format)",
+        "Common Units Full Name": "Hour:Minute in 24-hour format",
+        "Entry Text": "Enter the time you went to bed."
+      },
+      {
+        "DisplayOrder": 3,
+        "IsActive": false,
+        "Name": "Wake-up Time",
+        "Acronym": "Wakeup",
+        "Common Units": "HH:MM (24-hour format)",
+        "Common Units Full Name": "Hour:Minute in 24-hour format",
+        "Entry Text": "Enter the time you woke up."
+      },
+      {
+        "DisplayOrder": 4,
+        "IsActive": false,
+        "Name": "Total Sleep Time",
+        "Acronym": "Total Sleep",
+        "Common Units": "hours, minutes",
+        "Common Units Full Name": "Total hours and minutes slept",
+        "Entry Text": "Record the total duration of your sleep."
+      },
+      {
+        "DisplayOrder": 5,
+        "IsActive": false,
+        "Name": "Apnea-Hypopnea Index (AHI)",
+        "Acronym": "AHI",
+        "Common Units": "events/hour",
+        "Common Units Full Name": "Number of apneas and hypopneas per hour of sleep",
+        "Entry Text": "Record your AHI as reported by your sleep study or device."
+      },
+      {
+        "DisplayOrder": 6,
+        "IsActive": false,
+        "Name": "Oxygen Saturation (Lowest)",
+        "Acronym": "Min SpO2",
+        "Common Units": "%",
+        "Common Units Full Name": "Lowest recorded oxygen saturation percentage",
+        "Entry Text": "Record the lowest oxygen saturation level reached during sleep."
+      },
+      {
+        "DisplayOrder": 7,
+        "IsActive": false,
+        "Name": "Oxygen Desaturation Events (ODI)",
+        "Acronym": "ODI",
+        "Common Units": "events/hour",
+        "Common Units Full Name": "Number of oxygen desaturation events per hour of sleep",
+        "Entry Text": "Record the Oxygen Desaturation Index from your sleep data."
+      },
+      {
+        "DisplayOrder": 8,
+        "IsActive": false,
+        "Name": "Snoring (Intensity/Frequency)",
+        "Acronym": "Snoring",
+        "Common Units": "Scale 1-5 (Quiet to Loud), Descriptive (e.g., Frequent, Occasional)",
+        "Common Units Full Name": "Rating of snoring intensity and description of frequency",
+        "Entry Text": "Rate the intensity of your snoring and describe how often it occurred."
+      },
+      {
+        "DisplayOrder": 9,
+        "IsActive": false,
+        "Name": "Sleep Position",
+        "Acronym": "Position",
+        "Common Units": "Dropdown (Back, Side (Left), Side (Right), Stomach)",
+        "Common Units Full Name": "Predominant sleep position",
+        "Entry Text": "Note the position you slept in most often."
+      },
+      {
+        "DisplayOrder": 10,
+        "IsActive": false,
+        "Name": "Sleep Stages (from tracker/study)",
+        "Acronym": "Stages",
+        "Common Units": "minutes (Deep, REM, Light)",
+        "Common Units Full Name": "Duration of each sleep stage in minutes",
+        "Entry Text": "Record the duration of Deep, REM, and Light sleep stages if available."
+      },
+      {
+        "DisplayOrder": 11,
+        "IsActive": false,
+        "Name": "Number of Awakenings",
+        "Acronym": "Awakenings",
+        "Common Units": "Count",
+        "Common Units Full Name": "Number of times you woke up during the night",
+        "Entry Text": "Record the number of times you remember waking up."
+      },
+      {
+        "DisplayOrder": 12,
+        "IsActive": false,
+        "Name": "Sleep Efficiency (from tracker/study)",
+        "Acronym": "Efficiency",
+        "Common Units": "%",
+        "Common Units Full Name": "Percentage of time spent asleep while in bed",
+        "Entry Text": "Record your sleep efficiency percentage if available."
+      },
+      {
+        "DisplayOrder": 13,
+        "IsActive": false,
+        "Name": "Sleep Latency",
+        "Acronym": "Latency",
+        "Common Units": "minutes",
+        "Common Units Full Name": "Time taken to fall asleep in minutes",
+        "Entry Text": "Estimate or record how long it took you to fall asleep."
+      },
+      {
+        "DisplayOrder": 14,
+        "IsActive": false,
+        "Name": "Respiratory Effort-Related Arousals (RERA)",
+        "Acronym": "RERA",
+        "Common Units": "events/hour",
+        "Common Units Full Name": "Number of RERAs per hour of sleep",
+        "Entry Text": "Record the RERA index if reported by your sleep study or device."
+      },
+      {
+        "DisplayOrder": 15,
+        "IsActive": false,
+        "Name": "Heart Rate (Average)",
+        "Acronym": "Avg HR",
+        "Common Units": "bpm",
+        "Common Units Full Name": "Average heart rate during sleep",
+        "Entry Text": "Record your average heart rate during sleep if available."
+      },
+      {
+        "DisplayOrder": 16,
+        "IsActive": false,
+        "Name": "Heart Rate (Lowest)",
+        "Acronym": "Min HR",
+        "Common Units": "bpm",
+        "Common Units Full Name": "Lowest heart rate recorded during sleep",
+        "Entry Text": "Record your lowest heart rate during sleep if available."
+      },
+      {
+        "DisplayOrder": 17,
+        "IsActive": false,
+        "Name": "Symptoms Upon Waking",
+        "Acronym": "Wake Symptoms",
+        "Common Units": "Checkbox (Headache, Dry Mouth, Fatigue, Other), Text",
+        "Common Units Full Name": "Check applicable symptoms or describe others",
+        "Entry Text": "Indicate any symptoms you experienced upon waking or describe them."
+      },
+      {
+        "DisplayOrder": 18,
+        "IsActive": false,
+        "Name": "Medications/Devices Used",
+        "Acronym": "Treatment",
+        "Common Units": "Checkbox (CPAP, APAP, Oral Appliance, Other), Text",
+        "Common Units Full Name": "Check devices/medications used or describe others",
+        "Entry Text": "Indicate any devices or medications used to manage sleep apnea or snoring, or describe others."
+      },
+      {
+        "DisplayOrder": 19,
+        "IsActive": false,
+        "Name": "Notes/Observations",
+        "Acronym": "Notes",
+        "Common Units": "Text",
+        "Common Units Full Name": "Free text description",
+        "Entry Text": "Add any other relevant notes about your sleep, snoring, or apnea."
+      }
+    ],
+    "Persistent Cough Tracking": [
+      {
+        "DisplayOrder": 1,
+        "IsActive": false,
+        "Name": "Date",
+        "Acronym": "Date",
+        "Common Units": "YYYY-MM-DD",
+        "Common Units Full Name": "Year-Month-Day",
+        "Entry Text": "Enter the date of the tracking entry."
+      },
+      {
+        "DisplayOrder": 2,
+        "IsActive": false,
+        "Name": "Time of Day",
+        "Acronym": "Time",
+        "Common Units": "Morning, Afternoon, Evening, Night",
+        "Common Units Full Name": "General time period of the day",
+        "Entry Text": "Note the time of day when the cough was most prominent or occurred."
+      },
+      {
+        "DisplayOrder": 3,
+        "IsActive": false,
+        "Name": "Frequency",
+        "Acronym": "Frequency",
+        "Common Units": "e.g., Occasional, Frequent, Constant, Number of bouts",
+        "Common Units Full Name": "How often the coughing occurs",
+        "Entry Text": "Describe how often you are coughing."
+      },
+      {
+        "DisplayOrder": 4,
+        "IsActive": false,
+        "Name": "Intensity",
+        "Acronym": "Intensity",
+        "Common Units": "Scale 1-5 (Mild to Severe)",
+        "Common Units Full Name": "Rating of the severity or force of the cough",
+        "Entry Text": "Rate the intensity of your cough."
+      },
+      {
+        "DisplayOrder": 5,
+        "IsActive": false,
+        "Name": "Type of Cough",
+        "Acronym": "Type",
+        "Common Units": "Dropdown (Dry, Wet/Productive, Barking, Wheezing)",
+        "Common Units Full Name": "Description of the sound and nature of the cough",
+        "Entry Text": "Describe the type of cough you have."
+      },
+      {
+        "DisplayOrder": 6,
+        "IsActive": false,
+        "Name": "Mucus Production (if applicable)",
+        "Acronym": "Mucus",
+        "Common Units": "Yes/No, Color (Clear, White, Yellow, Green, Other), Amount (Small, Medium, Large)",
+        "Common Units Full Name": "Indicate if mucus is produced, its color, and the amount",
+        "Entry Text": "If you are producing mucus, note the color and approximate amount."
+      },
+      {
+        "DisplayOrder": 7,
+        "IsActive": false,
+        "Name": "Triggers",
+        "Acronym": "Triggers",
+        "Common Units": "Text, Checkbox (e.g., Cold air, Allergens, Exercise, Talking)",
+        "Common Units Full Name": "Factors that seem to worsen or initiate the cough",
+        "Entry Text": "Note any specific triggers that seem to make your cough worse."
+      },
+      {
+        "DisplayOrder": 8,
+        "IsActive": false,
+        "Name": "Relieving Factors",
+        "Acronym": "Relief",
+        "Common Units": "Text, Checkbox (e.g., Rest, Warm liquids, Cough drops)",
+        "Common Units Full Name": "Things that seem to make the cough better",
+        "Entry Text": "Note anything that seems to provide relief from your cough."
+      },
+      {
+        "DisplayOrder": 9,
+        "IsActive": false,
+        "Name": "Associated Symptoms",
+        "Acronym": "Symptoms",
+        "Common Units": "Checkbox (Sore throat, Runny nose, Fever, Chest pain, Shortness of breath)",
+        "Common Units Full Name": "Other symptoms you are experiencing along with the cough",
+        "Entry Text": "Check any other symptoms you have."
+      },
+      {
+        "DisplayOrder": 10,
+        "IsActive": false,
+        "Name": "Medications/Treatments Used",
+        "Acronym": "Treatment",
+        "Common Units": "Text (e.g., Cough syrup, Lozenges, Home remedies)",
+        "Common Units Full Name": "Any medications or treatments you are using for the cough",
+        "Entry Text": "Note any medications or treatments you are using."
+      },
+      {
+        "DisplayOrder": 11,
+        "IsActive": false,
+        "Name": "Effectiveness of Treatment",
+        "Acronym": "Effectiveness",
+        "Common Units": "Scale 1-5 (Not Effective to Very Effective)",
+        "Common Units Full Name": "Rating of how well the treatment seems to be working",
+        "Entry Text": "Rate how effective your current treatment seems to be."
+      },
+      {
+        "DisplayOrder": 12,
+        "IsActive": false,
+        "Name": "Impact on Daily Activities",
+        "Acronym": "Impact",
+        "Common Units": "Scale 1-5 (No Impact to Significant Impact), Descriptive",
+        "Common Units Full Name": "How much the cough is affecting your daily life",
+        "Entry Text": "Rate how much your cough is affecting your daily activities or describe the impact."
+      },
+      {
+        "DisplayOrder": 13,
+        "IsActive": false,
+        "Name": "Sleep Quality (related to cough)",
+        "Acronym": "Sleep",
+        "Common Units": "Scale 1-5 (Poor to Excellent)",
+        "Common Units Full Name": "How the cough is affecting your sleep quality",
+        "Entry Text": "Rate the quality of your sleep in relation to your cough."
+      },
+      {
+        "DisplayOrder": 14,
+        "IsActive": false,
+        "Name": "Notes/Observations",
+        "Acronym": "Notes",
+        "Common Units": "Text",
+        "Common Units Full Name": "Free text description",
+        "Entry Text": "Add any other relevant notes about your cough."
+      }
+    ],
+    "Urethral Stricture": [
+      {
+        "DisplayOrder": 1,
+        "IsActive": false,
+        "Name": "Date",
+        "Acronym": "DateEntry",
+        "Common Units": "YYYY-MM-DD",
+        "Common Units Full Name": "Year-Month-Day",
+        "Entry Text": "Enter the date of the tracking entry."
+      },
+      {
+        "DisplayOrder": 2,
+        "IsActive": false,
+        "Name": "Time of Day",
+        "Acronym": "TimeEntry",
+        "Common Units": "HH:MM (24-hour format), Morning, Afternoon, Evening, Night",
+        "Common Units Full Name": "Specific time or general time period",
+        "Entry Text": "Note the time of day for this observation."
+      },
+      {
+        "DisplayOrder": 3,
+        "IsActive": false,
+        "Name": "Urination Duration",
+        "Acronym": "TimeUrination",
+        "Common Units": "Seconds",
+        "Common Units Full Name": "Recorded time of Urination",
+        "Entry Text": "Use the timer or enter the seconds for your time to Urinate"
+      },
+      {
+        "DisplayOrder": 4,
+        "IsActive": false,
+        "Name": "Urinary Volume Unit",
+        "Acronym": "VolumeUrinationUnit",
+        "Common Units": "ml, oz",
+        "Common Units Full Name": "milliliter, Ounce",
+        "Entry Text": "Measurement standard of milliliters or ounces"
+      },
+      {
+        "DisplayOrder": 5,
+        "IsActive": false,
+        "Name": "Urinary Volume",
+        "Acronym": "VolumeUrination",
+        "Common Units": "ml, oz",
+        "Common Units Full Name": "milliliter, Ounce",
+        "Entry Text": "Amount of urine measured with 'Urinary Volume Unit'"
+      },
+      {
+        "DisplayOrder": 6,
+        "IsActive": false,
+        "Name": "Urinary Flow Rate Description",
+        "Acronym": "Flow Desc",
+        "Common Units": "Descriptive (e.g., Strong, Weak, Intermittent, Spraying)",
+        "Common Units Full Name": "Subjective description of urine stream",
+        "Entry Text": "Describe the strength and consistency of your urine flow."
+      },
+       {
+        "DisplayOrder": 7,
+        "IsActive": false,
+        "Name": "Urinary Flow Rate (calculated)",
+        "Acronym": "Flow Rate",
+        "Common Units": "ml/s, oz/s",
+        "Common Units Full Name": "milliliters per second, ounces per second",
+        "Entry Text": "Calculated from Volume and Duration. Note units used."
+      },
+      {
+        "DisplayOrder": 8,
+        "IsActive": false,
+        "Name": "Difficulty Initiating Urination",
+        "Acronym": "Initiation",
+        "Common Units": "Scale 1-5 (No Difficulty to Significant Difficulty), Yes/No",
+        "Common Units Full Name": "Rating of how hard it is to start urinating, or a simple Yes/No",
+        "Entry Text": "Rate the difficulty you have starting your urine stream or indicate Yes/No."
+      },
+      {
+        "DisplayOrder": 9,
+        "IsActive": false,
+        "Name": "Straining to Urinate",
+        "Acronym": "Straining",
+        "Common Units": "Scale 1-5 (No Straining to Significant Straining), Yes/No",
+        "Common Units Full Name": "Rating of how much you need to strain to urinate, or a simple Yes/No",
+        "Entry Text": "Rate the amount of straining required to urinate or indicate Yes/No."
+      },
+      {
+        "DisplayOrder": 10,
+        "IsActive": false,
+        "Name": "Feeling of Incomplete Emptying",
+        "Acronym": "Emptying",
+        "Common Units": "Scale 1-5 (Not at all to Very Much), Yes/No",
+        "Common Units Full Name": "Rating of how completely you feel your bladder empties, or a simple Yes/No",
+        "Entry Text": "Rate how completely you feel your bladder empties after urination or indicate Yes/No."
+      },
+      {
+        "DisplayOrder": 11,
+        "IsActive": false,
+        "Name": "Frequency of Urination (Daytime)",
+        "Acronym": "Freq Day",
+        "Common Units": "Count",
+        "Common Units Full Name": "Number of times urinated during the day",
+        "Entry Text": "Record how many times you urinated during the daytime."
+      },
+      {
+        "DisplayOrder": 12,
+        "IsActive": false,
+        "Name": "Frequency of Urination (Nighttime - Nocturia)",
+        "Acronym": "Freq Night",
+        "Common Units": "Count",
+        "Common Units Full Name": "Number of times you woke up to urinate at night",
+        "Entry Text": "Record how many times you woke up to urinate during the night."
+      },
+      {
+        "DisplayOrder": 13,
+        "IsActive": false,
+        "Name": "Urgency of Urination",
+        "Acronym": "Urgency",
+        "Common Units": "Scale 1-5 (Not Urgent to Very Urgent)",
+        "Common Units Full Name": "Rating of how sudden and intense your urge to urinate is",
+        "Entry Text": "Rate the level of urgency you experience when you need to urinate."
+      },
+      {
+        "DisplayOrder": 14,
+        "IsActive": false,
+        "Name": "Pain or Discomfort During Urination (Dysuria)",
+        "Acronym": "Dysuria",
+        "Common Units": "Scale 0-10, Descriptive (e.g., Burning, Stinging)",
+        "Common Units Full Name": "Rating of pain level and description of discomfort",
+        "Entry Text": "Rate any pain or discomfort you feel while urinating or describe it."
+      },
+      {
+        "DisplayOrder": 15,
+        "IsActive": false,
+        "Name": "Blood in Urine (Hematuria)",
+        "Acronym": "Hematuria",
+        "Common Units": "Yes/No, Description (e.g., Microscopic, Gross)",
+        "Common Units Full Name": "Indicate if blood is present and describe if known",
+        "Entry Text": "Note if you noticed blood in your urine and if it was visible or only detected by testing."
+      },
+      {
+        "DisplayOrder": 16,
+        "IsActive": false,
+        "Name": "Lower Abdominal or Pelvic Pain",
+        "Acronym": "Pelvic Pain",
+        "Common Units": "Scale 0-10",
+        "Common Units Full Name": "Scale from 0 (no pain) to 10 (worst possible pain)",
+        "Entry Text": "Rate any pain you are experiencing in your lower abdomen or pelvic area."
+      },
+      {
+        "DisplayOrder": 17,
+        "IsActive": false,
+        "Name": "Stricture Dilation (if performed)",
+        "Acronym": "Dilation",
+        "Common Units": "Yes/No, Frequency (e.g., Daily, Weekly), Size (Fr)",
+        "Common Units Full Name": "Indicate if self-dilation was performed, how often, and the size of the dilator in French units",
+        "Entry Text": "Note if you performed self-dilation, how often, and the French size used."
+      },
+      {
+        "DisplayOrder": 18,
+        "IsActive": false,
+        "Name": "Medications Used (for stricture or related symptoms)",
+        "Acronym": "Meds",
+        "Common Units": "Text",
+        "Common Units Full Name": "Names of medications being taken",
+        "Entry Text": "List any medications you are taking related to your urethral stricture or its symptoms."
+      },
+      {
+        "DisplayOrder": 19,
+        "IsActive": false,
+        "Name": "Fluid Intake",
+        "Acronym": "Fluids",
+        "Common Units": "Liters, Ounces",
+        "Common Units Full Name": "Amount of fluid consumed in liters or ounces",
+        "Entry Text": "Record your approximate daily fluid intake. Specify the units."
+      },
+      {
+        "DisplayOrder": 20,
+        "IsActive": false,
+        "Name": "Overall Well-being (related to urinary symptoms)",
+        "Acronym": "Well-being",
+        "Common Units": "Scale 1-10 (Poor to Excellent)",
+        "Common Units Full Name": "Rating of your overall well-being in relation to your urinary symptoms",
+        "Entry Text": "Rate your overall sense of well-being as it relates to your urinary issues."
+      },
+      {
+        "DisplayOrder": 21,
+        "IsActive": false,
+        "Name": "Notes/Observations",
+        "Acronym": "Notes",
+        "Common Units": "Text",
+        "Common Units Full Name": "Free text description",
+        "Entry Text": "Add any other relevant notes or observations about your urethral stricture symptoms or management."
+      }
+    ],
+    "Prostate Issues": [
+      {
+        "DisplayOrder": 1,
+        "IsActive": false,
+        "Name": "Date",
+        "Acronym": "Date",
+        "Common Units": "YYYY-MM-DD",
+        "Common Units Full Name": "Year-Month-Day",
+        "Entry Text": "Enter the date of the tracking entry."
+      },
+      {
+        "DisplayOrder": 2,
+        "IsActive": false,
+        "Name": "Time of Day",
+        "Acronym": "Time",
+        "Common Units": "HH:MM (24-hour format), Morning, Afternoon, Evening, Night",
+        "Common Units Full Name": "Specific time or general time period",
+        "Entry Text": "Note the time of day for this observation."
+      },
+      {
+        "DisplayOrder": 3,
+        "IsActive": false,
+        "Name": "Urinary Frequency (Daytime)",
+        "Acronym": "Freq Day",
+        "Common Units": "Count",
+        "Common Units Full Name": "Number of times urinated during the day",
+        "Entry Text": "Record how many times you urinated during the daytime."
+      },
+      {
+        "DisplayOrder": 4,
+        "IsActive": false,
+        "Name": "Urinary Frequency (Nighttime - Nocturia)",
+        "Acronym": "Freq Night",
+        "Common Units": "Count",
+        "Common Units Full Name": "Number of times you woke up to urinate at night",
+        "Entry Text": "Record how many times you woke up to urinate during the night."
+      },
+      {
+        "DisplayOrder": 5,
+        "IsActive": false,
+        "Name": "Urgency of Urination",
+        "Acronym": "Urgency",
+        "Common Units": "Scale 1-5 (Not Urgent to Very Urgent)",
+        "Common Units Full Name": "Rating of how sudden and intense your urge to urinate is",
+        "Entry Text": "Rate the level of urgency you experience when you need to urinate."
+      },
+      {
+        "DisplayOrder": 6,
+        "IsActive": false,
+        "Name": "Difficulty Initiating Urination",
+        "Acronym": "Initiation",
+        "Common Units": "Scale 1-5 (No Difficulty to Significant Difficulty), Yes/No",
+        "Common Units Full Name": "Rating of how hard it is to start urinating, or a simple Yes/No",
+        "Entry Text": "Rate the difficulty you have starting your urine stream or indicate Yes/No."
+      },
+      {
+        "DisplayOrder": 7,
+        "IsActive": false,
+        "Name": "Weak Urinary Stream",
+        "Acronym": "Weak Stream",
+        "Common Units": "Scale 1-5 (Strong to Very Weak), Yes/No",
+        "Common Units Full Name": "Rating of the strength of your urine flow, or a simple Yes/No",
+        "Entry Text": "Rate the strength of your urine stream or indicate Yes/No."
+      },
+      {
+        "DisplayOrder": 8,
+        "IsActive": false,
+        "Name": "Intermittent Urinary Stream",
+        "Acronym": "Intermittent",
+        "Common Units": "Scale 1-5 (Not at all to Very Much), Yes/No",
+        "Common Units Full Name": "Rating of how often your urine stream stops and starts, or a simple Yes/No",
+        "Entry Text": "Rate how often your urine stream is intermittent or indicate Yes/No."
+      },
+      {
+        "DisplayOrder": 9,
+        "IsActive": false,
+        "Name": "Straining to Urinate",
+        "Acronym": "Straining",
+        "Common Units": "Scale 1-5 (No Straining to Significant Straining), Yes/No",
+        "Common Units Full Name": "Rating of how much you need to strain to urinate, or a simple Yes/No",
+        "Entry Text": "Rate the amount of straining required to urinate or indicate Yes/No."
+      },
+      {
+        "DisplayOrder": 10,
+        "IsActive": false,
+        "Name": "Feeling of Incomplete Emptying",
+        "Acronym": "Emptying",
+        "Common Units": "Scale 1-5 (Not at all to Very Much), Yes/No",
+        "Common Units Full Name": "Rating of how completely you feel your bladder empties, or a simple Yes/No",
+        "Entry Text": "Rate how completely you feel your bladder empties after urination or indicate Yes/No."
+      },
+      {
+        "DisplayOrder": 11,
+        "IsActive": false,
+        "Name": "Pain or Discomfort During Urination (Dysuria)",
+        "Acronym": "Dysuria",
+        "Common Units": "Scale 0-10, Descriptive (e.g., Burning, Stinging)",
+        "Common Units Full Name": "Rating of pain level and description of discomfort",
+        "Entry Text": "Rate any pain or discomfort you feel while urinating or describe it."
+      },
+      {
+        "DisplayOrder": 12,
+        "IsActive": false,
+        "Name": "Blood in Urine (Hematuria)",
+        "Acronym": "Hematuria",
+        "Common Units": "Yes/No, Description (e.g., Microscopic, Gross)",
+        "Common Units Full Name": "Indicate if blood is present and describe if known",
+        "Entry Text": "Note if you noticed blood in your urine and if it was visible or only detected by testing."
+      },
+      {
+        "DisplayOrder": 13,
+        "IsActive": false,
+        "Name": "Pain in Pelvis, Groin, or Lower Back",
+        "Acronym": "Pelvic Pain",
+        "Common Units": "Scale 0-10",
+        "Common Units Full Name": "Scale from 0 (no pain) to 10 (worst possible pain)",
+        "Entry Text": "Rate any pain you are experiencing in your pelvis, groin, or lower back."
+      },
+      {
+        "DisplayOrder": 14,
+        "IsActive": false,
+        "Name": "Erectile Dysfunction (if applicable)",
+        "Acronym": "ED",
+        "Common Units": "Scale 1-5 (No Difficulty to Severe Difficulty), Descriptive",
+        "Common Units Full Name": "Rating of erectile function or descriptive notes",
+        "Entry Text": "If applicable, rate any difficulties with erection or provide a description."
+      },
+      {
+        "DisplayOrder": 15,
+        "IsActive": false,
+        "Name": "Pain During Ejaculation (if applicable)",
+        "Acronym": "Ejac Pain",
+        "Common Units": "Scale 0-10",
+        "Common Units Full Name": "Scale from 0 (no pain) to 10 (worst possible pain)",
+        "Entry Text": "If applicable, rate any pain experienced during ejaculation."
+      },
+      {
+        "DisplayOrder": 16,
+        "IsActive": false,
+        "Name": "Medications Used (for prostate issues)",
+        "Acronym": "Meds",
+        "Common Units": "Text",
+        "Common Units Full Name": "Names of medications being taken",
+        "Entry Text": "List any medications you are taking for your prostate issues (e.g., alpha-blockers, 5-alpha reductase inhibitors)."
+      },
+      {
+        "DisplayOrder": 17,
+        "IsActive": false,
+        "Name": "Supplements Used (for prostate health)",
+        "Acronym": "Supplements",
+        "Common Units": "Text",
+        "Common Units Full Name": "Names of supplements being taken",
+        "Entry Text": "List any supplements you are taking for prostate health (e.g., saw palmetto)."
+      },
+      {
+        "DisplayOrder": 18,
+        "IsActive": false,
+        "Name": "Digital Rectal Exam (DRE) Findings (if known)",
+        "Acronym": "DRE",
+        "Common Units": "Descriptive (e.g., Enlarged, Nodular, Tender)",
+        "Common Units Full Name": "Description of findings from a Digital Rectal Exam",
+        "Entry Text": "If you know the findings from your last DRE, you can note them here."
+      },
+      {
+        "DisplayOrder": 19,
+        "IsActive": false,
+        "Name": "PSA Level (if tested)",
+        "Acronym": "PSA",
+        "Common Units": "ng/mL",
+        "Common Units Full Name": "nanograms per milliliter",
+        "Entry Text": "If you've had a PSA test, record the result and the date of the test in the notes."
+      },
+      {
+        "DisplayOrder": 20,
+        "IsActive": false,
+        "Name": "Lifestyle Factors (relevant to prostate health)",
+        "Acronym": "Lifestyle",
+        "Common Units": "Text (e.g., Exercise, Diet, Stress Levels)",
+        "Common Units Full Name": "Notes on lifestyle factors that might be relevant",
+        "Entry Text": "Note any lifestyle factors (diet, exercise, stress) you think might be influencing your symptoms."
+      },
+      {
+        "DisplayOrder": 21,
+        "IsActive": false,
+        "Name": "Overall Well-being (related to prostate symptoms)",
+        "Acronym": "Well-being",
+        "Common Units": "Scale 1-10 (Poor to Excellent)",
+        "Common Units Full Name": "Rating of your overall well-being in relation to your prostate symptoms",
+        "Entry Text": "Rate your overall sense of well-being as it relates to your prostate issues."
+      },
+      {
+        "DisplayOrder": 22,
+        "IsActive": false,
+        "Name": "Notes/Observations",
+        "Acronym": "Notes",
+        "Common Units": "Text",
+        "Common Units Full Name": "Free text description",
+        "Entry Text": "Add any other relevant notes or observations about your prostate issues or management."
+      }
+    ],
+    "Resources": [
+      {
+        "DisplayOrder": 1,
+        "IsActive": true,
+        "Name": "MedlinePlus",
+        "Link": "https://medlineplus.gov/",
+        "Summary": "Reliable health information from the U.S. National Library of Medicine covering diseases, conditions, drugs, and wellness."
+      },
+      {
+        "DisplayOrder": 2,
+        "IsActive": true,
+        "Name": "Mayo Clinic",
+        "Link": "https://www.mayoclinic.org/patient-care-and-health-information",
+        "Summary": "Comprehensive information on diseases, symptoms, tests, procedures, drugs, and healthy living."
+      },
+      {
+        "DisplayOrder": 3,
+        "IsActive": true,
+        "Name": "Centers for Disease Control and Prevention (CDC)",
+        "Link": "https://www.cdc.gov/diseasesconditions/index.html",
+        "Summary": "Information on various diseases and conditions, health statistics, and public health recommendations."
+      },
+      {
+        "DisplayOrder": 4,
+        "IsActive": true,
+        "Name": "Urology Care Foundation",
+        "Link": "https://www.urologyhealth.org/",
+        "Summary": "Patient information from the American Urological Association on conditions like prostate issues, urethral stricture, etc."
+      },
+      {
+        "DisplayOrder": 5,
+        "IsActive": true,
+        "Name": "American Sleep Apnea Association (ASAA)",
+        "Link": "https://www.sleepapnea.org/",
+        "Summary": "Resources, education, and support for individuals affected by sleep apnea."
+      }
+    ]
+  },
+  "Self-Care": {
+    "Hygiene Supplies": [
+      {
+        "DisplayOrder": 1,
+        "IsActive": false,
+        "Name": "Shampoo",
+        "Acronym": "Shampoo",
+        "Common Units": "Bottles",
+        "Common Units Full Name": "Number of bottles",
+        "Entry Text": "Record the number of shampoo bottles remaining."
+      },
+      {
+        "DisplayOrder": 2,
+        "IsActive": false,
+        "Name": "Conditioner",
+        "Acronym": "Conditioner",
+        "Common Units": "Bottles",
+        "Common Units Full Name": "Number of bottles",
+        "Entry Text": "Record the number of conditioner bottles remaining."
+      },
+      {
+        "DisplayOrder": 3,
+        "IsActive": false,
+        "Name": "Body Wash",
+        "Acronym": "Body Wash",
+        "Common Units": "Bottles",
+        "Common Units Full Name": "Number of bottles",
+        "Entry Text": "Record the number of body wash bottles remaining."
+      },
+      {
+        "DisplayOrder": 4,
+        "IsActive": false,
+        "Name": "Bar Soap",
+        "Acronym": "Bar Soap",
+        "Common Units": "Bars",
+        "Common Units Full Name": "Number of bars",
+        "Entry Text": "Record the number of bars of soap remaining."
+      },
+      {
+        "DisplayOrder": 5,
+        "IsActive": false,
+        "Name": "Toothpaste",
+        "Acronym": "Toothpaste",
+        "Common Units": "Tubes",
+        "Common Units Full Name": "Number of tubes",
+        "Entry Text": "Record the number of toothpaste tubes remaining."
+      },
+      {
+        "DisplayOrder": 6,
+        "IsActive": false,
+        "Name": "Toothbrushes",
+        "Acronym": "Toothbrushes",
+        "Common Units": "Count",
+        "Common Units Full Name": "Number of toothbrushes",
+        "Entry Text": "Record the number of toothbrushes remaining."
+      },
+      {
+        "DisplayOrder": 7,
+        "IsActive": false,
+        "Name": "Mouthwash",
+        "Acronym": "Mouthwash",
+        "Common Units": "Bottles",
+        "Common Units Full Name": "Number of bottles",
+        "Entry Text": "Record the number of mouthwash bottles remaining."
+      },
+      {
+        "DisplayOrder": 8,
+        "IsActive": false,
+        "Name": "Floss",
+        "Acronym": "Floss",
+        "Common Units": "Containers",
+        "Common Units Full Name": "Number of containers",
+        "Entry Text": "Record the number of containers of floss remaining."
+      },
+      {
+        "DisplayOrder": 9,
+        "IsActive": false,
+        "Name": "Deodorant",
+        "Acronym": "Deodorant",
+        "Common Units": "Units",
+        "Common Units Full Name": "Number of units",
+        "Entry Text": "Record the number of deodorant units remaining."
+      },
+      {
+        "DisplayOrder": 10,
+        "IsActive": false,
+        "Name": "Lotion",
+        "Acronym": "Lotion",
+        "Common Units": "Bottles",
+        "Common Units Full Name": "Number of bottles",
+        "Entry Text": "Record the number of lotion bottles/containers remaining."
+      },
+      {
+        "DisplayOrder": 11,
+        "IsActive": false,
+        "Name": "Sunscreen",
+        "Acronym": "Sunscreen",
+        "Common Units": "Bottles",
+        "Common Units Full Name": "Number of bottles",
+        "Entry Text": "Record the number of sunscreen bottles/tubes remaining."
+      },
+      {
+        "DisplayOrder": 12,
+        "IsActive": false,
+        "Name": "Razors",
+        "Acronym": "Razors",
+        "Common Units": "Count",
+        "Common Units Full Name": "Number of razors or packs",
+        "Entry Text": "Record the number of razors or packs remaining."
+      },
+      {
+        "DisplayOrder": 13,
+        "IsActive": false,
+        "Name": "Shaving Cream",
+        "Acronym": "Shaving Cream",
+        "Common Units": "Cans/Tubes",
+        "Common Units Full Name": "Number of cans or tubes",
+        "Entry Text": "Record the number of shaving cream cans or tubes remaining."
+      },
+      {
+        "DisplayOrder": 14,
+        "IsActive": false,
+        "Name": "Hand Soap",
+        "Acronym": "Hand Soap",
+        "Common Units": "Bottles",
+        "Common Units Full Name": "Number of bottles",
+        "Entry Text": "Record the number of hand soap bottles remaining."
+      },
+      {
+        "DisplayOrder": 15,
+        "IsActive": false,
+        "Name": "Hand Sanitizer",
+        "Acronym": "Hand Sanitizer",
+        "Common Units": "Bottles",
+        "Common Units Full Name": "Number of bottles",
+        "Entry Text": "Record the number of hand sanitizer bottles remaining."
+      },
+      {
+        "DisplayOrder": 16,
+        "IsActive": false,
+        "Name": "Toilet Paper",
+        "Acronym": "Toilet Paper",
+        "Common Units": "Rolls",
+        "Common Units Full Name": "Number of rolls",
+        "Entry Text": "Record the number of toilet paper rolls remaining."
+      },
+      {
+        "DisplayOrder": 17,
+        "IsActive": false,
+        "Name": "Facial Cleanser",
+        "Acronym": "Facial Cleanser",
+        "Common Units": "Bottles",
+        "Common Units Full Name": "Number of bottles",
+        "Entry Text": "Record the number of facial cleanser bottles/tubes remaining."
+      },
+      {
+        "DisplayOrder": 18,
+        "IsActive": false,
+        "Name": "Makeup Remover",
+        "Acronym": "Makeup Remover",
+        "Common Units": "Units",
+        "Common Units Full Name": "Number of units (bottles, wipes, etc.)",
+        "Entry Text": "Record the number of makeup remover units remaining."
+      }
+    ],
+    "Hygiene": [
+      {
+        "DisplayOrder": 1,
+        "IsActive": false,
+        "Name": "Brushing Teeth",
+        "Acronym": "Brush Teeth",
+        "Common Units": "Times/Day, Duration (minutes)",
+        "Common Units Full Name": "Times per day, Duration in minutes",
+        "Entry Text": "Record how many times you brushed your teeth today and optionally the duration of each session."
+      },
+      {
+        "DisplayOrder": 2,
+        "IsActive": false,
+        "Name": "Flossing",
+        "Acronym": "Floss",
+        "Common Units": "Times/Day",
+        "Common Units Full Name": "Times per day",
+        "Entry Text": "Record how many times you flossed your teeth today."
+      },
+      {
+        "DisplayOrder": 3,
+        "IsActive": false,
+        "Name": "Mouthwash Use",
+        "Acronym": "Mouthwash",
+        "Common Units": "Times/Day",
+        "Common Units Full Name": "Times per day",
+        "Entry Text": "Record how many times you used mouthwash today."
+      },
+      {
+        "DisplayOrder": 4,
+        "IsActive": false,
+        "Name": "Showering/Bathing",
+        "Acronym": "Shower/Bath",
+        "Common Units": "Times/Day, Duration (minutes)",
+        "Common Units Full Name": "Times per day, Duration in minutes",
+        "Entry Text": "Record how many times you showered or bathed today and optionally the duration."
+      },
+      {
+        "DisplayOrder": 5,
+        "IsActive": false,
+        "Name": "Washing Face",
+        "Acronym": "Wash Face",
+        "Common Units": "Times/Day",
+        "Common Units Full Name": "Times per day",
+        "Entry Text": "Record how many times you washed your face today."
+      },
+      {
+        "DisplayOrder": 6,
+        "IsActive": false,
+        "Name": "Applying Skincare",
+        "Acronym": "Skincare",
+        "Common Units": "Times/Day",
+        "Common Units Full Name": "Times per day",
+        "Entry Text": "Record how many times you applied skincare products today (e.g., moisturizer, serums)."
+      },
+      {
+        "DisplayOrder": 7,
+        "IsActive": false,
+        "Name": "Brushing Hair",
+        "Acronym": "Brush Hair",
+        "Common Units": "Times/Day",
+        "Common Units Full Name": "Times per day",
+        "Entry Text": "Record how many times you brushed your hair today."
+      },
+      {
+        "DisplayOrder": 8,
+        "IsActive": false,
+        "Name": "Applying Deodorant",
+        "Acronym": "Deodorant",
+        "Common Units": "Times/Day",
+        "Common Units Full Name": "Times per day",
+        "Entry Text": "Record how many times you applied deodorant today."
+      },
+      {
+        "DisplayOrder": 9,
+        "IsActive": false,
+        "Name": "Hand Washing Frequency",
+        "Acronym": "Wash Hands",
+        "Common Units": "Times/Day",
+        "Common Units Full Name": "Times per day",
+        "Entry Text": "Record the approximate number of times you washed your hands today."
+      },
+      {
+        "DisplayOrder": 10,
+        "IsActive": false,
+        "Name": "Nail Care (Clipping, Filing)",
+        "Acronym": "Nail Care",
+        "Common Units": "Yes/No",
+        "Common Units Full Name": "Yes or No (completed)",
+        "Entry Text": "Indicate if you performed any nail care today."
+      },
+      {
+        "DisplayOrder": 11,
+        "IsActive": false,
+        "Name": "Hair Washing",
+        "Acronym": "Wash Hair",
+        "Common Units": "Times/Week",
+        "Common Units Full Name": "Times per week (can be daily entry)",
+        "Entry Text": "Record if you washed your hair today."
+      },
+      {
+        "DisplayOrder": 12,
+        "IsActive": false,
+        "Name": "Shaving",
+        "Acronym": "Shave",
+        "Common Units": "Yes/No, Area",
+        "Common Units Full Name": "Yes or No (completed), Specify area (e.g., face, legs)",
+        "Entry Text": "Indicate if you shaved today and optionally the area."
+      }
+    ],
+    "Skin Care Routine": [
+      {
+        "DisplayOrder": 1,
+        "IsActive": false,
+        "Name": "Cleansing",
+        "Acronym": "Cleanse",
+        "Common Units": "Times/Day",
+        "Common Units Full Name": "Times per day",
+        "Entry Text": "Record how many times you cleansed your face today."
+      },
+      {
+        "DisplayOrder": 2,
+        "IsActive": false,
+        "Name": "Toning",
+        "Acronym": "Tone",
+        "Common Units": "Times/Day",
+        "Common Units Full Name": "Times per day",
+        "Entry Text": "Record how many times you used toner today."
+      },
+      {
+        "DisplayOrder": 3,
+        "IsActive": false,
+        "Name": "Serum Application",
+        "Acronym": "Serum",
+        "Common Units": "Times/Day",
+        "Common Units Full Name": "Times per day",
+        "Entry Text": "Record how many times you applied serum(s) today."
+      },
+      {
+        "DisplayOrder": 4,
+        "IsActive": false,
+        "Name": "Moisturizing",
+        "Acronym": "Moisturize",
+        "Common Units": "Times/Day",
+        "Common Units Full Name": "Times per day",
+        "Entry Text": "Record how many times you moisturized your face today."
+      },
+      {
+        "DisplayOrder": 5,
+        "IsActive": false,
+        "Name": "Sunscreen Application",
+        "Acronym": "Sunscreen",
+        "Common Units": "Times/Day",
+        "Common Units Full Name": "Times per day",
+        "Entry Text": "Record how many times you applied sunscreen today."
+      },
+      {
+        "DisplayOrder": 6,
+        "IsActive": false,
+        "Name": "Exfoliation",
+        "Acronym": "Exfoliate",
+        "Common Units": "Times/Week",
+        "Common Units Full Name": "Times per week (can be daily entry)",
+        "Entry Text": "Record if you exfoliated today."
+      },
+      {
+        "DisplayOrder": 7,
+        "IsActive": false,
+        "Name": "Mask Application",
+        "Acronym": "Mask",
+        "Common Units": "Times/Week",
+        "Common Units Full Name": "Times per week (can be daily entry)",
+        "Entry Text": "Record if you used a face mask today."
+      },
+      {
+        "DisplayOrder": 8,
+        "IsActive": false,
+        "Name": "Eye Cream Application",
+        "Acronym": "Eye Cream",
+        "Common Units": "Times/Day",
+        "Common Units Full Name": "Times per day",
+        "Entry Text": "Record how many times you applied eye cream today."
+      },
+      {
+        "DisplayOrder": 9,
+        "IsActive": false,
+        "Name": "Spot Treatment Application",
+        "Acronym": "Spot Treat",
+        "Common Units": "Times/Day",
+        "Common Units Full Name": "Times per day",
+        "Entry Text": "Record how many times you applied spot treatment today (e.g., for acne)."
+      },
+      {
+        "DisplayOrder": 10,
+        "IsActive": false,
+        "Name": "Facial Massage",
+        "Acronym": "Massage",
+        "Common Units": "Yes/No, Duration (minutes)",
+        "Common Units Full Name": "Yes or No (completed), Duration in minutes",
+        "Entry Text": "Indicate if you performed a facial massage today and optionally the duration."
+      },
+      {
+        "DisplayOrder": 11,
+        "IsActive": false,
+        "Name": "Product Reactions",
+        "Acronym": "Reactions",
+        "Common Units": "Descriptive",
+        "Common Units Full Name": "Descriptive words (e.g., redness, irritation, no reaction)",
+        "Entry Text": "Describe any reactions your skin had to products today."
+      },
+      {
+        "DisplayOrder": 12,
+        "IsActive": false,
+        "Name": "Skin Hydration Level",
+        "Acronym": "Hydration",
+        "Common Units": "Scale 1-5, Descriptive",
+        "Common Units Full Name": "Scale from 1 (very dry) to 5 (very hydrated), Descriptive words (e.g., tight, supple, oily)",
+        "Entry Text": "Rate your skin's hydration level today."
+      },
+      {
+        "DisplayOrder": 13,
+        "IsActive": false,
+        "Name": "Overall Skin Condition",
+        "Acronym": "Skin Cond",
+        "Common Units": "Scale 1-5, Descriptive",
+        "Common Units Full Name": "Scale from 1 (poor) to 5 (excellent), Descriptive words (e.g., clear, dull, breaking out)",
+        "Entry Text": "Rate your overall skin condition today."
+      }
+    ],
+    "Skincare Product Usage": [
+      {
+        "DisplayOrder": 1,
+        "IsActive": false,
+        "Name": "Product Name",
+        "Acronym": "Name",
+        "Common Units": "Text",
+        "Common Units Full Name": "Text description",
+        "Entry Text": "Enter the full name of the skincare product."
+      },
+      {
+        "DisplayOrder": 2,
+        "IsActive": false,
+        "Name": "Product Category",
+        "Acronym": "Category",
+        "Common Units": "Dropdown (Cleanser, Toner, Serum, Moisturizer, Sunscreen, Mask, Eye Cream, Spot Treatment, Exfoliant)",
+        "Common Units Full Name": "Select from the list of skincare categories",
+        "Entry Text": "Select the category of the product."
+      },
+      {
+        "DisplayOrder": 3,
+        "IsActive": false,
+        "Name": "Brand",
+        "Acronym": "Brand",
+        "Common Units": "Text",
+        "Common Units Full Name": "Text description",
+        "Entry Text": "Enter the brand name of the product."
+      },
+      {
+        "DisplayOrder": 4,
+        "IsActive": false,
+        "Name": "Purchase Date",
+        "Acronym": "Purchased",
+        "Common Units": "YYYY-MM-DD",
+        "Common Units Full Name": "Year-Month-Day",
+        "Entry Text": "Enter the date you purchased this product."
+      },
+      {
+        "DisplayOrder": 5,
+        "IsActive": false,
+        "Name": "Purchase Size",
+        "Acronym": "Size",
+        "Common Units": "mL, oz, g",
+        "Common Units Full Name": "milliliters, ounces, grams",
+        "Entry Text": "Enter the size of the product you purchased. Specify the units."
+      },
+      {
+        "DisplayOrder": 6,
+        "IsActive": false,
+        "Name": "Purchase Price",
+        "Acronym": "Price",
+        "Common Units": "USD, EUR, etc.",
+        "Common Units Full Name": "Currency",
+        "Entry Text": "Enter the price you paid for the product. Specify the currency."
+      },
+      {
+        "DisplayOrder": 7,
+        "IsActive": false,
+        "Name": "Estimated Lifespan",
+        "Acronym": "Est. Life",
+        "Common Units": "Weeks, Months",
+        "Common Units Full Name": "Weeks or Months",
+        "Entry Text": "Estimate how long you expect this product to last with regular use."
+      },
+      {
+        "DisplayOrder": 8,
+        "IsActive": false,
+        "Name": "Date Finished",
+        "Acronym": "Finished",
+        "Common Units": "YYYY-MM-DD, Ongoing",
+        "Common Units Full Name": "Year-Month-Day, or mark as 'Ongoing'",
+        "Entry Text": "Enter the date you finished using this product, or mark as 'Ongoing' if still in use."
+      },
+      {
+        "DisplayOrder": 9,
+        "IsActive": false,
+        "Name": "Overall Rating",
+        "Acronym": "Rating",
+        "Common Units": "Scale 1-5 (Stars), Scale 1-10",
+        "Common Units Full Name": "Rating scale from 1 to 5 stars or 1 to 10",
+        "Entry Text": "Rate your overall satisfaction with this product on a scale of 1 to 5 (stars) or 1 to 10."
+      },
+      {
+        "DisplayOrder": 10,
+        "IsActive": false,
+        "Name": "Repurchase?",
+        "Acronym": "Repurchase",
+        "Common Units": "Yes/No, Maybe",
+        "Common Units Full Name": "Yes, No, or Maybe",
+        "Entry Text": "Indicate if you would repurchase this product."
+      },
+      {
+        "DisplayOrder": 11,
+        "IsActive": false,
+        "Name": "Notes/Observations",
+        "Acronym": "Notes",
+        "Common Units": "Text",
+        "Common Units Full Name": "Free text description",
+        "Entry Text": "Add any notes about the product, such as texture, scent, effectiveness, or how it compares to other products you've tried."
+      },
+      {
+        "DisplayOrder": 12,
+        "IsActive": false,
+        "Name": "Compared To (Previous Product)",
+        "Acronym": "Compared To",
+        "Common Units": "Text",
+        "Common Units Full Name": "Text description (Name of previous product)",
+        "Entry Text": "If applicable, note a similar product you used previously for comparison."
+      }
+    ],
+    "Sleep Tracking": [
+      {
+        "DisplayOrder": 1,
+        "IsActive": false,
+        "Name": "Date",
+        "Acronym": "Date",
+        "Common Units": "YYYY-MM-DD",
+        "Common Units Full Name": "Year-Month-Day",
+        "Entry Text": "Enter the date of your sleep."
+      },
+      {
+        "DisplayOrder": 2,
+        "IsActive": false,
+        "Name": "Time to Bed",
+        "Acronym": "Bedtime",
+        "Common Units": "HH:MM (24-hour format)",
+        "Common Units Full Name": "Hour:Minute in 24-hour format",
+        "Entry Text": "Enter the time you went to bed."
+      },
+      {
+        "DisplayOrder": 3,
+        "IsActive": false,
+        "Name": "Wake-up Time",
+        "Acronym": "Wakeup",
+        "Common Units": "HH:MM (24-hour format)",
+        "Common Units Full Name": "Hour:Minute in 24-hour format",
+        "Entry Text": "Enter the time you woke up."
+      },
+      {
+        "DisplayOrder": 4,
+        "IsActive": false,
+        "Name": "Total Sleep Time",
+        "Acronym": "Total Sleep",
+        "Common Units": "hours, minutes",
+        "Common Units Full Name": "Total hours and minutes slept",
+        "Entry Text": "Record the total duration of your sleep."
+      },
+      {
+        "DisplayOrder": 5,
+        "IsActive": false,
+        "Name": "Sleep Quality",
+        "Acronym": "Quality",
+        "Common Units": "Scale 1-5 (Poor to Excellent), Descriptive",
+        "Common Units Full Name": "Rating of sleep quality on a scale of 1 to 5, or descriptive words",
+        "Entry Text": "Rate the quality of your sleep or describe how restful it felt."
+      },
+      {
+        "DisplayOrder": 6,
+        "IsActive": false,
+        "Name": "Deep Sleep (from tracker)",
+        "Acronym": "Deep",
+        "Common Units": "minutes",
+        "Common Units Full Name": "Duration of deep sleep in minutes (if using a sleep tracker)",
+        "Entry Text": "If using a sleep tracker, record the duration of deep sleep."
+      },
+      {
+        "DisplayOrder": 7,
+        "IsActive": false,
+        "Name": "REM Sleep (from tracker)",
+        "Acronym": "REM",
+        "Common Units": "minutes",
+        "Common Units Full Name": "Duration of REM sleep in minutes (if using a sleep tracker)",
+        "Entry Text": "If using a sleep tracker, record the duration of REM sleep."
+      },
+      {
+        "DisplayOrder": 8,
+        "IsActive": false,
+        "Name": "Light Sleep (from tracker)",
+        "Acronym": "Light",
+        "Common Units": "minutes",
+        "Common Units Full Name": "Duration of light sleep in minutes (if using a sleep tracker)",
+        "Entry Text": "If using a sleep tracker, record the duration of light sleep."
+      },
+      {
+        "DisplayOrder": 9,
+        "IsActive": false,
+        "Name": "Number of Awakenings",
+        "Acronym": "Awakenings",
+        "Common Units": "Count",
+        "Common Units Full Name": "Number of times you woke up during the night",
+        "Entry Text": "Record the number of times you remember waking up."
+      },
+      {
+        "DisplayOrder": 10,
+        "IsActive": false,
+        "Name": "Sleep Efficiency (from tracker)",
+        "Acronym": "Efficiency",
+        "Common Units": "%",
+        "Common Units Full Name": "Percentage of time spent asleep while in bed (if using a sleep tracker)",
+        "Entry Text": "If using a sleep tracker, record your sleep efficiency percentage."
+      },
+      {
+        "DisplayOrder": 11,
+        "IsActive": false,
+        "Name": "Sleep Latency",
+        "Acronym": "Latency",
+        "Common Units": "minutes",
+        "Common Units Full Name": "Time taken to fall asleep in minutes",
+        "Entry Text": "Estimate or record how long it took you to fall asleep."
+      },
+      {
+        "DisplayOrder": 12,
+        "IsActive": false,
+        "Name": "Mood Upon Waking",
+        "Acronym": "Wake Mood",
+        "Common Units": "Scale 1-5 (Negative to Positive), Descriptive",
+        "Common Units Full Name": "Rating of your mood upon waking, or descriptive words",
+        "Entry Text": "Rate your mood when you woke up or describe how you felt."
+      },
+      {
+        "DisplayOrder": 13,
+        "IsActive": false,
+        "Name": "Energy Level Upon Waking",
+        "Acronym": "Wake Energy",
+        "Common Units": "Scale 1-5 (Low to High), Descriptive",
+        "Common Units Full Name": "Rating of your energy level upon waking, or descriptive words",
+        "Entry Text": "Rate your energy level when you woke up or describe how energetic you felt."
+      },
+      {
+        "DisplayOrder": 14,
+        "IsActive": false,
+        "Name": "Factors Affecting Sleep",
+        "Acronym": "Factors",
+        "Common Units": "Text, Dropdown (e.g., Caffeine, Alcohol, Stress, Exercise)",
+        "Common Units Full Name": "Potential factors that influenced your sleep",
+        "Entry Text": "Note any factors that you believe may have affected your sleep."
+      },
+      {
+        "DisplayOrder": 15,
+        "IsActive": false,
+        "Name": "Notes/Observations",
+        "Acronym": "Notes",
+        "Common Units": "Text",
+        "Common Units Full Name": "Free text description",
+        "Entry Text": "Add any other relevant notes about your sleep."
+      }
+    ],
+    "Practice Engagement": [
+      {
+        "DisplayOrder": 1,
+        "IsActive": false,
+        "Name": "Meditation Duration",
+        "Acronym": "Med Dur",
+        "Common Units": "minutes",
+        "Common Units Full Name": "minutes",
+        "Entry Text": "Record the total duration of your meditation practice today in minutes."
+      },
+      {
+        "DisplayOrder": 2,
+        "IsActive": false,
+        "Name": "Meditation Focus Quality",
+        "Acronym": "Med Focus",
+        "Common Units": "Scale 1-10, Descriptive",
+        "Common Units Full Name": "Scale from 1 (highly distracted) to 10 (deeply focused), Descriptive words (e.g., wandering mind, present, clear)",
+        "Entry Text": "Rate the quality of your focus during meditation or describe your mental state."
+      },
+      {
+        "DisplayOrder": 3,
+        "IsActive": false,
+        "Name": "Chant Repetitions",
+        "Acronym": "Chant Reps",
+        "Common Units": "count",
+        "Common Units Full Name": "number of repetitions",
+        "Entry Text": "Record the number of times you repeated chants today."
+      },
+      {
+        "DisplayOrder": 4,
+        "IsActive": false,
+        "Name": "Chant Engagement Level",
+        "Acronym": "Chant Engage",
+        "Common Units": "Scale 1-10, Descriptive",
+        "Common Units Full Name": "Scale from 1 (mechanical) to 10 (fully engaged), Descriptive words (e.g., heartfelt, distracted, present)",
+        "Entry Text": "Rate your level of emotional and mental engagement during chanting."
+      },
+      {
+        "DisplayOrder": 5,
+        "IsActive": false,
+        "Name": "Tantric Breathing Sessions",
+        "Acronym": "TB Sessions",
+        "Common Units": "count",
+        "Common Units Full Name": "number of sessions",
+        "Entry Text": "Record the number of tantric breathing sessions you practiced today."
+      },
+      {
+        "DisplayOrder": 6,
+        "IsActive": false,
+        "Name": "Tantric Breathing Focus",
+        "Acronym": "TB Focus",
+        "Common Units": "Scale 1-10, Descriptive",
+        "Common Units Full Name": "Scale from 1 (distracted) to 10 (highly focused), Descriptive words (e.g., aware, lost, connected)",
+        "Entry Text": "Rate your level of focus and awareness during tantric breathing."
+      },
+      {
+        "DisplayOrder": 7,
+        "IsActive": false,
+        "Name": "Journaling Duration",
+        "Acronym": "Journal Dur",
+        "Common Units": "minutes",
+        "Common Units Full Name": "minutes",
+        "Entry Text": "Record the total time you spent journaling today in minutes."
+      },
+      {
+        "DisplayOrder": 8,
+        "IsActive": false,
+        "Name": "Journaling Depth",
+        "Acronym": "Journal Depth",
+        "Common Units": "Scale 1-10, Descriptive",
+        "Common Units Full Name": "Scale from 1 (superficial) to 10 (deeply introspective), Descriptive words (e.g., surface level, reflective, insightful)",
+        "Entry Text": "Rate the depth and level of introspection in your journaling today."
+      },
+      {
+        "DisplayOrder": 9,
+        "IsActive": false,
+        "Name": "Affirmation Repetitions",
+        "Acronym": "Affirm Reps",
+        "Common Units": "count",
+        "Common Units Full Name": "number of repetitions",
+        "Entry Text": "Record the number of times you repeated your affirmations today."
+      },
+      {
+        "DisplayOrder": 10,
+        "IsActive": false,
+        "Name": "Affirmation Belief Level",
+        "Acronym": "Affirm Belief",
+        "Common Units": "Scale 1-10, Descriptive",
+        "Common Units Full Name": "Scale from 1 (disbelieving) to 10 (fully believing), Descriptive words (e.g., resistant, hopeful, convinced)",
+        "Entry Text": "Rate your level of belief and emotional connection to your affirmations."
+      },
+      {
+        "DisplayOrder": 11,
+        "IsActive": false,
+        "Name": "Self-Help Reading Duration",
+        "Acronym": "SH Read Dur",
+        "Common Units": "minutes",
+        "Common Units Full Name": "minutes",
+        "Entry Text": "Record the total time you spent reading self-help material today in minutes."
+      },
+      {
+        "DisplayOrder": 12,
+        "IsActive": false,
+        "Name": "Self-Help Reading Focus",
+        "Acronym": "SH Read Focus",
+        "Common Units": "Scale 1-10, Descriptive",
+        "Common Units Full Name": "Scale from 1 (distracted) to 10 (highly focused), Descriptive words (e.g., comprehending, skimming, engaged)",
+        "Entry Text": "Rate your level of focus and comprehension while reading self-help material."
+      },
+      {
+        "DisplayOrder": 13,
+        "IsActive": false,
+        "Name": "Gratitude Journal Entries",
+        "Acronym": "Gratitude Entries",
+        "Common Units": "count",
+        "Common Units Full Name": "number of entries",
+        "Entry Text": "Record the number of things you listed in your gratitude journal today."
+      },
+      {
+        "DisplayOrder": 14,
+        "IsActive": false,
+        "Name": "Mindfulness Exercises",
+        "Acronym": "Mind Ex",
+        "Common Units": "count",
+        "Common Units Full Name": "number of exercises",
+        "Entry Text": "Record the number of specific mindfulness exercises you practiced today."
+      },
+      {
+        "DisplayOrder": 15,
+        "IsActive": false,
+        "Name": "Yoga/Movement Practice Duration",
+        "Acronym": "Yoga Dur",
+        "Common Units": "minutes",
+        "Common Units Full Name": "minutes",
+        "Entry Text": "Record the total duration of your yoga or mindful movement practice today in minutes."
+      },
+      {
+        "DisplayOrder": 16,
+        "IsActive": false,
+        "Name": "Creative Expression Time",
+        "Acronym": "Create Time",
+        "Common Units": "minutes",
+        "Common Units Full Name": "minutes",
+        "Entry Text": "Record the total time you spent on creative expression (e.g., art, music, writing) today in minutes."
+      }
+    ],
+    "Metaphysical Statuses": [
+      {
+        "DisplayOrder": 1,
+        "IsActive": false,
+        "Name": "Mindfulness Level",
+        "Acronym": "ML",
+        "Common Units": "Scale 1-10, Descriptive",
+        "Common Units Full Name": "Scale from 1 (not mindful) to 10 (highly mindful), Descriptive words (e.g., present, distracted, focused)",
+        "Entry Text": "Rate your current level of mindfulness or describe your state of presence."
+      },
+      {
+        "DisplayOrder": 2,
+        "IsActive": false,
+        "Name": "Inner Peace",
+        "Acronym": "IP",
+        "Common Units": "Scale 1-10, Descriptive",
+        "Common Units Full Name": "Scale from 1 (turbulent) to 10 (serene), Descriptive words (e.g., calm, agitated, centered)",
+        "Entry Text": "Rate your sense of inner peace or describe your internal emotional state."
+      },
+      {
+        "DisplayOrder": 3,
+        "IsActive": false,
+        "Name": "Connection to Self",
+        "Acronym": "CS",
+        "Common Units": "Scale 1-10, Descriptive",
+        "Common Units Full Name": "Scale from 1 (disconnected) to 10 (deeply connected), Descriptive words (e.g., authentic, alienated, aligned)",
+        "Entry Text": "Rate your feeling of connection to your true self or describe this connection."
+      },
+      {
+        "DisplayOrder": 4,
+        "IsActive": false,
+        "Name": "Spiritual Connection",
+        "Acronym": "SC",
+        "Common Units": "Scale 1-10, Descriptive",
+        "Common Units Full Name": "Scale from 1 (disconnected) to 10 (deeply connected), Descriptive words (e.g., connected to something larger, isolated, spiritual)",
+        "Entry Text": "Rate your sense of spiritual connection or connection to something beyond yourself."
+      },
+      {
+        "DisplayOrder": 5,
+        "IsActive": false,
+        "Name": "Gratitude Level",
+        "Acronym": "GL",
+        "Common Units": "Scale 1-10, Descriptive",
+        "Common Units Full Name": "Scale from 1 (ungrateful) to 10 (deeply grateful), Descriptive words (e.g., appreciative, resentful, thankful)",
+        "Entry Text": "Rate your current feeling of gratitude or list things you are grateful for."
+      },
+      {
+        "DisplayOrder": 6,
+        "IsActive": false,
+        "Name": "Energy Level (Metaphysical)",
+        "Acronym": "EM",
+        "Common Units": "Scale 1-10, Descriptive",
+        "Common Units Full Name": "Scale from 1 (drained) to 10 (vibrant), Descriptive words (e.g., vital, depleted, energetic)",
+        "Entry Text": "Rate your overall metaphysical energy level or describe how energetic you feel beyond the physical."
+      },
+      {
+        "DisplayOrder": 7,
+        "IsActive": false,
+        "Name": "Intuitive Guidance",
+        "Acronym": "IG",
+        "Common Units": "Scale 1-10, Descriptive",
+        "Common Units Full Name": "Scale from 1 (unclear) to 10 (very clear), Descriptive words (e.g., clear insights, confused, trusting intuition)",
+        "Entry Text": "Rate the clarity of your intuitive guidance or describe any intuitive feelings or insights."
+      },
+      {
+        "DisplayOrder": 8,
+        "IsActive": false,
+        "Name": "Sense of Purpose",
+        "Acronym": "SP",
+        "Common Units": "Scale 1-10, Descriptive",
+        "Common Units Full Name": "Scale from 1 (lost) to 10 (very clear), Descriptive words (e.g., purposeful, directionless, motivated)",
+        "Entry Text": "Rate your current sense of purpose or describe your feelings about your direction in life."
+      },
+      {
+        "DisplayOrder": 9,
+        "IsActive": false,
+        "Name": "Self-Love Level",
+        "Acronym": "SL",
+        "Common Units": "Scale 1-10, Descriptive",
+        "Common Units Full Name": "Scale from 1 (low self-worth) to 10 (high self-love), Descriptive words (e.g., accepting, critical, compassionate)",
+        "Entry Text": "Rate your current level of self-love or describe your feelings towards yourself."
+      },
+      {
+        "DisplayOrder": 10,
+        "IsActive": false,
+        "Name": "Alignment (Mind-Body-Spirit)",
+        "Acronym": "Align",
+        "Common Units": "Scale 1-10, Descriptive",
+        "Common Units Full Name": "Scale from 1 (misaligned) to 10 (fully aligned), Descriptive words (e.g., integrated, disconnected, harmonious)",
+        "Entry Text": "Rate your sense of alignment between your mind, body, and spirit or describe how integrated you feel."
+      },
+      {
+        "DisplayOrder": 11,
+        "IsActive": false,
+        "Name": "Trust in the Universe/Life",
+        "Acronym": "Trust",
+        "Common Units": "Scale 1-10, Descriptive",
+        "Common Units Full Name": "Scale from 1 (distrustful) to 10 (fully trusting), Descriptive words (e.g., secure, anxious, hopeful)",
+        "Entry Text": "Rate your level of trust in the flow of life or the universe."
+      },
+      {
+        "DisplayOrder": 12,
+        "IsActive": false,
+        "Name": "Creative Flow",
+        "Acronym": "CF",
+        "Common Units": "Scale 1-10, Descriptive",
+        "Common Units Full Name": "Scale from 1 (blocked) to 10 (flowing), Descriptive words (e.g., inspired, stagnant, imaginative)",
+        "Entry Text": "Rate your current level of creative flow or describe your creative state."
+      }
+    ],
+    "Resources": [
+      {
+        "DisplayOrder": 1,
+        "IsActive": true,
+        "Name": "MentalHealth.gov",
+        "Link": "https://www.mentalhealth.gov/",
+        "Summary": "U.S. government resource for mental health information, including self-care tips and finding help."
+      },
+      {
+        "DisplayOrder": 2,
+        "IsActive": true,
+        "Name": "Sleep Foundation",
+        "Link": "https://www.sleepfoundation.org/",
+        "Summary": "Provides evidence-based information on sleep health, sleep disorders, and improving sleep hygiene."
+      },
+      {
+        "DisplayOrder": 3,
+        "IsActive": true,
+        "Name": "American Academy of Dermatology (AAD) - Public Resources",
+        "Link": "https://www.aad.org/public",
+        "Summary": "Information on skin care basics, conditions, and finding a dermatologist."
+      },
+      {
+        "DisplayOrder": 4,
+        "IsActive": true,
+        "Name": "Mindful.org",
+        "Link": "https://www.mindful.org/",
+        "Summary": "Resources on mindfulness, meditation practices, and incorporating mindfulness into daily life."
+      },
+      {
+        "DisplayOrder": 5,
+        "IsActive": true,
+        "Name": "Greater Good Science Center",
+        "Link": "https://greatergood.berkeley.edu/",
+        "Summary": "Research-based insights for a meaningful life, covering topics like gratitude, compassion, and self-care."
+      }
+    ]
+  },
+  "Home": {
+    "Chores": [
+      {
+        "DisplayOrder": 1,
+        "IsActive": false,
+        "Name": "Dishes Washed",
+        "Acronym": "Dishes",
+        "Common Units": "Yes/No, Load Count",
+        "Common Units Full Name": "Yes or No (completed), Number of loads",
+        "Entry Text": "Indicate if you washed the dishes today, or record the number of loads."
+      },
+      {
+        "DisplayOrder": 2,
+        "IsActive": false,
+        "Name": "Trash Taken Out",
+        "Acronym": "Trash",
+        "Common Units": "Yes/No",
+        "Common Units Full Name": "Yes or No (completed)",
+        "Entry Text": "Indicate if you took out the trash today."
+      },
+      {
+        "DisplayOrder": 3,
+        "IsActive": false,
+        "Name": "Surfaces Wiped Down",
+        "Acronym": "Wipe",
+        "Common Units": "Yes/No, Area",
+        "Common Units Full Name": "Yes or No (completed), Specific areas (e.g., kitchen counters, bathroom sink)",
+        "Entry Text": "Indicate if you wiped down surfaces, and optionally specify which areas."
+      },
+      {
+        "DisplayOrder": 4,
+        "IsActive": false,
+        "Name": "Bedrooms Tidied",
+        "Acronym": "Tidy BR",
+        "Common Units": "Yes/No, Count",
+        "Common Units Full Name": "Yes or No (completed), Number of bedrooms tidied",
+        "Entry Text": "Indicate if you tidied the bedrooms, or record how many."
+      },
+      {
+        "DisplayOrder": 5,
+        "IsActive": false,
+        "Name": "Kitchen Floor Swept",
+        "Acronym": "Sweep Kitchen",
+        "Common Units": "Yes/No",
+        "Common Units Full Name": "Yes or No (completed)",
+        "Entry Text": "Indicate if you swept the kitchen floor today."
+      },
+      {
+        "DisplayOrder": 6,
+        "IsActive": false,
+        "Name": "Vacuuming Done",
+        "Acronym": "Vacuum",
+        "Common Units": "Yes/No, Area",
+        "Common Units Full Name": "Yes or No (completed), Specific areas vacuumed",
+        "Entry Text": "Indicate if you vacuumed, and optionally specify which areas."
+      },
+      {
+        "DisplayOrder": 7,
+        "IsActive": false,
+        "Name": "Pets Fed",
+        "Acronym": "Feed Pets",
+        "Common Units": "Yes/No, Times",
+        "Common Units Full Name": "Yes or No (completed), Number of times",
+        "Entry Text": "Indicate if you fed the pets today, or record how many times."
+      },
+      {
+        "DisplayOrder": 8,
+        "IsActive": false,
+        "Name": "Bed Made",
+        "Acronym": "Make Bed",
+        "Common Units": "Yes/No",
+        "Common Units Full Name": "Yes or No (completed)",
+        "Entry Text": "Indicate if you made the bed today."
+      },
+      {
+        "DisplayOrder": 9,
+        "IsActive": false,
+        "Name": "Laundry Done",
+        "Acronym": "Laundry",
+        "Common Units": "Yes/No, Loads",
+        "Common Units Full Name": "Yes or No (completed), Number of loads",
+        "Entry Text": "Indicate if you did laundry today, or record the number of loads."
+      },
+      {
+        "DisplayOrder": 10,
+        "IsActive": false,
+        "Name": "Bathroom Cleaned",
+        "Acronym": "Clean Bath",
+        "Common Units": "Yes/No, Areas",
+        "Common Units Full Name": "Yes or No (completed), Specific areas cleaned (e.g., toilet, sink, shower)",
+        "Entry Text": "Indicate if you cleaned the bathroom, and optionally specify which areas."
+      },
+      {
+        "DisplayOrder": 11,
+        "IsActive": false,
+        "Name": "Floors Mopped",
+        "Acronym": "Mop Floors",
+        "Common Units": "Yes/No, Area",
+        "Common Units Full Name": "Yes or No (completed), Specific areas mopped",
+        "Entry Text": "Indicate if you mopped the floors, and optionally specify which areas."
+      },
+      {
+        "DisplayOrder": 12,
+        "IsActive": false,
+        "Name": "General Tidying",
+        "Acronym": "Tidy Gen",
+        "Common Units": "Scale 1-5, Descriptive",
+        "Common Units Full Name": "Scale from 1 (not tidy) to 5 (very tidy), Descriptive words (e.g., cluttered, organized, neat)",
+        "Entry Text": "Rate the overall tidiness of your living space."
+      },
+      {
+        "DisplayOrder": 13,
+        "IsActive": false,
+        "Name": "Time Spent on Chores",
+        "Acronym": "Chore Time",
+        "Common Units": "minutes",
+        "Common Units Full Name": "minutes",
+        "Entry Text": "Record the total time you spent doing chores today in minutes."
+      },
+      {
+        "DisplayOrder": 14,
+        "IsActive": false,
+        "Name": "Chores Completed",
+        "Acronym": "Chores Done",
+        "Common Units": "count",
+        "Common Units Full Name": "number of chores completed",
+        "Entry Text": "Record the total number of chores you completed today."
+      }
+    ],
+    "Household Supplies": [
+      {
+        "DisplayOrder": 1,
+        "IsActive": false,
+        "Name": "Toilet Paper",
+        "Acronym": "TP",
+        "Common Units": "Rolls",
+        "Common Units Full Name": "Number of rolls",
+        "Entry Text": "Record the number of toilet paper rolls remaining."
+      },
+      {
+        "DisplayOrder": 2,
+        "IsActive": false,
+        "Name": "Tissue Boxes",
+        "Acronym": "Tissues",
+        "Common Units": "Boxes",
+        "Common Units Full Name": "Number of boxes",
+        "Entry Text": "Record the number of tissue boxes remaining."
+      },
+      {
+        "DisplayOrder": 3,
+        "IsActive": false,
+        "Name": "Paper Towels",
+        "Acronym": "PT",
+        "Common Units": "Rolls",
+        "Common Units Full Name": "Number of rolls",
+        "Entry Text": "Record the number of paper towel rolls remaining."
+      },
+      {
+        "DisplayOrder": 4,
+        "IsActive": false,
+        "Name": "Dish Soap",
+        "Acronym": "DS",
+        "Common Units": "Bottles",
+        "Common Units Full Name": "Number of bottles",
+        "Entry Text": "Record the number of dish soap bottles remaining."
+      },
+      {
+        "DisplayOrder": 5,
+        "IsActive": false,
+        "Name": "Dishwasher Detergent",
+        "Acronym": "DD",
+        "Common Units": "Units",
+        "Common Units Full Name": "Number of individual units (pods, tablets, etc.)",
+        "Entry Text": "Record the number of dishwasher detergent units remaining."
+      },
+      {
+        "DisplayOrder": 6,
+        "IsActive": false,
+        "Name": "Laundry Detergent",
+        "Acronym": "LD",
+        "Common Units": "Bottles/Loads",
+        "Common Units Full Name": "Number of bottles or estimated number of loads",
+        "Entry Text": "Record the number of laundry detergent bottles or estimated loads remaining."
+      },
+      {
+        "DisplayOrder": 7,
+        "IsActive": false,
+        "Name": "Cleaning Wipes",
+        "Acronym": "CW",
+        "Common Units": "Containers",
+        "Common Units Full Name": "Number of containers",
+        "Entry Text": "Record the number of containers of cleaning wipes remaining."
+      },
+      {
+        "DisplayOrder": 8,
+        "IsActive": false,
+        "Name": "All-Purpose Cleaner",
+        "Acronym": "APC",
+        "Common Units": "Bottles",
+        "Common Units Full Name": "Number of bottles",
+        "Entry Text": "Record the number of bottles of all-purpose cleaner remaining."
+      },
+      {
+        "DisplayOrder": 9,
+        "IsActive": false,
+        "Name": "Bathroom Cleaner",
+        "Acronym": "BC",
+        "Common Units": "Bottles",
+        "Common Units Full Name": "Number of bottles",
+        "Entry Text": "Record the number of bottles of bathroom cleaner remaining."
+      },
+      {
+        "DisplayOrder": 10,
+        "IsActive": false,
+        "Name": "Trash Bags",
+        "Acronym": "TB",
+        "Common Units": "Rolls/Bags",
+        "Common Units Full Name": "Number of rolls or individual bags",
+        "Entry Text": "Record the number of trash bag rolls or individual bags remaining."
+      },
+      {
+        "DisplayOrder": 11,
+        "IsActive": false,
+        "Name": "Hand Soap",
+        "Acronym": "HS",
+        "Common Units": "Bottles",
+        "Common Units Full Name": "Number of bottles",
+        "Entry Text": "Record the number of hand soap bottles remaining."
+      },
+      {
+        "DisplayOrder": 12,
+        "IsActive": false,
+        "Name": "Shampoo",
+        "Acronym": "Shamp",
+        "Common Units": "Bottles",
+        "Common Units Full Name": "Number of bottles",
+        "Entry Text": "Record the number of shampoo bottles remaining."
+      },
+      {
+        "DisplayOrder": 13,
+        "IsActive": false,
+        "Name": "Conditioner",
+        "Acronym": "Cond",
+        "Common Units": "Bottles",
+        "Common Units Full Name": "Number of bottles",
+        "Entry Text": "Record the number of conditioner bottles remaining."
+      },
+      {
+        "DisplayOrder": 14,
+        "IsActive": false,
+        "Name": "Toothpaste",
+        "Acronym": "TPaste",
+        "Common Units": "Tubes",
+        "Common Units Full Name": "Number of tubes",
+        "Entry Text": "Record the number of toothpaste tubes remaining."
+      },
+      {
+        "DisplayOrder": 15,
+        "IsActive": false,
+        "Name": "Toothbrushes",
+        "Acronym": "TB",
+        "Common Units": "Count",
+        "Common Units Full Name": "Number of toothbrushes",
+        "Entry Text": "Record the number of toothbrushes remaining."
+      },
+      {
+        "DisplayOrder": 16,
+        "IsActive": false,
+        "Name": "Mouthwash",
+        "Acronym": "MW",
+        "Common Units": "Bottles",
+        "Common Units Full Name": "Number of bottles",
+        "Entry Text": "Record the number of mouthwash bottles remaining."
+      },
+      {
+        "DisplayOrder": 17,
+        "IsActive": false,
+        "Name": "Lotion",
+        "Acronym": "Lot",
+        "Common Units": "Bottles",
+        "Common Units Full Name": "Number of bottles",
+        "Entry Text": "Record the number of lotion bottles/containers remaining."
+      },
+      {
+        "DisplayOrder": 18,
+        "IsActive": false,
+        "Name": "Batteries",
+        "Acronym": "Bat",
+        "Common Units": "Count",
+        "Common Units Full Name": "Number of batteries (specify size if needed)",
+        "Entry Text": "Record the number of batteries remaining (specify size, e.g., AA, AAA)."
+      },
+      {
+        "DisplayOrder": 19,
+        "IsActive": false,
+        "Name": "Light Bulbs",
+        "Acronym": "Bulbs",
+        "Common Units": "Count",
+        "Common Units Full Name": "Number of light bulbs",
+        "Entry Text": "Record the number of light bulbs remaining (specify type if needed)."
+      }
+    ],
+    "Resources": [
+      {
+        "DisplayOrder": 1,
+        "IsActive": true,
+        "Name": "Good Housekeeping - Cleaning",
+        "Link": "https://www.goodhousekeeping.com/home/cleaning/",
+        "Summary": "Tips, tricks, and product recommendations for cleaning various areas of the home."
+      },
+      {
+        "DisplayOrder": 2,
+        "IsActive": true,
+        "Name": "The Spruce - Home Organization",
+        "Link": "https://www.thespruce.com/home-organization-4176921",
+        "Summary": "Articles and guides on decluttering, organizing spaces, and managing household tasks."
+      },
+      {
+        "DisplayOrder": 3,
+        "IsActive": true,
+        "Name": "FlyLady.net",
+        "Link": "https://www.flylady.net/d/getting-started/",
+        "Summary": "A system for establishing cleaning and organizing routines through small daily steps and zone cleaning."
+      },
+      {
+        "DisplayOrder": 4,
+        "IsActive": true,
+        "Name": "Real Simple - Cleaning & Organizing",
+        "Link": "https://www.realsimple.com/home-organizing/cleaning-organizing",
+        "Summary": "Practical advice and solutions for simplifying home life, including cleaning and organizing strategies."
+      }
+    ]
+  },
+  "Learning": {
+    "Language Learning Activity Tracking": [
+      {
+        "DisplayOrder": 1,
+        "IsActive": false,
+        "Name": "Date",
+        "Acronym": "Date",
+        "Common Units": "YYYY-MM-DD",
+        "Common Units Full Name": "Year-Month-Day",
+        "Entry Text": "Enter the date of your language learning activity."
+      },
+      {
+        "DisplayOrder": 2,
+        "IsActive": false,
+        "Name": "Language",
+        "Acronym": "Language",
+        "Common Units": "Text, Dropdown (e.g., Spanish, French, Japanese)",
+        "Common Units Full Name": "The language you are learning",
+        "Entry Text": "Specify the language you focused on today."
+      },
+      {
+        "DisplayOrder": 3,
+        "IsActive": false,
+        "Name": "Activity Type",
+        "Acronym": "Activity",
+        "Common Units": "Dropdown (Vocabulary Practice, Grammar Study, Reading, Listening, Speaking Practice, Writing Practice, Cultural Immersion)",
+        "Common Units Full Name": "The type of language learning activity",
+        "Entry Text": "Select the main type of language learning activity you engaged in."
+      },
+      {
+        "DisplayOrder": 4,
+        "IsActive": false,
+        "Name": "Duration",
+        "Acronym": "Duration",
+        "Common Units": "minutes",
+        "Common Units Full Name": "Total time spent on the activity in minutes",
+        "Entry Text": "Record the total duration of this language learning session."
+      },
+      {
+        "DisplayOrder": 5,
+        "IsActive": false,
+        "Name": "Specific Resource/Tool Used",
+        "Acronym": "Resource",
+        "Common Units": "Text (e.g., Duolingo, textbook name, conversation partner)",
+        "Common Units Full Name": "The specific resource or tool you used",
+        "Entry Text": "Note the specific app, book, website, or person you interacted with."
+      },
+      {
+        "DisplayOrder": 6,
+        "IsActive": false,
+        "Name": "Vocabulary Learned/Reviewed",
+        "Acronym": "Vocab",
+        "Common Units": "Count",
+        "Common Units Full Name": "Number of new or reviewed vocabulary words",
+        "Entry Text": "Record the number of new vocabulary words you learned or reviewed."
+      },
+      {
+        "DisplayOrder": 7,
+        "IsActive": false,
+        "Name": "Grammar Topics Studied",
+        "Acronym": "Grammar",
+        "Common Units": "Text",
+        "Common Units Full Name": "Specific grammar points studied",
+        "Entry Text": "Note the specific grammar topics you studied today (e.g., past tense, subjunctive)."
+      },
+      {
+        "DisplayOrder": 8,
+        "IsActive": false,
+        "Name": "Reading Material",
+        "Acronym": "Reading",
+        "Common Units": "Text (e.g., article title, page numbers)",
+        "Common Units Full Name": "The material you read",
+        "Entry Text": "Note what you read in the target language."
+      },
+      {
+        "DisplayOrder": 9,
+        "IsActive": false,
+        "Name": "Listening Material",
+        "Acronym": "Listening",
+        "Common Units": "Text (e.g., podcast episode, video title)",
+        "Common Units Full Name": "The material you listened to",
+        "Entry Text": "Note what you listened to in the target language."
+      },
+      {
+        "DisplayOrder": 10,
+        "IsActive": false,
+        "Name": "Speaking Practice (Duration/Topic)",
+        "Acronym": "Speaking",
+        "Common Units": "minutes, Text (topic)",
+        "Common Units Full Name": "Duration of speaking practice and the topic discussed",
+        "Entry Text": "Record how long you spent speaking and the topic of conversation (if applicable)."
+      },
+      {
+        "DisplayOrder": 11,
+        "IsActive": false,
+        "Name": "Writing Practice (Topic/Length)",
+        "Acronym": "Writing",
+        "Common Units": "Text (topic), Word Count",
+        "Common Units Full Name": "The topic you wrote about and the number of words/characters",
+        "Entry Text": "Note what you wrote about and the length (e.g., a paragraph, 100 words)."
+      },
+      {
+        "DisplayOrder": 12,
+        "IsActive": false,
+        "Name": "Comprehension Level (Self-Assessed)",
+        "Acronym": "Comprehension",
+        "Common Units": "Scale 1-5 (Low to High)",
+        "Common Units Full Name": "Your self-assessment of your understanding",
+        "Entry Text": "Rate your comprehension level during the activity."
+      },
+      {
+        "DisplayOrder": 13,
+        "IsActive": false,
+        "Name": "Fluency Level (Self-Assessed)",
+        "Acronym": "Fluency",
+        "Common Units": "Scale 1-5 (Low to High)",
+        "Common Units Full Name": "Your self-assessment of your fluency",
+        "Entry Text": "Rate your perceived fluency during the activity (especially speaking/writing)."
+      },
+      {
+        "DisplayOrder": 14,
+        "IsActive": false,
+        "Name": "Motivation Level",
+        "Acronym": "Motivation",
+        "Common Units": "Scale 1-5 (Low to High)",
+        "Common Units Full Name": "Your level of motivation during the session",
+        "Entry Text": "Rate your motivation level for learning today."
+      },
+      {
+        "DisplayOrder": 15,
+        "IsActive": false,
+        "Name": "Enjoyment Level",
+        "Acronym": "Enjoyment",
+        "Common Units": "Scale 1-5 (Low to High)",
+        "Common Units Full Name": "How much you enjoyed the activity",
+        "Entry Text": "Rate how much you enjoyed the language learning activity."
+      },
+      {
+        "DisplayOrder": 16,
+        "IsActive": false,
+        "Name": "Notes/Observations",
+        "Acronym": "Notes",
+        "Common Units": "Text",
+        "Common Units Full Name": "Free text description",
+        "Entry Text": "Add any other relevant notes about your language learning session, such as challenges, breakthroughs, or areas to focus on."
+      }
+    ],
+    "Resources": [
+      {
+        "DisplayOrder": 1,
+        "IsActive": true,
+        "Name": "Duolingo",
+        "Link": "https://www.duolingo.com/",
+        "Summary": "Gamified language learning platform offering free courses in numerous languages."
+      },
+      {
+        "DisplayOrder": 2,
+        "IsActive": true,
+        "Name": "Memrise",
+        "Link": "https://www.memrise.com/",
+        "Summary": "Focuses on vocabulary acquisition using spaced repetition and user-generated content."
+      },
+      {
+        "DisplayOrder": 3,
+        "IsActive": true,
+        "Name": "Babbel",
+        "Link": "https://www.babbel.com/",
+        "Summary": "Subscription-based language learning app focusing on conversational skills."
+      },
+      {
+        "DisplayOrder": 4,
+        "IsActive": true,
+        "Name": "italki",
+        "Link": "https://www.italki.com/",
+        "Summary": "Connects language learners with native speaker tutors for online lessons and conversation practice."
+      },
+       {
+        "DisplayOrder": 5,
+        "IsActive": true,
+        "Name": "Forvo",
+        "Link": "https://forvo.com/",
+        "Summary": "Crowdsourced pronunciation dictionary; listen to words pronounced by native speakers."
+      }
+    ]
+  }
+}

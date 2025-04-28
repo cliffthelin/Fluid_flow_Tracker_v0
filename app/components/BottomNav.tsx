@@ -1,20 +1,18 @@
 "use client"
 
 import type React from "react"
-import { Plus, BarChart, Database, BookMarked, BookOpen, Upload } from "lucide-react"
-import { useConfig } from "../context/ConfigContext"
+import { Plus, BarChart, Database, BookMarked, BookOpen, Settings } from "lucide-react"
 
-type Section = "entry" | "stats" | "data" | "resources" | "help" | "import"
+// Update the type definition to include "config"
+type Section = "entry" | "stats" | "data" | "resources" | "help" | "config"
 
 interface BottomNavProps {
   activeSection: Section
   setActiveSection: (section: Section) => void
 }
 
-// Update the bottom nav to include 5 sections
+// Update the BottomNav component to include 6 sections instead of 5
 const BottomNav: React.FC<BottomNavProps> = ({ activeSection, setActiveSection }) => {
-  const { menuTitleEntry, menuTitleStats, menuTitleData, menuTitleResources, menuTitleHelp } = useConfig()
-
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-gray-900 dark:bg-gray-950 text-white z-50 shadow-lg border-t border-gray-700">
       <div className="flex justify-around items-center">
@@ -30,7 +28,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeSection, setActiveSection }
         >
           <Plus size={24} className={activeSection === "entry" ? "text-blue-400" : ""} />
           <span className={`text-xs mt-1 font-bold ${activeSection === "entry" ? "text-blue-400" : ""}`}>
-            {menuTitleEntry}
+            Add Entry
           </span>
         </button>
         <button
@@ -45,7 +43,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeSection, setActiveSection }
         >
           <BarChart size={24} className={activeSection === "stats" ? "text-green-400" : ""} />
           <span className={`text-xs mt-1 font-bold ${activeSection === "stats" ? "text-green-400" : ""}`}>
-            {menuTitleStats}
+            UroLog Stats
           </span>
         </button>
         <button
@@ -59,9 +57,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeSection, setActiveSection }
           aria-pressed={activeSection === "data"}
         >
           <Database size={24} className={activeSection === "data" ? "text-purple-400" : ""} />
-          <span className={`text-xs mt-1 font-bold ${activeSection === "data" ? "text-purple-400" : ""}`}>
-            {menuTitleData}
-          </span>
+          <span className={`text-xs mt-1 font-bold ${activeSection === "data" ? "text-purple-400" : ""}`}>Data</span>
         </button>
         <button
           onClick={() => setActiveSection("resources")}
@@ -75,7 +71,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeSection, setActiveSection }
         >
           <BookOpen size={24} className={activeSection === "resources" ? "text-cyan-400" : ""} />
           <span className={`text-xs mt-1 font-bold ${activeSection === "resources" ? "text-cyan-400" : ""}`}>
-            {menuTitleResources}
+            Resources
           </span>
         </button>
         <button
@@ -89,23 +85,20 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeSection, setActiveSection }
           aria-pressed={activeSection === "help"}
         >
           <BookMarked size={24} className={activeSection === "help" ? "text-amber-400" : ""} />
-          <span className={`text-xs mt-1 font-bold ${activeSection === "help" ? "text-amber-400" : ""}`}>
-            {menuTitleHelp}
-          </span>
+          <span className={`text-xs mt-1 font-bold ${activeSection === "help" ? "text-amber-400" : ""}`}>Help</span>
         </button>
-        {/* Import option in the navigation items */}
         <button
-          onClick={() => setActiveSection("import")}
+          onClick={() => setActiveSection("config")}
           className={`flex flex-col items-center py-4 px-2 w-1/6 ${
-            activeSection === "import"
-              ? "text-blue-400 border-t-4 border-blue-400 bg-gray-800 dark:bg-gray-800"
+            activeSection === "config"
+              ? "text-pink-400 border-t-4 border-pink-400 bg-gray-800 dark:bg-gray-800"
               : "text-gray-300 hover:text-white hover:bg-gray-800 dark:hover:bg-gray-800"
           } transition-all duration-200`}
-          aria-label="Import"
-          aria-pressed={activeSection === "import"}
+          aria-label="Configuration"
+          aria-pressed={activeSection === "config"}
         >
-          <Upload size={24} className={activeSection === "import" ? "text-blue-400" : ""} />
-          <span className={`text-xs mt-1 font-bold ${activeSection === "import" ? "text-blue-400" : ""}`}>Import</span>
+          <Settings size={24} className={activeSection === "config" ? "text-pink-400" : ""} />
+          <span className={`text-xs mt-1 font-bold ${activeSection === "config" ? "text-pink-400" : ""}`}>Config</span>
         </button>
       </div>
     </div>

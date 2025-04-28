@@ -243,7 +243,7 @@ For additional support or to report issues, please use the feedback form in the 
 
 Let's update the BackupRestore component to use the new type names:
 
-```typescriptreact file="app/components/BackupRestore.tsx"
+\`\`\`typescriptreact file="app/components/BackupRestore.tsx"
 [v0-no-op-code-block-prefix]"use client"
 
 import type React from "react"

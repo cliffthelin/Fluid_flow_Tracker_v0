@@ -1,0 +1,17 @@
+// somewhere during app initialization (optional)
+import { db } from '~/db/trackerDb';
+import { defaultCustomTrackers } from '~/data/defaultCustomTrackers';
+
+export async function seedDefaultTrackers() {
+  for (const group in defaultCustomTrackers) {
+    for (const field of defaultCustomTrackers[group]) {
+      const exists = await db.customTrackers
+        .where({ group, Name: field.Name })
+        .first();
+
+      if (!exists) {
+        await db.customTrackers.add({ ...field, group });
+      }
+    }
+  }
+}

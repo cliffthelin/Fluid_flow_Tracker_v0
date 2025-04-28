@@ -510,3 +510,301 @@ export async function getDatabaseInfo(): Promise<{
     }
   }
 }
+
+// Update the export function to include isDemo
+export async function exportData(): Promise<string> {
+  try {
+    // Get all data from all stores
+    const data: Record<string, any[]> = {}
+
+    for (const table of db.tables) {
+      data[table.name] = await table.toArray()
+    }
+
+    // Get app configuration for display order and active status
+    const appConfig = localStorage.getItem("appConfig")
+    let displayOrder = {}
+    let activeStatus = {}
+
+    if (appConfig) {
+      try {
+        const parsedConfig = JSON.parse(appConfig)
+
+        // Extract display order and active status
+        displayOrder = {
+          tabs: getTabDisplayOrder(parsedConfig),
+          sections: getSectionDisplayOrder(parsedConfig),
+          fields: getFieldDisplayOrder(parsedConfig),
+        }
+
+        activeStatus = {
+          tabs: getTabActiveStatus(parsedConfig),
+          sections: getSectionActiveStatus(parsedConfig),
+          fields: getFieldActiveStatus(parsedConfig),
+        }
+      } catch (error) {
+        console.error("Error parsing app configuration:", error)
+      }
+    }
+
+    return JSON.stringify({
+      data,
+      metadata: {
+        displayOrder,
+        activeStatus,
+      },
+      exportDate: new Date().toISOString(),
+      version: "3.0", // Increment version to indicate display order and active status support
+    })
+  } catch (error) {
+    console.error("Error exporting data:", error)
+    throw new Error("Failed to export data")
+  }
+}
+
+// Helper functions to extract display order and active status
+function getTabDisplayOrder(config: any) {
+  const tabOrder = {}
+
+  if (config.pages) {
+    Object.entries(config.pages).forEach(([pageId, page]) => {
+      if (page.sections) {
+        Object.entries(page.sections).forEach(([sectionId, section]) => {
+          if (section.tabs) {
+            Object.entries(section.tabs).forEach(([tabId, tab]) => {
+              tabOrder[`${pageId}.${sectionId}.${tabId}`] = tab.order
+            })
+          }
+        })
+      }
+    })
+  }
+
+  return tabOrder
+}
+
+function getSectionDisplayOrder(config: any) {
+  const sectionOrder = {}
+
+  if (config.pages) {
+    Object.entries(config.pages).forEach(([pageId, page]) => {
+      if (page.sections) {
+        Object.entries(page.sections).forEach(([sectionId, section]) => {
+          sectionOrder[`${pageId}.${sectionId}`] = section.order
+        })
+      }
+    })
+  }
+
+  return sectionOrder
+}
+
+function getFieldDisplayOrder(config: any) {
+  const fieldOrder = {}
+
+  if (config.pages) {
+    Object.entries(config.pages).forEach(([pageId, page]) => {
+      if (page.sections) {
+        Object.entries(page.sections).forEach(([sectionId, section]) => {
+          if (section.tabs) {
+            Object.entries(section.tabs).forEach(([tabId, tab]) => {
+              if (tab.fields) {
+                Object.entries(tab.fields).forEach(([fieldId, field]) => {
+                  fieldOrder[`${pageId}.${sectionId}.${tabId}.${fieldId}`] = field.order
+                })
+              }
+            })
+          }
+        })
+      }
+    })
+  }
+
+  return fieldOrder
+}
+
+function getTabActiveStatus(config: any) {
+  const tabStatus = {}
+
+  if (config.pages) {
+    Object.entries(config.pages).forEach(([pageId, page]) => {
+      if (page.sections) {
+        Object.entries(page.sections).forEach(([sectionId, section]) => {
+          if (section.tabs) {
+            Object.entries(section.tabs).forEach(([tabId, tab]) => {
+              tabStatus[`${pageId}.${sectionId}.${tabId}`] = tab.enabled
+            })
+          }
+        })
+      }
+    })
+  }
+
+  return tabStatus
+}
+
+function getSectionActiveStatus(config: any) {
+  const sectionStatus = {}
+
+  if (config.pages) {
+    Object.entries(config.pages).forEach(([pageId, page]) => {
+      if (page.sections) {
+        Object.entries(page.sections).forEach(([sectionId, section]) => {
+          sectionStatus[`${pageId}.${sectionId}`] = section.enabled
+        })
+      }
+    })
+  }
+
+  return sectionStatus
+}
+
+function getFieldActiveStatus(config: any) {
+  const fieldStatus = {}
+
+  if (config.pages) {
+    Object.entries(config.pages).forEach(([pageId, page]) => {
+      if (page.sections) {
+        Object.entries(page.sections).forEach(([sectionId, section]) => {
+          if (section.tabs) {
+            Object.entries(section.tabs).forEach(([tabId, tab]) => {
+              if (tab.fields) {
+                Object.entries(tab.fields).forEach(([fieldId, field]) => {
+                  fieldStatus[`${pageId}.${sectionId}.${tabId}.${fieldId}`] = field.enabled
+                })
+              }
+            })
+          }
+        })
+      }
+    })
+  }
+
+  return fieldStatus
+}
+
+// Update the import function to handle isDemo
+export async function importData(jsonData: string): Promise<void> {
+  try {
+    const parsedData = JSON.parse(jsonData)
+    const { data, metadata, /*config,*/ version } = parsedData
+
+    // Validate the data
+    if (!data || typeof data !== "object") {
+      throw new Error("Invalid data format")
+    }
+
+    // Import data to each store
+    for (const [storeName, entries] of Object.entries(data)) {
+      if (!Array.isArray(entries)) continue
+
+      // Check if the store exists
+      const tableNames = db.tables.map((table) => table.name)
+      if (!tableNames.includes(storeName)) {
+        console.warn(`Store ${storeName} does not exist, skipping`)
+        continue
+      }
+
+      const table = db.table(storeName)
+
+      // Clear existing data
+      await table.clear()
+
+      // Add each entry, ensuring isDemo is set
+      for (const entry of entries) {
+        // For older exports without isDemo, set it to false by default
+        if (entry.isDemo === undefined) {
+          entry.isDemo = false
+        }
+        await table.add(entry)
+      }
+    }
+
+    // Import display order and active status if available
+    if (metadata && (metadata.displayOrder || metadata.activeStatus)) {
+      try {
+        // Get current app config
+        const appConfig = localStorage.getItem("appConfig")
+        if (appConfig) {
+          const parsedConfig = JSON.parse(appConfig)
+          let configUpdated = false
+
+          // Update tab display order and active status
+          if (metadata.displayOrder?.tabs && metadata.activeStatus?.tabs) {
+            Object.entries(metadata.displayOrder.tabs).forEach(([path, order]) => {
+              const [pageId, sectionId, tabId] = path.split(".")
+              if (parsedConfig.pages?.[pageId]?.sections?.[sectionId]?.tabs?.[tabId]) {
+                parsedConfig.pages[pageId].sections[sectionId].tabs[tabId].order = order
+                configUpdated = true
+              }
+            })
+
+            Object.entries(metadata.activeStatus.tabs).forEach(([path, enabled]) => {
+              const [pageId, sectionId, tabId] = path.split(".")
+              if (parsedConfig.pages?.[pageId]?.sections?.[sectionId]?.tabs?.[tabId]) {
+                parsedConfig.pages[pageId].sections[sectionId].tabs[tabId].enabled = enabled
+                configUpdated = true
+              }
+            })
+          }
+
+          // Update section display order and active status
+          if (metadata.displayOrder?.sections && metadata.activeStatus?.sections) {
+            Object.entries(metadata.displayOrder.sections).forEach(([path, order]) => {
+              const [pageId, sectionId] = path.split(".")
+              if (parsedConfig.pages?.[pageId]?.sections?.[sectionId]) {
+                parsedConfig.pages[pageId].sections[sectionId].order = order
+                configUpdated = true
+              }
+            })
+
+            Object.entries(metadata.activeStatus.sections).forEach(([path, enabled]) => {
+              const [pageId, sectionId] = path.split(".")
+              if (parsedConfig.pages?.[pageId]?.sections?.[sectionId]) {
+                parsedConfig.pages[pageId].sections[sectionId].enabled = enabled
+                configUpdated = true
+              }
+            })
+          }
+
+          // Update field display order and active status
+          if (metadata.displayOrder?.fields && metadata.activeStatus?.fields) {
+            Object.entries(metadata.displayOrder.fields).forEach(([path, order]) => {
+              const [pageId, sectionId, tabId, fieldId] = path.split(".")
+              if (parsedConfig.pages?.[pageId]?.sections?.[sectionId]?.tabs?.[tabId]?.fields?.[fieldId]) {
+                parsedConfig.pages[pageId].sections[sectionId].tabs[tabId].fields[fieldId].order = order
+                configUpdated = true
+              }
+            })
+
+            Object.entries(metadata.activeStatus.fields).forEach(([path, enabled]) => {
+              const [pageId, sectionId, tabId, fieldId] = path.split(".")
+              if (parsedConfig.pages?.[pageId]?.sections?.[sectionId]?.tabs?.[tabId]?.fields?.[fieldId]) {
+                parsedConfig.pages[pageId].sections[sectionId].tabs[tabId].fields[fieldId].enabled = enabled
+                configUpdated = true
+              }
+            })
+          }
+
+          // Save updated config if changes were made
+          if (configUpdated) {
+            localStorage.setItem("appConfig", JSON.stringify(parsedConfig))
+            console.log("Display order and active status imported successfully")
+          }
+        }
+      } catch (error) {
+        console.error("Error importing display order and active status:", error)
+      }
+    }
+
+    // Import configuration if available
+    // if (config) {
+    //   await setAppConfiguration(config); // Assuming this is not needed for Dexie
+    // }
+
+    return
+  } catch (error) {
+    console.error("Error importing data:", error)
+    throw new Error("Failed to import data")
+  }
+}

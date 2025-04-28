@@ -1,40 +1,91 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
-import {
-  Play,
-  Pause,
-  Save,
-  RotateCcw,
-  Clock,
-  AlertTriangle,
-  FileText,
-  Calendar,
-  Coffee,
-  TrendingUp,
-  TrendingDown,
-  Check,
-  Dumbbell,
-} from "lucide-react"
+import { useState, useEffect, useRef } from "react"
+import { Clock, AlertTriangle, FileText, Coffee, Dumbbell, Thermometer, Droplet, Activity } from "lucide-react"
 import type { UroLog, UrineColor, UrgencyRating, ConcernType, FluidType, HydroLog, KegelLog } from "../types"
-import { useConfig } from "../context/ConfigContext"
+import type { AppConfig, FormFieldConfig } from "../types/config"
 
 interface FlowEntryFormProps {
   addUroLog: (entry: UroLog) => void
   addHydroLog: (entry: HydroLog) => void
   addKegelLog: (entry: KegelLog) => void
+  appConfig: AppConfig
   title2?: React.ReactNode
 }
 
-const FlowEntryForm: React.FC<FlowEntryFormProps> = ({ addUroLog, addHydroLog, addKegelLog, title2 }) => {
-  // Get measurement configuration from context
-  const { uroLogMeasurement, uroLogUnit } = useConfig()
+// Update the form state to include isDemo
+interface FormState {
+  // Existing fields...
+  volume: string
+  duration: string
+  color: UrineColor
+  urgency: UrgencyRating
+  concerns: ConcernType[]
+  flowNotes: string
+  isTimerRunning: boolean
+  timerStart: number | null
+  elapsedTime: number
+  calculatedFlowRate: number | null
+  hydroLogType: FluidType
+  customFluidType: string
+  hydroLogAmount: string
+  hydroLogUnit: "oz" | "mL"
+  useCustomAmount: boolean
+  hydroLogNotes: string
+  kegelReps: string
+  kegelHoldTime: string
+  kegelSets: string
+  kegelTotalTime: number
+  kegelCompleted: boolean
+  kegelNotes: string
+  isKegelTimerRunning: boolean
+  kegelTimerStart: number | null
+  kegelElapsedTime: number
+  kegelGuidedTimer: boolean
+  kegelRepsCompleted: string
+  activeTab: "basic" | "fluid" | "kegel" | "stricture" | "hydration"
+  isExpanded: boolean
+  entryDate: string
+  entryTime: string
+  useCustomDateTime: boolean
+  saveSuccess: boolean | null
+  saveMessage: string
+  overallAverage: number
+  weekAverage: number
+  monthAverage: number
+  dayAverage: number
+  isDemo: boolean
+  // Hydration tab fields
+  hydrationBeverageType: string
+  hydrationCustomType: string
+  hydrationAmount: string
+  hydrationUnit: "oz" | "mL" | "cups"
+  hydrationTemperature: string
+  hydrationTimeOfDay: string
+  hydrationGoal: string
+  hydrationNotes: string
+}
+
+const FlowEntryForm: React.FC<FlowEntryFormProps> = ({ addUroLog, addHydroLog, addKegelLog, appConfig, title2 }) => {
+  // Get configuration for form fields
+  const getFieldConfig = (tabId: string, fieldId: string): FormFieldConfig | undefined => {
+    return appConfig.pages["page1"]?.sections["section1"]?.tabs[tabId]?.fields[fieldId]
+  }
+
+  // Check if a tab is enabled
+  const isTabEnabled = (tabId: string): boolean => {
+    return !!appConfig.pages["page1"]?.sections["section1"]?.tabs[tabId]?.enabled
+  }
 
   // Add this near the top of the component
   const [dbUroLogs, setDbUroLogs] = useState<UroLog[]>([])
   const [dbHydroLogs, setDbHydroLogs] = useState<HydroLog[]>([])
   const [dbKegelLogs, setDbKegelLogs] = useState<KegelLog[]>([])
+
+  // Add timer interval refs
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const strictureTimerIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   // UroLog Entry state
   const [volume, setVolume] = useState("")
@@ -69,8 +120,32 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({ addUroLog, addHydroLog, a
   const [kegelGuidedTimer, setKegelGuidedTimer] = useState(false)
   const [kegelRepsCompleted, setKegelRepsCompleted] = useState("")
 
+  // Stricture Log state
+  const [strictureVolume, setStrictureVolume] = useState("")
+  const [strictureDuration, setStrictureDuration] = useState("")
+  const [strictureFlowRate, setStrictureFlowRate] = useState<number | null>(null)
+  const [strictureColor, setStrictureColor] = useState<UrineColor>("")
+  const [strictureUrgency, setStrictureUrgency] = useState<UrgencyRating>("")
+  const [strictureSymptoms, setStrictureSymptoms] = useState<string[]>([])
+  const [streamQuality, setStreamQuality] = useState("")
+  const [painLevel, setPainLevel] = useState("")
+  const [strictureNotes, setStrictureNotes] = useState("")
+  const [isStrictureTimerRunning, setIsStrictureTimerRunning] = useState(false)
+  const [strictureTimerStart, setStrictureTimerStart] = useState<number | null>(null)
+  const [strictureElapsedTime, setStrictureElapsedTime] = useState(0)
+
+  // Hydration tab state
+  const [hydrationBeverageType, setHydrationBeverageType] = useState("")
+  const [hydrationCustomType, setHydrationCustomType] = useState("")
+  const [hydrationAmount, setHydrationAmount] = useState("")
+  const [hydrationUnit, setHydrationUnit] = useState<"oz" | "mL" | "cups">("mL")
+  const [hydrationTemperature, setHydrationTemperature] = useState("")
+  const [hydrationTimeOfDay, setHydrationTimeOfDay] = useState("")
+  const [hydrationGoal, setHydrationGoal] = useState("")
+  const [hydrationNotes, setHydrationNotes] = useState("")
+
   // Shared state
-  const [activeTab, setActiveTab] = useState<"basic" | "fluid" | "kegel">("basic")
+  const [activeTab, setActiveTab] = useState<"basic" | "fluid" | "kegel" | "stricture" | "hydration">("basic")
   const [isExpanded, setIsExpanded] = useState(true)
   const [entryDate, setEntryDate] = useState("")
   const [entryTime, setEntryTime] = useState("")
@@ -84,6 +159,87 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({ addUroLog, addHydroLog, a
   const [monthAverage, setMonthAverage] = useState<number>(0)
   const [dayAverage, setDayAverage] = useState<number>(0)
 
+  const [formState, setFormState] = useState<FormState>({
+    volume: "",
+    duration: "",
+    color: "",
+    urgency: "",
+    concerns: [],
+    flowNotes: "",
+    isTimerRunning: false,
+    timerStart: null,
+    elapsedTime: 0,
+    calculatedFlowRate: null,
+    hydroLogType: "",
+    customFluidType: "",
+    hydroLogAmount: "",
+    hydroLogUnit: "mL",
+    useCustomAmount: false,
+    hydroLogNotes: "",
+    kegelReps: "",
+    kegelHoldTime: "",
+    kegelSets: "",
+    kegelTotalTime: 0,
+    kegelCompleted: false,
+    kegelNotes: "",
+    isKegelTimerRunning: false,
+    kegelTimerStart: null,
+    kegelElapsedTime: 0,
+    kegelGuidedTimer: false,
+    kegelRepsCompleted: "",
+    activeTab: "basic",
+    isExpanded: true,
+    entryDate: "",
+    entryTime: "",
+    useCustomDateTime: false,
+    saveSuccess: null,
+    saveMessage: "",
+    overallAverage: 0,
+    weekAverage: 0,
+    monthAverage: 0,
+    dayAverage: 0,
+    isDemo: false,
+    hydrationBeverageType: "",
+    hydrationCustomType: "",
+    hydrationAmount: "",
+    hydrationUnit: "mL",
+    hydrationTemperature: "",
+    hydrationTimeOfDay: "",
+    hydrationGoal: "",
+    hydrationNotes: "",
+  })
+
+  // Calculate flow rate when volume or duration changes
+  useEffect(() => {
+    if (volume && duration && Number(volume) > 0 && Number(duration) > 0) {
+      const flowRate = Number(volume) / Number(duration)
+      setCalculatedFlowRate(Number.parseFloat(flowRate.toFixed(2)))
+    } else {
+      setCalculatedFlowRate(null)
+    }
+  }, [volume, duration])
+
+  // Calculate stricture flow rate
+  useEffect(() => {
+    if (strictureVolume && strictureDuration && Number(strictureVolume) > 0 && Number(strictureDuration) > 0) {
+      const flowRate = Number(strictureVolume) / Number(strictureDuration)
+      setStrictureFlowRate(Number.parseFloat(flowRate.toFixed(2)))
+    } else {
+      setStrictureFlowRate(null)
+    }
+  }, [strictureVolume, strictureDuration])
+
+  // Calculate kegel total time
+  useEffect(() => {
+    if (kegelReps && kegelHoldTime && kegelSets) {
+      const totalTime = Number(kegelReps) * Number(kegelHoldTime) * Number(kegelSets)
+      setKegelTotalTime(totalTime)
+    } else {
+      setKegelTotalTime(0)
+    }
+  }, [kegelReps, kegelHoldTime, kegelSets])
+
+  // Get color options from configuration or use defaults
   const colorOptions: { value: UrineColor; label: string; bgColor: string; textColor: string }[] = [
     { value: "", label: "Select color (optional)", bgColor: "bg-white dark:bg-gray-700", textColor: "text-gray-500" },
     { value: "Light Yellow", label: "Light Yellow", bgColor: "bg-yellow-200", textColor: "text-yellow-800" },
@@ -92,153 +248,245 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({ addUroLog, addHydroLog, a
     { value: "Amber or Honey", label: "Amber or Honey", bgColor: "bg-amber-300", textColor: "text-amber-800" },
     { value: "Orange", label: "Orange", bgColor: "bg-orange-300", textColor: "text-orange-800" },
     { value: "Pink or Red", label: "Pink or Red", bgColor: "bg-red-200", textColor: "text-red-800" },
-    { value: "Blue or Green", label: "Blue or Green", bgColor: "bg-teal-200", textColor: "text-teal-800" },
+  ].filter((color) => color.value !== undefined)
+
+  // Update the availableTabs array to include the new tab
+  const availableTabs = [
+    { id: "tab1", key: "basic", label: "UroLog Entry", icon: <Droplet size={20} className="mr-2 text-blue-500" /> },
+    { id: "tab2", key: "fluid", label: "HydroLog", icon: <Coffee size={20} className="mr-2 text-brown-500" /> },
+    { id: "tab3", key: "kegel", label: "KegelLog", icon: <Dumbbell size={20} className="mr-2 text-purple-500" /> },
     {
-      value: "Brown or Cola-colored",
-      label: "Brown or Cola-colored",
-      bgColor: "bg-amber-700",
-      textColor: "text-white",
+      id: "tab4",
+      key: "stricture",
+      label: "Urethral Stricture",
+      icon: <AlertTriangle size={20} className="mr-2 text-orange-500" />,
     },
-    { value: "Cloudy or Murky", label: "Cloudy or Murky", bgColor: "bg-gray-300", textColor: "text-gray-800" },
-    { value: "Foamy or Bubbly", label: "Foamy or Bubbly", bgColor: "bg-blue-100", textColor: "text-blue-800" },
-  ]
+    { id: "tab5", key: "hydration", label: "Hydration", icon: <Droplet size={20} className="mr-2 text-cyan-500" /> },
+  ].filter((tab) => isTabEnabled(tab.id))
 
-  const urgencyOptions: { value: UrgencyRating; label: string }[] = [
-    { value: "", label: "Select urgency (optional)" },
-    { value: "Normal", label: "Normal" },
-    { value: "Hour < 60 min", label: "Hour < 60 min" },
-    { value: "Hold < 15 min", label: "Hold < 15 min" },
-    { value: "Hold < 5 minutes", label: "Hold < 5 minutes" },
-    { value: "Had drips", label: "Had drips" },
-    { value: "Couldn't hold it", label: "Couldn't hold it" },
-  ]
+  // Define validation functions
+  const isFlowDataValid = volume !== "" && duration !== ""
+  const isFluidDataValid = hydroLogType !== "" && hydroLogAmount !== ""
+  const isKegelDataValid = kegelReps !== "" && kegelHoldTime !== "" && kegelSets !== ""
+  const isStrictureDataValid = strictureVolume !== "" && strictureDuration !== ""
+  const isHydrationDataValid =
+    getFieldConfig("tab5", "field1")?.enabled &&
+    hydrationBeverageType !== "" &&
+    (hydrationBeverageType !== "Other" || (hydrationBeverageType === "Other" && hydrationCustomType !== "")) &&
+    Number(hydrationAmount) > 0
 
-  const fluidTypeOptions: { value: FluidType; label: string }[] = [
-    { value: "", label: "Select type" },
-    { value: "Water", label: "Water" },
-    { value: "Juice", label: "Juice" },
-    { value: "Tea", label: "Tea" },
-    { value: "Soda", label: "Soda" },
-    { value: "Coffee", label: "Coffee" },
-    { value: "Alcohol", label: "Alcohol" },
-    { value: "Other", label: "Other" },
-  ]
+  const isSaveEnabled =
+    (activeTab === "basic" && isFlowDataValid) ||
+    (activeTab === "fluid" && isFluidDataValid) ||
+    (activeTab === "kegel" && isKegelDataValid) ||
+    (activeTab === "stricture" && isStrictureDataValid) ||
+    (activeTab === "hydration" && isHydrationDataValid)
 
-  const commonSizes = [
-    { label: "Small (8 oz / 240 mL)", oz: 8, mL: 240 },
-    { label: "Medium (12 oz / 355 mL)", oz: 12, mL: 355 },
-    { label: "Large (16 oz / 475 mL)", oz: 16, mL: 475 },
-    { label: "Extra Large (20 oz / 590 mL)", oz: 20, mL: 590 },
-    { label: "750 mL (25.4 oz)", oz: 25.4, mL: 750 },
-    { label: "1000 mL (33.8 oz)", oz: 33.8, mL: 1000 },
-  ]
+  // Timer functions
+  const startTimer = () => {
+    if (!isTimerRunning) {
+      setIsTimerRunning(true)
+      const startTime = Date.now() - elapsedTime
+      setTimerStart(startTime)
 
-  const concernOptions: ConcernType[] = [
-    "Straining",
-    "Dribbling",
-    "Frequent urges",
-    "Incomplete emptying",
-    "Waking just to pee",
-    "Pain",
-    "Burning",
-    "Blood",
-  ]
+      // Create interval and store its ID
+      const intervalId = setInterval(() => {
+        setElapsedTime(Date.now() - startTime)
+        setDuration(Math.floor((Date.now() - startTime) / 1000).toString())
+      }, 100)
 
-  // Add this useEffect to fetch data from IndexedDB
-  useEffect(() => {
-    const fetchEntries = async () => {
-      try {
-        const { db } = await import("../services/db")
+      // Store interval ID in a ref to clear it later
+      timerIntervalRef.current = intervalId
+    }
+  }
 
-        // Check if the tables exist before trying to access them
-        if (db.uroLogs && typeof db.uroLogs.toArray === "function") {
-          const uroLogs = await db.uroLogs.toArray()
-          setDbUroLogs(uroLogs)
-        } else {
-          console.warn("uroLogs table not found or not properly initialized")
-          setDbUroLogs([])
-        }
+  const pauseTimer = () => {
+    if (isTimerRunning && timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current)
+      timerIntervalRef.current = null
+      setIsTimerRunning(false)
+    }
+  }
 
-        if (db.hydroLogs && typeof db.hydroLogs.toArray === "function") {
-          const hydroLogs = await db.hydroLogs.toArray()
-          setDbHydroLogs(hydroLogs)
-        } else {
-          console.warn("hydroLogs table not found or not properly initialized")
-          setDbHydroLogs([])
-        }
+  const resetTimer = () => {
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current)
+      timerIntervalRef.current = null
+    }
+    setIsTimerRunning(false)
+    setTimerStart(null)
+    setElapsedTime(0)
+    setDuration("")
+  }
 
-        if (db.kegelLogs && typeof db.kegelLogs.toArray === "function") {
-          const kegelLogs = await db.kegelLogs.toArray()
-          setDbKegelLogs(kegelLogs)
-        } else {
-          console.warn("kegelLogs table not found or not properly initialized")
-          setDbKegelLogs([])
-        }
-      } catch (error) {
-        console.error("Error fetching entries from database:", error)
-        // Set empty arrays to prevent further errors
-        setDbUroLogs([])
-        setDbHydroLogs([])
-        setDbKegelLogs([])
+  // Stricture timer functions
+  const startStrictureTimer = () => {
+    if (!isStrictureTimerRunning) {
+      setIsStrictureTimerRunning(true)
+      const startTime = Date.now() - strictureElapsedTime
+      setStrictureTimerStart(startTime)
+
+      // Create interval and store its ID
+      const intervalId = setInterval(() => {
+        setStrictureElapsedTime(Date.now() - startTime)
+        setStrictureDuration(Math.floor((Date.now() - startTime) / 1000).toString())
+      }, 100)
+
+      // Store interval ID in a ref to clear it later
+      strictureTimerIntervalRef.current = intervalId
+    }
+  }
+
+  const pauseStrictureTimer = () => {
+    if (isStrictureTimerRunning && strictureTimerIntervalRef.current) {
+      clearInterval(strictureTimerIntervalRef.current)
+      strictureTimerIntervalRef.current = null
+      setIsStrictureTimerRunning(false)
+    }
+  }
+
+  const resetStrictureTimer = () => {
+    if (strictureTimerIntervalRef.current) {
+      clearInterval(strictureTimerIntervalRef.current)
+      strictureTimerIntervalRef.current = null
+    }
+    setIsStrictureTimerRunning(false)
+    setStrictureTimerStart(null)
+    setStrictureElapsedTime(0)
+    setStrictureDuration("")
+  }
+
+  // Format timer display
+  const formatTime = (ms: number) => {
+    const totalSeconds = Math.floor(ms / 1000)
+    const minutes = Math.floor(totalSeconds / 60)
+    const seconds = totalSeconds % 60
+    const tenths = Math.floor((ms % 1000) / 100)
+    return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}.${tenths}`
+  }
+
+  // Handle form submission
+  const handleSubmit = () => {
+    const timestamp = new Date().toISOString()
+    const id = Date.now().toString()
+
+    if (activeTab === "basic" && isFlowDataValid) {
+      const uroLogEntry: UroLog = {
+        id,
+        timestamp,
+        volume: Number(volume),
+        duration: Number(duration),
+        flowRate: calculatedFlowRate || 0,
+        color: color || "",
+        concerns: concerns,
+        urgency: urgency || "",
+        notes: flowNotes,
+        isDemo: false,
       }
+      addUroLog(uroLogEntry)
+      resetForm("basic")
+    } else if (activeTab === "fluid" && isFluidDataValid) {
+      const hydroLogEntry: HydroLog = {
+        id,
+        timestamp,
+        volume: Number(hydroLogAmount),
+        type: hydroLogType === "Other" ? customFluidType : hydroLogType,
+        notes: hydroLogNotes,
+        isDemo: false,
+      }
+      addHydroLog(hydroLogEntry)
+      resetForm("fluid")
+    } else if (activeTab === "kegel" && isKegelDataValid) {
+      const kegelLogEntry: KegelLog = {
+        id,
+        timestamp,
+        duration: Number(kegelHoldTime),
+        intensity: 0, // Default value
+        sets: Number(kegelSets),
+        notes: kegelNotes,
+        isDemo: false,
+      }
+      addKegelLog(kegelLogEntry)
+      resetForm("kegel")
+    } else if (activeTab === "stricture" && isStrictureDataValid) {
+      const strictureEntry: UroLog = {
+        id,
+        timestamp,
+        volume: Number(strictureVolume),
+        duration: Number(strictureDuration),
+        flowRate: strictureFlowRate || 0,
+        color: strictureColor || "",
+        concerns: strictureSymptoms,
+        urgency: strictureUrgency || "",
+        notes: strictureNotes,
+        isDemo: false,
+        streamQuality: streamQuality,
+        painLevel: painLevel,
+      }
+      addUroLog(strictureEntry)
+      resetForm("stricture")
+    } else if (activeTab === "hydration" && isHydrationDataValid) {
+      const hydroLogEntry: HydroLog = {
+        id,
+        timestamp,
+        volume: Number(hydrationAmount),
+        type: hydrationBeverageType === "Other" ? hydrationCustomType : hydrationBeverageType,
+        notes: hydrationNotes,
+        isDemo: false,
+        temperature: hydrationTemperature,
+        timeOfDay: hydrationTimeOfDay,
+        unit: hydrationUnit,
+      }
+      addHydroLog(hydroLogEntry)
+      resetForm("hydration")
     }
+  }
 
-    fetchEntries()
-  }, [])
-
-  // Calculate averages from entries
-  useEffect(() => {
-    if (dbUroLogs.length === 0) return
-
-    // Overall average
-    const allFlowRates = dbUroLogs.map((entry) => entry.flowRate)
-    setOverallAverage(allFlowRates.reduce((sum, rate) => sum + rate, 0) / allFlowRates.length)
-
-    // Last 7 days average
-    const oneWeekAgo = new Date()
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
-    const weekEntries = dbUroLogs.filter((entry) => new Date(entry.timestamp) >= oneWeekAgo)
-    if (weekEntries.length > 0) {
-      const weekRates = weekEntries.map((entry) => entry.flowRate)
-      setWeekAverage(weekRates.reduce((sum, rate) => sum + rate, 0) / weekRates.length)
+  // Reset form fields based on tab
+  const resetForm = (tab: string) => {
+    if (tab === "basic") {
+      setVolume("")
+      setDuration("")
+      setColor("")
+      setUrgency("")
+      setConcerns([])
+      setFlowNotes("")
+      resetTimer()
+    } else if (tab === "fluid") {
+      setFluidType("")
+      setCustomFluidType("")
+      setFluidAmount("")
+      setFluidUnit("mL")
+      setFluidNotes("")
+    } else if (tab === "kegel") {
+      setKegelReps("")
+      setKegelHoldTime("")
+      setKegelSets("")
+      setKegelCompleted(false)
+      setKegelNotes("")
+    } else if (tab === "stricture") {
+      setStrictureVolume("")
+      setStrictureDuration("")
+      setStrictureColor("")
+      setStrictureUrgency("")
+      setStrictureSymptoms([])
+      setStreamQuality("")
+      setPainLevel("")
+      setStrictureNotes("")
+      resetStrictureTimer()
+    } else if (tab === "hydration") {
+      setHydrationBeverageType("")
+      setHydrationCustomType("")
+      setHydrationAmount("")
+      setHydrationUnit("mL")
+      setHydrationTemperature("")
+      setHydrationTimeOfDay("")
+      setHydrationGoal("")
+      setHydrationNotes("")
     }
+  }
 
-    // Last month average
-    const oneMonthAgo = new Date()
-    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1)
-    const monthEntries = dbUroLogs.filter((entry) => new Date(entry.timestamp) >= oneMonthAgo)
-    if (monthEntries.length > 0) {
-      const monthRates = monthEntries.map((entry) => entry.flowRate)
-      setMonthAverage(monthRates.reduce((sum, rate) => sum + rate, 0) / monthRates.length)
-    }
-
-    // Today's average
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const todayEntries = dbUroLogs.filter((entry) => new Date(entry.timestamp) >= today)
-    if (todayEntries.length > 0) {
-      const todayRates = todayEntries.map((entry) => entry.flowRate)
-      setDayAverage(todayRates.reduce((sum, rate) => sum + rate, 0) / todayRates.length)
-    }
-  }, [dbUroLogs])
-
-  // Initialize date and time fields with current values
-  useEffect(() => {
-    const now = new Date()
-    setEntryDate(now.toISOString().split("T")[0])
-    setEntryTime(now.toTimeString().substring(0, 5))
-  }, [])
-
-  // Calculate flow rate when volume or duration changes
-  useEffect(() => {
-    if (volume && duration && Number(volume) > 0 && Number(duration) > 0) {
-      const flowRate = Number(volume) / Number(duration)
-      setCalculatedFlowRate(flowRate)
-    } else {
-      setCalculatedFlowRate(null)
-    }
-  }, [volume, duration])
-
+  // Toggle concern selection
   const toggleConcern = (concern: ConcernType) => {
     if (concerns.includes(concern)) {
       setConcerns(concerns.filter((c) => c !== concern))
@@ -247,633 +495,243 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({ addUroLog, addHydroLog, a
     }
   }
 
+  // Toggle stricture symptom selection
+  const toggleSymptom = (symptom: string) => {
+    if (strictureSymptoms.includes(symptom)) {
+      setStrictureSymptoms(strictureSymptoms.filter((s) => s !== symptom))
+    } else {
+      setStrictureSymptoms([...strictureSymptoms, symptom])
+    }
+  }
+
+  // Clean up intervals on unmount
   useEffect(() => {
-    let interval: NodeJS.Timeout | null = null
-
-    if (isTimerRunning) {
-      interval = setInterval(() => {
-        if (timerStart) {
-          const elapsed = (Date.now() - timerStart) / 1000
-          setElapsedTime(elapsed)
-        }
-      }, 100)
-    } else if (interval) {
-      clearInterval(interval)
-    }
-
     return () => {
-      if (interval) clearInterval(interval)
-    }
-  }, [isTimerRunning, timerStart])
-
-  const formatTime = (timeInSeconds: number) => {
-    const minutes = Math.floor(timeInSeconds / 60)
-    const seconds = Math.floor(timeInSeconds % 60)
-    const tenths = Math.floor((timeInSeconds * 10) % 10)
-    return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}.${tenths}`
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-
-    // Create timestamp based on user input or current time
-    let timestamp: string
-    if (useCustomDateTime && entryDate && entryTime) {
-      timestamp = new Date(`${entryDate}T${entryTime}`).toISOString()
-    } else {
-      timestamp = new Date().toISOString()
-    }
-
-    let hasUroLog = false
-    let hasHydroLog = false
-    let hasKegelLog = false
-
-    // Save UroLog if data is provided
-    if (volume && (duration || isTimerRunning)) {
-      let durationValue = Number.parseFloat(duration)
-
-      if (isTimerRunning && timerStart) {
-        durationValue = (Date.now() - timerStart) / 1000
-        setIsTimerRunning(false)
-        setTimerStart(null)
-        setElapsedTime(0)
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current)
       }
-
-      const flowRate = Number.parseFloat(volume) / durationValue
-
-      const uroLog: UroLog = {
-        timestamp,
-        volume: Number.parseFloat(volume),
-        duration: durationValue,
-        flowRate,
-        color: color || undefined,
-        urgency: urgency || undefined,
-        concerns: concerns.length > 0 ? concerns : undefined,
-        notes: flowNotes || undefined,
-        // Add measurement type and unit
-        measurementType: uroLogMeasurement,
-        measurementUnit: uroLogUnit,
+      if (strictureTimerIntervalRef.current) {
+        clearInterval(strictureTimerIntervalRef.current)
       }
-
-      addUroLog(uroLog)
-      hasUroLog = true
-
-      // Reset flow entry form
-      setVolume("")
-      setDuration("")
-      setColor("")
-      setUrgency("")
-      setConcerns([])
-      setFlowNotes("")
-      setCalculatedFlowRate(null)
     }
-
-    // Save HydroLog if data is provided
-    if (hydroLogType) {
-      const amount = useCustomAmount
-        ? Number(hydroLogAmount)
-        : hydroLogUnit === "oz"
-          ? commonSizes[Number(hydroLogAmount)].oz
-          : commonSizes[Number(hydroLogAmount)].mL
-
-      const hydroLog: HydroLog = {
-        timestamp,
-        type: hydroLogType,
-        customType: hydroLogType === "Other" ? customFluidType : undefined,
-        amount,
-        unit: hydroLogUnit,
-        notes: hydroLogNotes || undefined,
-      }
-
-      addHydroLog(hydroLog)
-      hasHydroLog = true
-
-      // Reset fluid intake form
-      setFluidType("")
-      setCustomFluidType("")
-      setFluidAmount("")
-      setUseCustomAmount(false)
-      setFluidNotes("")
-    }
-
-    // Save KegelLog if data is provided
-    if (kegelReps && kegelHoldTime && kegelSets) {
-      const totalTime = Number(kegelHoldTime) * Number(kegelReps) * Number(kegelSets)
-
-      const kegelLog: KegelLog = {
-        timestamp,
-        reps: Number(kegelReps),
-        holdTime: Number(kegelHoldTime),
-        sets: Number(kegelSets),
-        totalTime: totalTime,
-        completed: kegelCompleted,
-        notes: kegelNotes || undefined,
-      }
-
-      addKegelLog(kegelLog)
-      hasKegelLog = true
-
-      // Reset kegel entry form
-      setKegelReps("")
-      setKegelHoldTime("")
-      setKegelSets("")
-      setKegelTotalTime(0)
-      setKegelCompleted(false)
-      setKegelNotes("")
-      setKegelRepsCompleted("")
-    }
-
-    // Reset shared form elements
-    // Reset date and time to current
-    const now = new Date()
-    setEntryDate(now.toISOString().split("T")[0])
-    setEntryTime(now.toTimeString().substring(0, 5))
-    setUseCustomDateTime(false)
-
-    // Show success message
-    if (hasUroLog || hasHydroLog || hasKegelLog) {
-      setSaveSuccess(true)
-
-      if (hasUroLog && hasHydroLog && hasKegelLog) {
-        setSaveMessage("UroLog, HydroLog, and KegelLog saved successfully!")
-      } else if (hasUroLog && hasHydroLog) {
-        setSaveMessage("UroLog and HydroLog saved successfully!")
-      } else if (hasUroLog && hasKegelLog) {
-        setSaveMessage("UroLog and KegelLog saved successfully!")
-      } else if (hasHydroLog && hasKegelLog) {
-        setSaveMessage("HydroLog and KegelLog saved successfully!")
-      } else if (hasUroLog) {
-        setSaveMessage("UroLog saved successfully!")
-      } else if (hasHydroLog) {
-        setSaveMessage("HydroLog saved successfully!")
-      } else {
-        setSaveMessage("KegelLog saved successfully!")
-      }
-
-      // Clear success message after 3 seconds
-      setTimeout(() => {
-        setSaveSuccess(null)
-        setSaveMessage("")
-      }, 3000)
-
-      // Collapse the section after saving
-      setIsExpanded(false)
-    } else {
-      setSaveSuccess(false)
-      setSaveMessage("Please enter data for at least one entry type")
-
-      // Clear error message after 3 seconds
-      setTimeout(() => {
-        setSaveSuccess(null)
-        setSaveMessage("")
-      }, 3000)
-    }
-  }
-
-  const toggleTimer = () => {
-    if (isTimerRunning) {
-      setIsTimerRunning(false)
-      if (timerStart) {
-        const durationInSeconds = (Date.now() - timerStart) / 1000
-        setDuration(durationInSeconds.toFixed(1))
-        setElapsedTime(0)
-      }
-      setTimerStart(null)
-    } else {
-      setIsTimerRunning(true)
-      setTimerStart(Date.now())
-      setDuration("")
-    }
-  }
-
-  const resetTimer = () => {
-    setIsTimerRunning(false)
-    setTimerStart(null)
-    setElapsedTime(0)
-    setDuration("")
-  }
-
-  const handleSizeSelection = (index: number) => {
-    setFluidAmount(index.toString())
-    setUseCustomAmount(false)
-  }
-
-  // Get comparison class for flow rate
-  const getComparisonClass = (current: number, average: number) => {
-    if (current > average * 1.1) return "text-green-600 dark:text-green-400"
-    if (current < average * 0.9) return "text-red-600 dark:text-red-400"
-    return "text-yellow-600 dark:text-yellow-400"
-  }
-
-  // Check if Save button should be enabled
-  const isFlowDataValid = Number(volume) > 0 && (Number(duration) > 0 || isTimerRunning)
-  const isFluidDataValid = hydroLogType !== "" && (useCustomAmount ? Number(hydroLogAmount) > 0 : hydroLogAmount !== "")
-  const isKegelDataValid = Number(kegelReps) > 0 && Number(kegelHoldTime) > 0 && Number(kegelSets) > 0
-  const isSaveEnabled = isFlowDataValid || isFluidDataValid || isKegelDataValid
-
-  // Get the label for the volume field based on the selected measurement
-  const getVolumeLabel = () => {
-    if (uroLogMeasurement === "Urine Volume") {
-      return `Volume (${uroLogUnit})`
-    }
-    return `${uroLogMeasurement} (${uroLogUnit})`
-  }
-
-  // Get the label for the flow rate based on the selected measurement
-  const getFlowRateLabel = () => {
-    if (uroLogMeasurement === "Urine Volume") {
-      return "Flow Rate"
-    }
-    return "Rate"
-  }
-
-  // Get the unit for the flow rate based on the selected measurement
-  const getFlowRateUnit = () => {
-    if (uroLogMeasurement === "Urine Volume") {
-      return "mL/s"
-    }
-    if (uroLogUnit.includes("/")) {
-      return uroLogUnit
-    }
-    return `${uroLogUnit}/s`
-  }
+  }, [])
 
   return (
-    <>
-      {/* Save button and success/error message */}
-      <div className="mb-4 flex flex-col items-center">
-        <button
-          onClick={handleSubmit}
-          disabled={!isSaveEnabled}
-          className={`min-h-[48px] px-6 rounded-lg flex items-center justify-center shadow-sm text-white text-lg w-full max-w-md mb-2 ${
-            isSaveEnabled ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-400 cursor-not-allowed"
-          }`}
-          aria-label="Save entry"
-        >
-          <Save size={22} className="mr-2" /> Save Entry
-        </button>
-
-        {saveSuccess !== null && (
-          <div
-            className={`p-3 rounded-lg flex items-center justify-center w-full max-w-md ${
-              saveSuccess
-                ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200"
-                : "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200"
+    <div className="flow-entry-form">
+      {/* Tab navigation */}
+      <div className="flex flex-wrap mb-4 border-b">
+        {availableTabs.map((tab) => (
+          <button
+            key={tab.key}
+            className={`px-4 py-2 mr-2 mb-2 rounded-t-lg flex items-center ${
+              activeTab === tab.key
+                ? "bg-blue-500 text-white"
+                : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
             }`}
+            onClick={() => setActiveTab(tab.key as any)}
           >
-            {saveSuccess ? (
-              <Check size={18} className="mr-2 flex-shrink-0" />
-            ) : (
-              <AlertTriangle size={18} className="mr-2 flex-shrink-0" />
-            )}
-            <span>{saveMessage}</span>
-          </div>
-        )}
+            {tab.icon}
+            {tab.label}
+          </button>
+        ))}
       </div>
 
-      <div className="mb-4">
-        <div className="flex border-b">
-          <button
-            className={`px-4 py-3 font-medium text-lg ${
-              activeTab === "basic"
-                ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-t-lg"
-                : "text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
-            } transition-colors`}
-            onClick={() => setActiveTab("basic")}
-          >
-            {/* Dynamically change the tab name based on the selected measurement */}
-            {uroLogMeasurement === "Urine Volume" ? "UroLog Entry" : `${uroLogMeasurement} Entry`}
-          </button>
-          <button
-            className={`px-4 py-3 font-medium text-lg flex items-center ${
-              activeTab === "fluid"
-                ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-t-lg"
-                : "text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
-            } transition-colors`}
-            onClick={() => setActiveTab("fluid")}
-          >
-            <Coffee size={20} className="mr-2" />
-            HydroLog
-          </button>
-          <button
-            className={`px-4 py-3 font-medium text-lg flex items-center ${
-              activeTab === "kegel"
-                ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-t-lg"
-                : "text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
-            } transition-colors`}
-            onClick={() => setActiveTab("kegel")}
-          >
-            <Dumbbell size={20} className="mr-2" />
-            KegelLog
-          </button>
-        </div>
-      </div>
-
-      {/* Date and Time Override - Moved above the tabs */}
-      <div className="mb-4 max-w-[414px] mx-auto">
-        <div className="flex items-center mb-2">
-          <Calendar size={20} className="mr-2 text-teal-500" />
-          <label
-            htmlFor="custom-datetime"
-            className="flex items-center cursor-pointer text-gray-800 dark:text-gray-300 text-lg"
-          >
-            <input
-              type="checkbox"
-              id="custom-datetime"
-              checked={useCustomDateTime}
-              onChange={() => setUseCustomDateTime(!useCustomDateTime)}
-              className="mr-2 h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-            <span>Override date/time</span>
-          </label>
-        </div>
-
-        {useCustomDateTime && (
-          <div className="space-y-2 animate-fade-in bg-teal-50 dark:bg-teal-900/20 p-3 rounded-lg">
-            <div>
-              <label htmlFor="entry-date" className="block mb-1 text-lg text-gray-800 dark:text-gray-300">
-                Date
-              </label>
-              <input
-                type="date"
-                id="entry-date"
-                value={entryDate}
-                onChange={(e) => setEntryDate(e.target.value)}
-                className="w-full p-2 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 text-lg"
-              />
-            </div>
-            <div>
-              <label htmlFor="entry-time" className="block mb-1 text-lg text-gray-800 dark:text-gray-300">
-                Time
-              </label>
-              <input
-                type="time"
-                id="entry-time"
-                value={entryTime}
-                onChange={(e) => setEntryTime(e.target.value)}
-                className="w-full p-2 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 text-lg"
-              />
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="animate-fade-in">
-        {activeTab === "basic" && (
-          <div className="max-w-[414px] mx-auto">
-            <div className="form-group p-0">
-              {/* Timer Display with Start Button and Save Button */}
-              <div className="flex flex-col mb-4">
-                <div className="bg-blue-50 dark:bg-gray-800 p-3 rounded-lg text-center mb-2 shadow-inner">
-                  <div className="text-6xl font-mono font-bold tabular-nums text-blue-800 dark:text-white">
-                    {isTimerRunning ? formatTime(elapsedTime) : formatTime(Number(duration) || 0)}
-                  </div>
-
-                  {/* Flow Rate Display - Directly below timer */}
-                  {calculatedFlowRate !== null && (
-                    <div className="mt-2 flex flex-col items-center">
-                      <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-                        {calculatedFlowRate.toFixed(1)} {getFlowRateUnit()}
-                      </div>
-
-                      <div className="flex items-center justify-center gap-4 mt-1">
-                        {/* Percentage comparison to last entry */}
-                        {dbUroLogs.length > 0 &&
-                          (() => {
-                            const lastEntry = [...dbUroLogs].sort(
-                              (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
-                            )[0]
-                            if (lastEntry) {
-                              const percentChange =
-                                ((calculatedFlowRate - lastEntry.flowRate) / lastEntry.flowRate) * 100
-                              const isIncrease = percentChange > 0
-                              return (
-                                <div className="flex items-center">
-                                  {isIncrease ? (
-                                    <TrendingUp size={20} className="text-green-600 dark:text-green-400 mr-1" />
-                                  ) : (
-                                    <TrendingDown size={20} className="text-red-600 dark:text-red-400 mr-1" />
-                                  )}
-                                  <span
-                                    className={`text-lg font-bold ${isIncrease ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
-                                  >
-                                    {isIncrease ? "+" : ""}
-                                    {percentChange.toFixed(1)}%
-                                  </span>
-                                </div>
-                              )
-                            }
-                            return null
-                          })()}
-
-                        {/* Percentage comparison to overall average */}
-                        {dbUroLogs.length > 0 &&
-                          (() => {
-                            const percentChange = ((calculatedFlowRate - overallAverage) / overallAverage) * 100
-                            const isIncrease = percentChange > 0
-                            return (
-                              <div className="flex items-center">
-                                <span className="text-gray-700 dark:text-gray-400 mr-1">Avg:</span>
-                                {isIncrease ? (
-                                  <TrendingUp size={20} className="text-green-600 dark:text-green-400 mr-1" />
-                                ) : (
-                                  <TrendingDown size={20} className="text-red-600 dark:text-red-400 mr-1" />
-                                )}
-                                <span
-                                  className={`text-lg font-bold ${isIncrease ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
-                                >
-                                  {isIncrease ? "+" : ""}
-                                  {percentChange.toFixed(1)}%
-                                </span>
-                              </div>
-                            )
-                          })()}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex justify-between">
-                  <button
-                    type="button"
-                    onClick={toggleTimer}
-                    className="min-h-[48px] px-6 text-white rounded-lg flex items-center justify-center shadow-sm hover:shadow transition-all text-lg w-[48%] bg-green-600 hover:bg-green-700"
-                    aria-label={isTimerRunning ? "Stop timer" : "Start timer"}
-                  >
-                    {isTimerRunning ? <Pause size={22} /> : <Play size={22} />}
-                    <span className="ml-2 font-medium">{isTimerRunning ? "Stop" : "Start"}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={resetTimer}
-                    className="min-h-[48px] px-6 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center justify-center shadow-sm hover:shadow transition-all text-lg w-[48%]"
-                    aria-label="Reset timer"
-                  >
-                    <RotateCcw size={22} className="mr-2" /> Reset
-                  </button>
-                </div>
-              </div>
-
-              {/* Duration Timer Controls */}
-              <div className="mb-4">
-                <label htmlFor="duration" className="block mb-2 text-lg font-medium text-gray-800 dark:text-gray-300">
-                  Duration (seconds)
-                </label>
-                <div className="flex items-center">
-                  <input
-                    type="number"
-                    id="duration"
-                    value={duration}
-                    onChange={(e) => {
-                      const val = Math.min(600, Number(e.target.value))
-                      setDuration(val.toString())
-                    }}
-                    disabled={isTimerRunning}
-                    className={`border rounded-lg dark:bg-gray-700 dark:border-gray-600 w-full text-lg ${
-                      isTimerRunning ? "opacity-50" : ""
-                    } ${duration && !isTimerRunning ? "border-blue-500 ring-2 ring-blue-200 dark:ring-blue-800" : ""}`}
-                    placeholder="Sec"
-                    max={600}
-                    aria-label="Duration in seconds"
-                  />
-                </div>
-              </div>
-
-              {/* Volume Field - Dynamically labeled based on measurement type */}
+      {/* UroLog tab content */}
+      {activeTab === "basic" && isTabEnabled("tab1") && (
+        <div className="max-w-[414px] mx-auto">
+          <div className="form-group bg-gradient-to-br from-blue-50 to-blue-100 dark:from-gray-800 dark:to-gray-700 p-4 rounded-lg">
+            {/* Volume */}
+            {getFieldConfig("tab1", "field1")?.enabled && (
               <div className="mb-4">
                 <label htmlFor="volume" className="block mb-2 text-lg font-medium text-gray-800 dark:text-gray-300">
-                  {getVolumeLabel()}
+                  {getFieldConfig("tab1", "field1")?.label || "Volume (mL)"}
                 </label>
                 <input
                   type="number"
                   id="volume"
                   value={volume}
-                  onChange={(e) => {
-                    const val = Math.min(800, Number(e.target.value))
-                    setVolume(val.toString())
-                  }}
-                  className={`border rounded-lg dark:bg-gray-700 dark:border-gray-600 text-lg w-full ${
-                    duration && !volume ? "border-blue-500 ring-2 ring-blue-200 dark:ring-blue-800 animate-pulse" : ""
-                  }`}
-                  required
-                  placeholder={uroLogUnit}
-                  max={800}
-                  aria-label={`${uroLogMeasurement} in ${uroLogUnit}`}
+                  onChange={(e) => setVolume(e.target.value)}
+                  className="w-full p-2.5 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200"
+                  placeholder={getFieldConfig("tab1", "field1")?.placeholder || "mL"}
+                  required={getFieldConfig("tab1", "field1")?.required}
+                  min={getFieldConfig("tab1", "field1")?.min || 0}
+                  max={getFieldConfig("tab1", "field1")?.max || 800}
                 />
+                {getFieldConfig("tab1", "field1")?.helpText && (
+                  <p className="text-sm text-gray-500 mt-1">{getFieldConfig("tab1", "field1")?.helpText}</p>
+                )}
               </div>
+            )}
 
-              {/* Only show these fields for Urine Volume measurement */}
-              {uroLogMeasurement === "Urine Volume" && (
-                <>
-                  {/* Dividing line after Volume */}
-                  <div className="my-6 border-t-2 border-gray-200 dark:border-gray-700"></div>
+            {/* Duration with Timer */}
+            {getFieldConfig("tab1", "field2")?.enabled && (
+              <div className="mb-4">
+                <label htmlFor="duration" className="block mb-2 text-lg font-medium text-gray-800 dark:text-gray-300">
+                  {getFieldConfig("tab1", "field2")?.label || "Duration (seconds)"}
+                </label>
+                <div className="flex flex-col">
+                  <input
+                    type="number"
+                    id="duration"
+                    value={duration}
+                    onChange={(e) => setDuration(e.target.value)}
+                    className="w-full p-2.5 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200 mb-2"
+                    placeholder={getFieldConfig("tab1", "field2")?.placeholder || "Sec"}
+                    required={getFieldConfig("tab1", "field2")?.required}
+                    min={getFieldConfig("tab1", "field2")?.min || 0}
+                    max={getFieldConfig("tab1", "field2")?.max || 600}
+                  />
 
-                  {/* Urgency Rating */}
-                  <div className="mb-4">
-                    <label
-                      htmlFor="urgency"
-                      className="block mb-2 flex items-center text-lg font-medium text-gray-800 dark:text-gray-300"
-                    >
-                      <Clock size={20} className="mr-2 text-purple-500" />
-                      Urgency Rating
-                    </label>
-                    <select
-                      id="urgency"
-                      value={urgency}
-                      onChange={(e) => setUrgency(e.target.value as UrgencyRating)}
-                      className="w-full p-2.5 border rounded-lg appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200 enhanced-select"
-                    >
-                      {urgencyOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Urine Color */}
-                  <div className="mb-4">
-                    <label
-                      htmlFor="color"
-                      className="block mb-2 flex items-center text-lg font-medium text-gray-800 dark:text-gray-300"
-                    >
-                      Urine Color
-                    </label>
-                    <div className="relative">
-                      <select
-                        id="color"
-                        value={color}
-                        onChange={(e) => setColor(e.target.value as UrineColor)}
-                        className="w-full p-2.5 pl-10 border rounded-lg appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200 enhanced-select"
-                        style={{
-                          colorScheme: "light dark",
-                        }}
-                      >
-                        {colorOptions.map((option) => (
-                          <option
-                            key={option.value}
-                            value={option.value}
-                            className={`${option.value ? option.bgColor : ""} ${option.value ? option.textColor : ""}`}
-                          >
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                        <div
-                          className={`w-5 h-5 rounded ${
-                            color
-                              ? colorOptions.find((o) => o.value === color)?.bgColor || "bg-gray-200"
-                              : "bg-gray-200"
-                          }`}
-                        ></div>
+                  {/* Timer Display */}
+                  {getFieldConfig("tab1", "field2")?.enableTimer && (isTimerRunning || elapsedTime > 0) && (
+                    <div className="w-full bg-gray-100 dark:bg-gray-600 rounded-lg p-3 mb-2 text-center">
+                      <div className="text-3xl font-mono font-bold text-blue-600 dark:text-blue-400">
+                        {formatTime(elapsedTime)}
                       </div>
                     </div>
-                  </div>
+                  )}
 
-                  {/* Concerns - One per row */}
-                  <div className="mb-4">
-                    <label className="block mb-2 flex items-center text-lg font-medium text-gray-800 dark:text-gray-300">
-                      <AlertTriangle size={20} className="mr-2 text-amber-500" />
-                      Concerns
-                    </label>
-                    <div className="space-y-2">
-                      {concernOptions.map((concern) => (
-                        <div
-                          key={concern}
-                          className={`flex items-center p-2 border rounded-lg hover:bg-blue-50 dark:hover:bg-gray-600 cursor-pointer transition-colors text-lg ${
-                            concerns.includes(concern)
-                              ? "bg-blue-100 border-blue-300 dark:bg-blue-900/30 dark:border-blue-800 text-blue-800 dark:text-blue-200"
-                              : "bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
-                          }`}
-                          onClick={() => toggleConcern(concern)}
-                        >
-                          <input
-                            type="checkbox"
-                            id={`concern-${concern}`}
-                            checked={concerns.includes(concern)}
-                            onChange={() => toggleConcern(concern)}
-                            className="mr-2 h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                          />
-                          <label htmlFor={`concern-${concern}`} className="cursor-pointer flex-1">
-                            {concern}
-                          </label>
-                        </div>
-                      ))}
+                  {/* Timer Controls */}
+                  {getFieldConfig("tab1", "field2")?.enableTimer && (
+                    <div className="grid grid-cols-2 gap-2 w-full">
+                      <button
+                        type="button"
+                        onClick={isTimerRunning ? pauseTimer : startTimer}
+                        className={`p-3 rounded-lg text-white font-medium ${
+                          isTimerRunning
+                            ? "bg-red-500 hover:bg-red-600 active:bg-red-700"
+                            : "bg-green-500 hover:bg-green-600 active:bg-green-700"
+                        }`}
+                      >
+                        {isTimerRunning ? "Pause Timer" : "Start Timer"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={resetTimer}
+                        className="p-3 bg-gray-300 hover:bg-gray-400 active:bg-gray-500 dark:bg-gray-600 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg font-medium"
+                      >
+                        Reset Timer
+                      </button>
                     </div>
-                  </div>
-                </>
-              )}
+                  )}
+                </div>
+                {getFieldConfig("tab1", "field2")?.helpText && (
+                  <p className="text-sm text-gray-500 mt-1">{getFieldConfig("tab1", "field2")?.helpText}</p>
+                )}
+              </div>
+            )}
 
-              {/* Notes Field - Full Width */}
+            {/* Flow Rate (Calculated) */}
+            {getFieldConfig("tab1", "field3")?.enabled && (
+              <div className="mb-4">
+                <label htmlFor="flow-rate" className="block mb-2 text-lg font-medium text-gray-800 dark:text-gray-300">
+                  {getFieldConfig("tab1", "field3")?.label || "Flow Rate (mL/s)"}
+                </label>
+                <input
+                  type="text"
+                  id="flow-rate"
+                  value={calculatedFlowRate !== null ? calculatedFlowRate.toString() : ""}
+                  readOnly
+                  className="w-full p-2.5 border rounded-lg bg-gray-100 dark:bg-gray-600 dark:border-gray-500 text-lg text-gray-800 dark:text-gray-200"
+                  placeholder={getFieldConfig("tab1", "field3")?.placeholder || "mL/s"}
+                />
+                {getFieldConfig("tab1", "field3")?.helpText && (
+                  <p className="text-sm text-gray-500 mt-1">{getFieldConfig("tab1", "field3")?.helpText}</p>
+                )}
+              </div>
+            )}
+
+            {/* Urine Color */}
+            {getFieldConfig("tab1", "field4")?.enabled && (
+              <div className="mb-4">
+                <label
+                  htmlFor="urine-color"
+                  className="block mb-2 text-lg font-medium text-gray-800 dark:text-gray-300"
+                >
+                  {getFieldConfig("tab1", "field4")?.label || "Urine Color"}
+                </label>
+                <select
+                  id="urine-color"
+                  value={color}
+                  onChange={(e) => setColor(e.target.value as UrineColor)}
+                  className="w-full p-2.5 border rounded-lg appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200 enhanced-select"
+                  required={getFieldConfig("tab1", "field4")?.required}
+                >
+                  {colorOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Urgency Rating */}
+            {getFieldConfig("tab1", "field5")?.enabled && (
+              <div className="mb-4">
+                <label
+                  htmlFor="urgency-rating"
+                  className="block mb-2 flex items-center text-lg font-medium text-gray-800 dark:text-gray-300"
+                >
+                  <Clock size={20} className="mr-2 text-purple-500" />
+                  {getFieldConfig("tab1", "field5")?.label || "Urgency Rating"}
+                </label>
+                <select
+                  id="urgency-rating"
+                  value={urgency}
+                  onChange={(e) => setUrgency(e.target.value as UrgencyRating)}
+                  className="w-full p-2.5 border rounded-lg appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200 enhanced-select"
+                  required={getFieldConfig("tab1", "field5")?.required}
+                >
+                  {getFieldConfig("tab1", "field5")?.options?.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Concerns/Symptoms */}
+            {getFieldConfig("tab1", "field6")?.enabled && (
+              <div className="mb-4">
+                <label className="block mb-2 text-lg font-medium text-gray-800 dark:text-gray-300">
+                  {getFieldConfig("tab1", "field6")?.label || "Concerns/Symptoms"}
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {getFieldConfig("tab1", "field6")?.options?.map((option) => (
+                    <div key={option.value} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id={`concern-${option.value}`}
+                        checked={concerns.includes(option.value as ConcernType)}
+                        onChange={() => toggleConcern(option.value as ConcernType)}
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600"
+                      />
+                      <label
+                        htmlFor={`concern-${option.value}`}
+                        className="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300"
+                      >
+                        {option.label}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Notes */}
+            {getFieldConfig("tab1", "field9")?.enabled && (
               <div className="mb-4">
                 <label
                   htmlFor="flow-notes"
                   className="block mb-2 flex items-center text-lg font-medium text-gray-800 dark:text-gray-300"
                 >
                   <FileText size={20} className="mr-2 text-green-500" />
-                  Notes (max 256 characters)
+                  {getFieldConfig("tab1", "field9")?.label || "Notes"}
+                  {getFieldConfig("tab1", "field9")?.helpText && (
+                    <span className="ml-2 text-sm text-gray-500">({getFieldConfig("tab1", "field9")?.helpText})</span>
+                  )}
                 </label>
                 <textarea
                   id="flow-notes"
@@ -882,133 +740,116 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({ addUroLog, addHydroLog, a
                   maxLength={256}
                   className="w-full p-2.5 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 min-h-[80px] text-lg text-gray-800 dark:text-gray-200"
                   rows={2}
-                  placeholder="Add any additional notes here..."
+                  placeholder={getFieldConfig("tab1", "field9")?.placeholder || "Add any additional notes..."}
+                  required={getFieldConfig("tab1", "field9")?.required}
                 ></textarea>
                 <div className="text-right text-lg text-gray-600 mt-1">{flowNotes.length}/256 characters</div>
               </div>
-            </div>
+            )}
           </div>
-        )}
+        </div>
+      )}
 
-        {activeTab === "fluid" && (
-          <div className="max-w-[414px] mx-auto">
-            <div className="form-group bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-gray-800 dark:to-gray-700">
+      {/* HydroLog tab content */}
+      {activeTab === "fluid" && isTabEnabled("tab2") && (
+        <div className="max-w-[414px] mx-auto">
+          <div className="form-group bg-gradient-to-br from-amber-50 to-amber-100 dark:from-gray-800 dark:to-gray-700 p-4 rounded-lg">
+            {/* Beverage Type */}
+            {getFieldConfig("tab2", "field1")?.enabled && (
               <div className="mb-4">
                 <label
-                  htmlFor="fluid-type"
+                  htmlFor="beverage-type"
                   className="block mb-2 flex items-center text-lg font-medium text-gray-800 dark:text-gray-300"
                 >
-                  <Coffee size={20} className="mr-2 text-cyan-500" />
-                  Beverage Type
+                  <Coffee size={20} className="mr-2 text-brown-500" />
+                  {getFieldConfig("tab2", "field1")?.label || "Beverage Type"}
                 </label>
                 <select
-                  id="fluid-type"
+                  id="beverage-type"
                   value={hydroLogType}
                   onChange={(e) => setFluidType(e.target.value as FluidType)}
-                  className={`w-full p-2.5 border rounded-lg appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200 enhanced-select ${
-                    !hydroLogType ? "border-cyan-500 ring-2 ring-cyan-200 dark:ring-cyan-800 animate-pulse" : ""
-                  }`}
+                  className="w-full p-2.5 border rounded-lg appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200 enhanced-select"
+                  required={getFieldConfig("tab2", "field1")?.required}
                 >
-                  {fluidTypeOptions.map((option) => (
+                  {getFieldConfig("tab2", "field1")?.options?.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
                     </option>
                   ))}
                 </select>
               </div>
+            )}
 
-              {hydroLogType === "Other" && (
-                <div className="mb-4 animate-fade-in">
-                  <label
-                    htmlFor="custom-fluid-type"
-                    className="block mb-2 text-lg font-medium text-gray-800 dark:text-gray-300"
-                  >
-                    Specify Beverage
-                  </label>
-                  <input
-                    type="text"
-                    id="custom-fluid-type"
-                    value={customFluidType}
-                    onChange={(e) => setCustomFluidType(e.target.value)}
-                    className="w-full p-2.5 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200"
-                    placeholder="Enter beverage type"
-                    required={hydroLogType === "Other"}
-                  />
-                </div>
-              )}
+            {/* Custom Beverage Type */}
+            {hydroLogType === "Other" && getFieldConfig("tab2", "field2")?.enabled && (
+              <div className="mb-4 animate-fade-in">
+                <label
+                  htmlFor="custom-beverage-type"
+                  className="block mb-2 text-lg font-medium text-gray-800 dark:text-gray-300"
+                >
+                  {getFieldConfig("tab2", "field2")?.label || "Custom Beverage Type"}
+                </label>
+                <input
+                  type="text"
+                  id="custom-beverage-type"
+                  value={customFluidType}
+                  onChange={(e) => setCustomFluidType(e.target.value)}
+                  className="w-full p-2.5 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200"
+                  placeholder={getFieldConfig("tab2", "field2")?.placeholder || "Enter beverage type"}
+                  required={hydroLogType === "Other" && getFieldConfig("tab2", "field2")?.required}
+                />
+              </div>
+            )}
 
+            {/* Amount */}
+            {getFieldConfig("tab2", "field3")?.enabled && (
               <div className="mb-4">
                 <label
-                  className={`block mb-2 text-lg font-medium ${
-                    hydroLogType && (!hydroLogAmount || hydroLogAmount === "")
-                      ? "text-cyan-600 dark:text-cyan-400 animate-pulse"
-                      : "text-gray-800 dark:text-gray-300"
-                  }`}
+                  htmlFor="fluid-amount"
+                  className="block mb-2 text-lg font-medium text-gray-800 dark:text-gray-300"
                 >
-                  Beverage Size
+                  {getFieldConfig("tab2", "field3")?.label || "Amount"}
                 </label>
-                <div className="grid grid-cols-2 gap-2 mb-3">
-                  {commonSizes.map((size, index) => (
-                    <div
-                      key={index}
-                      className={`p-2 border rounded-lg cursor-pointer transition-all text-lg ${
-                        !useCustomAmount && hydroLogAmount === index.toString()
-                          ? "bg-cyan-100 border-cyan-300 dark:bg-cyan-900/30 dark:border-cyan-700 shadow-sm text-cyan-800 dark:text-cyan-200"
-                          : hydroLogType && (!hydroLogAmount || hydroLogAmount === "")
-                            ? "bg-white dark:bg-gray-700 hover:bg-cyan-50 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 border-cyan-300 dark:border-cyan-700"
-                            : "bg-white dark:bg-gray-700 hover:bg-cyan-50 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200"
-                      }`}
-                      onClick={() => handleSizeSelection(index)}
-                    >
-                      <div className="font-medium">{size.label}</div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="flex items-center mt-3">
+                <div className="flex items-center">
                   <input
-                    type="checkbox"
-                    id="custom-amount"
-                    checked={useCustomAmount}
-                    onChange={(e) => setUseCustomAmount(!useCustomAmount)}
-                    className="mr-2 h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    type="number"
+                    id="fluid-amount"
+                    value={hydroLogAmount}
+                    onChange={(e) => setFluidAmount(e.target.value)}
+                    className="w-full p-2.5 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200 mr-2"
+                    placeholder={getFieldConfig("tab2", "field3")?.placeholder || "Amount"}
+                    required={getFieldConfig("tab2", "field3")?.required}
+                    min={getFieldConfig("tab2", "field3")?.min || 1}
+                    max={getFieldConfig("tab2", "field3")?.max || 2000}
                   />
-                  <label htmlFor="custom-amount" className="cursor-pointer text-gray-800 dark:text-gray-300 text-lg">
-                    Custom amount
-                  </label>
+                  <select
+                    id="fluid-unit"
+                    value={hydroLogUnit}
+                    onChange={(e) => setFluidUnit(e.target.value as "oz" | "mL")}
+                    className="p-2.5 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200 enhanced-select"
+                  >
+                    {getFieldConfig("tab2", "field4")?.options?.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-
-                {useCustomAmount && (
-                  <div className="flex items-center mt-3 animate-fade-in">
-                    <input
-                      type="number"
-                      value={hydroLogAmount}
-                      onChange={(e) => setFluidAmount(e.target.value)}
-                      className="p-2.5 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 w-28 mr-3 text-lg text-gray-800 dark:text-gray-200"
-                      placeholder="Amount"
-                      required={useCustomAmount}
-                      min="1"
-                    />
-                    <select
-                      value={hydroLogUnit}
-                      onChange={(e) => setFluidUnit(e.target.value as "oz" | "mL")}
-                      className="p-2.5 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200 enhanced-select"
-                    >
-                      <option value="oz">oz</option>
-                      <option value="mL">mL</option>
-                    </select>
-                  </div>
-                )}
               </div>
+            )}
 
-              {/* Notes Field for Fluid Intake */}
+            {/* Notes */}
+            {getFieldConfig("tab2", "field5")?.enabled && (
               <div className="mb-4">
                 <label
                   htmlFor="fluid-notes"
                   className="block mb-2 flex items-center text-lg font-medium text-gray-800 dark:text-gray-300"
                 >
                   <FileText size={20} className="mr-2 text-green-500" />
-                  Notes (max 256 characters)
+                  {getFieldConfig("tab2", "field5")?.label || "Notes"}
+                  {getFieldConfig("tab2", "field5")?.helpText && (
+                    <span className="ml-2 text-sm text-gray-500">({getFieldConfig("tab2", "field5")?.helpText})</span>
+                  )}
                 </label>
                 <textarea
                   id="fluid-notes"
@@ -1017,21 +858,28 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({ addUroLog, addHydroLog, a
                   maxLength={256}
                   className="w-full p-2.5 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 min-h-[80px] text-lg text-gray-800 dark:text-gray-200"
                   rows={2}
-                  placeholder="Add any additional notes about this fluid intake..."
+                  placeholder={
+                    getFieldConfig("tab2", "field5")?.placeholder ||
+                    "Add any additional notes about this fluid intake..."
+                  }
+                  required={getFieldConfig("tab2", "field5")?.required}
                 ></textarea>
                 <div className="text-right text-lg text-gray-600 mt-1">{hydroLogNotes.length}/256 characters</div>
               </div>
-            </div>
+            )}
           </div>
-        )}
+        </div>
+      )}
 
-        {activeTab === "kegel" && (
-          <div className="max-w-[414px] mx-auto">
-            <div className="form-group bg-gradient-to-br from-orange-50 to-yellow-50 dark:from-gray-800 dark:to-gray-700">
-              {/* Reps Field */}
+      {/* KegelLog tab content */}
+      {activeTab === "kegel" && isTabEnabled("tab3") && (
+        <div className="max-w-[414px] mx-auto">
+          <div className="form-group bg-gradient-to-br from-purple-50 to-purple-100 dark:from-gray-800 dark:to-gray-700 p-4 rounded-lg">
+            {/* Reps */}
+            {getFieldConfig("tab3", "field1")?.enabled && (
               <div className="mb-4">
                 <label htmlFor="kegel-reps" className="block mb-2 text-lg font-medium text-gray-800 dark:text-gray-300">
-                  Reps (Number of Squeezes)
+                  {getFieldConfig("tab3", "field1")?.label || "Reps (Number of Squeezes)"}
                 </label>
                 <input
                   type="number"
@@ -1039,17 +887,22 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({ addUroLog, addHydroLog, a
                   value={kegelReps}
                   onChange={(e) => setKegelReps(e.target.value)}
                   className="w-full p-2.5 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200"
-                  placeholder="Enter number of squeezes"
+                  placeholder={getFieldConfig("tab3", "field1")?.placeholder || "Enter number of squeezes"}
+                  required={getFieldConfig("tab3", "field1")?.required}
+                  min={getFieldConfig("tab3", "field1")?.min || 1}
+                  max={getFieldConfig("tab3", "field1")?.max || 100}
                 />
               </div>
+            )}
 
-              {/* Hold Time Field */}
+            {/* Hold Time */}
+            {getFieldConfig("tab3", "field2")?.enabled && (
               <div className="mb-4">
                 <label
                   htmlFor="kegel-hold-time"
                   className="block mb-2 text-lg font-medium text-gray-800 dark:text-gray-300"
                 >
-                  Hold Time (seconds)
+                  {getFieldConfig("tab3", "field2")?.label || "Hold Time (seconds)"}
                 </label>
                 <input
                   type="number"
@@ -1057,14 +910,19 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({ addUroLog, addHydroLog, a
                   value={kegelHoldTime}
                   onChange={(e) => setKegelHoldTime(e.target.value)}
                   className="w-full p-2.5 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200"
-                  placeholder="Enter duration of each squeeze"
+                  placeholder={getFieldConfig("tab3", "field2")?.placeholder || "Enter duration of each squeeze"}
+                  required={getFieldConfig("tab3", "field2")?.required}
+                  min={getFieldConfig("tab3", "field2")?.min || 1}
+                  max={getFieldConfig("tab3", "field2")?.max || 60}
                 />
               </div>
+            )}
 
-              {/* Sets Field */}
+            {/* Sets */}
+            {getFieldConfig("tab3", "field3")?.enabled && (
               <div className="mb-4">
                 <label htmlFor="kegel-sets" className="block mb-2 text-lg font-medium text-gray-800 dark:text-gray-300">
-                  Sets (Number of Sets)
+                  {getFieldConfig("tab3", "field3")?.label || "Sets (Number of Sets)"}
                 </label>
                 <input
                   type="number"
@@ -1072,109 +930,70 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({ addUroLog, addHydroLog, a
                   value={kegelSets}
                   onChange={(e) => setKegelSets(e.target.value)}
                   className="w-full p-2.5 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200"
-                  placeholder="Enter number of sets"
+                  placeholder={getFieldConfig("tab3", "field3")?.placeholder || "Enter number of sets"}
+                  required={getFieldConfig("tab3", "field3")?.required}
+                  min={getFieldConfig("tab3", "field3")?.min || 1}
+                  max={getFieldConfig("tab3", "field3")?.max || 20}
                 />
               </div>
+            )}
 
-              {/* Total Time (calculated) */}
-              <div className="mb-4">
-                <label className="block mb-2 text-lg font-medium text-gray-800 dark:text-gray-300">
-                  Total Time (estimated)
-                </label>
-                <div className="p-2.5 border rounded-lg bg-gray-100 dark:bg-gray-700 text-lg text-gray-800 dark:text-gray-200">
-                  {Number(kegelHoldTime) * Number(kegelReps) * Number(kegelSets)} seconds
-                </div>
-              </div>
-
-              {/* Guided Timer */}
-              <div className="mb-4">
-                <label className="block mb-2 flex items-center text-lg font-medium text-gray-800 dark:text-gray-300">
-                  <input
-                    type="checkbox"
-                    checked={kegelGuidedTimer}
-                    onChange={(e) => setKegelGuidedTimer(!kegelGuidedTimer)}
-                    className="mr-2 h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  Use Guided Timer
-                </label>
-              </div>
-
-              {kegelGuidedTimer && (
-                <div className="mb-4">
-                  {/* Timer Display */}
-                  <div className="bg-yellow-50 dark:bg-gray-800 p-3 rounded-lg text-center mb-2 shadow-inner">
-                    <div className="text-6xl font-mono font-bold tabular-nums text-yellow-800 dark:text-white">
-                      {formatTime(kegelElapsedTime)}
-                    </div>
-                  </div>
-
-                  {/* Timer Controls */}
-                  <div className="flex justify-between">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsKegelTimerRunning(!isKegelTimerRunning)
-                        setKegelTimerStart(Date.now())
-                      }}
-                      className="min-h-[48px] px-6 text-white rounded-lg flex items-center justify-center shadow-sm hover:shadow transition-all text-lg w-[48%] bg-green-600 hover:bg-green-700"
-                    >
-                      {isKegelTimerRunning ? <Pause size={22} /> : <Play size={22} />}
-                      <span className="ml-2 font-medium">{isKegelTimerRunning ? "Pause" : "Start"}</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsKegelTimerRunning(false)
-                        setKegelTimerStart(null)
-                        setKegelElapsedTime(0)
-                      }}
-                      className="min-h-[48px] px-6 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center justify-center shadow-sm hover:shadow transition-all text-lg w-[48%]"
-                    >
-                      <RotateCcw size={22} className="mr-2" /> Reset
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Reps Completed Field */}
+            {/* Total Exercise Time (Calculated) */}
+            {getFieldConfig("tab3", "field4")?.enabled && (
               <div className="mb-4">
                 <label
-                  htmlFor="kegel-reps-completed"
+                  htmlFor="kegel-total-time"
                   className="block mb-2 text-lg font-medium text-gray-800 dark:text-gray-300"
                 >
-                  Reps Completed
+                  {getFieldConfig("tab3", "field4")?.label || "Total Exercise Time"}
                 </label>
                 <input
-                  type="number"
-                  id="kegel-reps-completed"
-                  value={kegelRepsCompleted}
-                  onChange={(e) => setKegelRepsCompleted(e.target.value)}
-                  className="w-full p-2.5 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200"
-                  placeholder="Enter number of reps completed"
+                  type="text"
+                  id="kegel-total-time"
+                  value={kegelTotalTime > 0 ? `${kegelTotalTime} seconds` : ""}
+                  readOnly
+                  className="w-full p-2.5 border rounded-lg bg-gray-100 dark:bg-gray-600 dark:border-gray-500 text-lg text-gray-800 dark:text-gray-200"
+                  placeholder={getFieldConfig("tab3", "field4")?.placeholder || "Total seconds"}
                 />
+                {getFieldConfig("tab3", "field4")?.helpText && (
+                  <p className="text-sm text-gray-500 mt-1">{getFieldConfig("tab3", "field4")?.helpText}</p>
+                )}
               </div>
+            )}
 
-              {/* Completed Checkbox */}
+            {/* Completed All Sets */}
+            {getFieldConfig("tab3", "field5")?.enabled && (
               <div className="mb-4">
-                <label className="block mb-2 flex items-center text-lg font-medium text-gray-800 dark:text-gray-300">
+                <div className="flex items-center">
                   <input
                     type="checkbox"
+                    id="kegel-completed"
                     checked={kegelCompleted}
-                    onChange={(e) => setKegelCompleted(!kegelCompleted)}
-                    className="mr-2 h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    onChange={(e) => setKegelCompleted(e.target.checked)}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600"
                   />
-                  Completed All Sets
-                </label>
+                  <label
+                    htmlFor="kegel-completed"
+                    className="ml-2 text-lg font-medium text-gray-900 dark:text-gray-300"
+                  >
+                    {getFieldConfig("tab3", "field5")?.label || "Completed All Sets"}
+                  </label>
+                </div>
               </div>
+            )}
 
-              {/* Notes Field */}
+            {/* Notes */}
+            {getFieldConfig("tab3", "field6")?.enabled && (
               <div className="mb-4">
                 <label
                   htmlFor="kegel-notes"
-                  className="block mb-2 text-lg font-medium text-gray-800 dark:text-gray-300"
+                  className="block mb-2 flex items-center text-lg font-medium text-gray-800 dark:text-gray-300"
                 >
-                  Notes (max 256 characters)
+                  <FileText size={20} className="mr-2 text-green-500" />
+                  {getFieldConfig("tab3", "field6")?.label || "Notes"}
+                  {getFieldConfig("tab3", "field6")?.helpText && (
+                    <span className="ml-2 text-sm text-gray-500">({getFieldConfig("tab3", "field6")?.helpText})</span>
+                  )}
                 </label>
                 <textarea
                   id="kegel-notes"
@@ -1183,25 +1002,515 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({ addUroLog, addHydroLog, a
                   maxLength={256}
                   className="w-full p-2.5 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 min-h-[80px] text-lg text-gray-800 dark:text-gray-200"
                   rows={2}
-                  placeholder="Add any additional notes about this exercise..."
+                  placeholder={
+                    getFieldConfig("tab3", "field6")?.placeholder || "Add any additional notes about this exercise..."
+                  }
+                  required={getFieldConfig("tab3", "field6")?.required}
                 ></textarea>
                 <div className="text-right text-lg text-gray-600 mt-1">{kegelNotes.length}/256 characters</div>
-                <div className="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-100 dark:border-yellow-800">
-                  <h4 className="font-medium text-amber-800 dark:text-amber-300 mb-2">
-                    How to Perform Kegel Exercises:
-                  </h4>
-                  <p className="text-gray-800 dark:text-gray-200">
-                    "To do Kegels, imagine you're sitting on a marble. Tighten your pelvic muscles as if you're lifting
-                    the marble upward, toward your head. Try it for three seconds at a time. Then relax for a count of
-                    three."
-                  </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Urethral Stricture tab content */}
+      {activeTab === "stricture" && isTabEnabled("tab4") && (
+        <div className="max-w-[414px] mx-auto">
+          <div className="form-group bg-gradient-to-br from-orange-50 to-orange-100 dark:from-gray-800 dark:to-gray-700 p-4 rounded-lg">
+            {/* Volume */}
+            {getFieldConfig("tab4", "field1")?.enabled && (
+              <div className="mb-4">
+                <label
+                  htmlFor="stricture-volume"
+                  className="block mb-2 text-lg font-medium text-gray-800 dark:text-gray-300"
+                >
+                  {getFieldConfig("tab4", "field1")?.label || "Volume (mL)"}
+                </label>
+                <input
+                  type="number"
+                  id="stricture-volume"
+                  value={strictureVolume}
+                  onChange={(e) => setStrictureVolume(e.target.value)}
+                  className="w-full p-2.5 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200"
+                  placeholder={getFieldConfig("tab4", "field1")?.placeholder || "mL"}
+                  required={getFieldConfig("tab4", "field1")?.required}
+                  min={getFieldConfig("tab4", "field1")?.min || 0}
+                  max={getFieldConfig("tab4", "field1")?.max || 800}
+                />
+                {getFieldConfig("tab4", "field1")?.helpText && (
+                  <p className="text-sm text-gray-500 mt-1">{getFieldConfig("tab4", "field1")?.helpText}</p>
+                )}
+              </div>
+            )}
+
+            {/* Duration with Timer */}
+            {getFieldConfig("tab4", "field2")?.enabled && (
+              <div className="mb-4">
+                <label
+                  htmlFor="stricture-duration"
+                  className="block mb-2 text-lg font-medium text-gray-800 dark:text-gray-300"
+                >
+                  {getFieldConfig("tab4", "field2")?.label || "Duration (seconds)"}
+                </label>
+                <div className="flex flex-col">
+                  <input
+                    type="number"
+                    id="stricture-duration"
+                    value={strictureDuration}
+                    onChange={(e) => setStrictureDuration(e.target.value)}
+                    className="w-full p-2.5 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200 mb-2"
+                    placeholder={getFieldConfig("tab4", "field2")?.placeholder || "Sec"}
+                    required={getFieldConfig("tab4", "field2")?.required}
+                    min={getFieldConfig("tab4", "field2")?.min || 0}
+                    max={getFieldConfig("tab4", "field2")?.max || 600}
+                  />
+
+                  {/* Timer Display */}
+                  {getFieldConfig("tab4", "field2")?.enableTimer &&
+                    (isStrictureTimerRunning || strictureElapsedTime > 0) && (
+                      <div className="w-full bg-gray-100 dark:bg-gray-600 rounded-lg p-3 mb-2 text-center">
+                        <div className="text-3xl font-mono font-bold text-orange-600 dark:text-orange-400">
+                          {formatTime(strictureElapsedTime)}
+                        </div>
+                      </div>
+                    )}
+
+                  {/* Timer Controls */}
+                  {getFieldConfig("tab4", "field2")?.enableTimer && (
+                    <div className="grid grid-cols-2 gap-2 w-full">
+                      <button
+                        type="button"
+                        onClick={isStrictureTimerRunning ? pauseStrictureTimer : startStrictureTimer}
+                        className={`p-3 rounded-lg text-white font-medium ${
+                          isStrictureTimerRunning
+                            ? "bg-red-500 hover:bg-red-600 active:bg-red-700"
+                            : "bg-green-500 hover:bg-green-600 active:bg-green-700"
+                        }`}
+                      >
+                        {isStrictureTimerRunning ? "Pause Timer" : "Start Timer"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={resetStrictureTimer}
+                        className="p-3 bg-gray-300 hover:bg-gray-400 active:bg-gray-500 dark:bg-gray-600 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg font-medium"
+                      >
+                        Reset Timer
+                      </button>
+                    </div>
+                  )}
+                </div>
+                {getFieldConfig("tab4", "field2")?.helpText && (
+                  <p className="text-sm text-gray-500 mt-1">{getFieldConfig("tab4", "field2")?.helpText}</p>
+                )}
+              </div>
+            )}
+
+            {/* Flow Rate (Calculated) */}
+            {getFieldConfig("tab4", "field3")?.enabled && (
+              <div className="mb-4">
+                <label
+                  htmlFor="stricture-flow-rate"
+                  className="block mb-2 text-lg font-medium text-gray-800 dark:text-gray-300"
+                >
+                  {getFieldConfig("tab4", "field3")?.label || "Flow Rate (mL/s)"}
+                </label>
+                <input
+                  type="text"
+                  id="stricture-flow-rate"
+                  value={strictureFlowRate !== null ? strictureFlowRate.toString() : ""}
+                  readOnly
+                  className="w-full p-2.5 border rounded-lg bg-gray-100 dark:bg-gray-600 dark:border-gray-500 text-lg text-gray-800 dark:text-gray-200"
+                  placeholder={getFieldConfig("tab4", "field3")?.placeholder || "mL/s"}
+                />
+                {getFieldConfig("tab4", "field3")?.helpText && (
+                  <p className="text-sm text-gray-500 mt-1">{getFieldConfig("tab4", "field3")?.helpText}</p>
+                )}
+              </div>
+            )}
+
+            {/* Urine Color */}
+            {getFieldConfig("tab4", "field4")?.enabled && (
+              <div className="mb-4">
+                <label
+                  htmlFor="stricture-urine-color"
+                  className="block mb-2 text-lg font-medium text-gray-800 dark:text-gray-300"
+                >
+                  {getFieldConfig("tab4", "field4")?.label || "Urine Color"}
+                </label>
+                <select
+                  id="stricture-urine-color"
+                  value={strictureColor}
+                  onChange={(e) => setStrictureColor(e.target.value as UrineColor)}
+                  className="w-full p-2.5 border rounded-lg appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200 enhanced-select"
+                  required={getFieldConfig("tab4", "field4")?.required}
+                >
+                  {colorOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Urgency Rating */}
+            {getFieldConfig("tab4", "field5")?.enabled && (
+              <div className="mb-4">
+                <label
+                  htmlFor="stricture-urgency-rating"
+                  className="block mb-2 flex items-center text-lg font-medium text-gray-800 dark:text-gray-300"
+                >
+                  <Clock size={20} className="mr-2 text-purple-500" />
+                  {getFieldConfig("tab4", "field5")?.label || "Urgency Rating"}
+                </label>
+                <select
+                  id="stricture-urgency-rating"
+                  value={strictureUrgency}
+                  onChange={(e) => setStrictureUrgency(e.target.value as UrgencyRating)}
+                  className="w-full p-2.5 border rounded-lg appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200 enhanced-select"
+                  required={getFieldConfig("tab4", "field5")?.required}
+                >
+                  {getFieldConfig("tab4", "field5")?.options?.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Stricture Symptoms */}
+            {getFieldConfig("tab4", "field6")?.enabled && (
+              <div className="mb-4">
+                <label className="block mb-2 text-lg font-medium text-gray-800 dark:text-gray-300">
+                  {getFieldConfig("tab4", "field6")?.label || "Stricture Symptoms"}
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {getFieldConfig("tab4", "field6")?.options?.map((option) => (
+                    <div key={option.value} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id={`symptom-${option.value}`}
+                        checked={strictureSymptoms.includes(option.value)}
+                        onChange={() => toggleSymptom(option.value)}
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600"
+                      />
+                      <label
+                        htmlFor={`symptom-${option.value}`}
+                        className="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300"
+                      >
+                        {option.label}
+                      </label>
+                    </div>
+                  ))}
                 </div>
               </div>
-            </div>
+            )}
+
+            {/* Stream Quality */}
+            {getFieldConfig("tab4", "field7")?.enabled && (
+              <div className="mb-4">
+                <label
+                  htmlFor="stream-quality"
+                  className="block mb-2 flex items-center text-lg font-medium text-gray-800 dark:text-gray-300"
+                >
+                  <Activity size={20} className="mr-2 text-blue-500" />
+                  {getFieldConfig("tab4", "field7")?.label || "Stream Quality"}
+                </label>
+                <select
+                  id="stream-quality"
+                  value={streamQuality}
+                  onChange={(e) => setStreamQuality(e.target.value)}
+                  className="w-full p-2.5 border rounded-lg appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200 enhanced-select"
+                  required={getFieldConfig("tab4", "field7")?.required}
+                >
+                  {getFieldConfig("tab4", "field7")?.options?.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Pain Level */}
+            {getFieldConfig("tab4", "field7")?.enabled && (
+              <div className="mb-4">
+                <label
+                  htmlFor="pain-level"
+                  className="block mb-2 flex items-center text-lg font-medium text-gray-800 dark:text-gray-300"
+                >
+                  <Thermometer size={20} className="mr-2 text-red-500" />
+                  {getFieldConfig("tab4", "field7")?.label || "Pain Level"}
+                </label>
+                <select
+                  id="pain-level"
+                  value={painLevel}
+                  onChange={(e) => setPainLevel(e.target.value)}
+                  className="w-full p-2.5 border rounded-lg appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200 enhanced-select"
+                  required={getFieldConfig("tab4", "field7")?.required}
+                >
+                  {getFieldConfig("tab4", "field7")?.options?.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Notes */}
+            {getFieldConfig("tab4", "field8")?.enabled && (
+              <div className="mb-4">
+                <label
+                  htmlFor="stricture-notes"
+                  className="block mb-2 flex items-center text-lg font-medium text-gray-800 dark:text-gray-300"
+                >
+                  <FileText size={20} className="mr-2 text-green-500" />
+                  {getFieldConfig("tab4", "field8")?.label || "Notes"}
+                  {getFieldConfig("tab4", "field8")?.helpText && (
+                    <span className="ml-2 text-sm text-gray-500">({getFieldConfig("tab4", "field8")?.helpText})</span>
+                  )}
+                </label>
+                <textarea
+                  id="stricture-notes"
+                  value={strictureNotes}
+                  onChange={(e) => setStrictureNotes(e.target.value.slice(0, 256))}
+                  maxLength={256}
+                  className="w-full p-2.5 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 min-h-[80px] text-lg text-gray-800 dark:text-gray-200"
+                  rows={2}
+                  placeholder={
+                    getFieldConfig("tab4", "field8")?.placeholder ||
+                    "Add any additional notes about stricture symptoms..."
+                  }
+                  required={getFieldConfig("tab4", "field8")?.required}
+                ></textarea>
+                <div className="text-right text-lg text-gray-600 mt-1">{strictureNotes.length}/256 characters</div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
+      )}
+
+      {/* Hydration tab content */}
+      {activeTab === "hydration" && isTabEnabled("tab5") && (
+        <div className="max-w-[414px] mx-auto">
+          <div className="form-group bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-gray-800 dark:to-gray-700 p-4 rounded-lg">
+            {/* Beverage Type */}
+            {getFieldConfig("tab5", "field1")?.enabled && (
+              <div className="mb-4">
+                <label
+                  htmlFor="hydration-beverage-type"
+                  className="block mb-2 flex items-center text-lg font-medium text-gray-800 dark:text-gray-300"
+                >
+                  <Coffee size={20} className="mr-2 text-blue-500" />
+                  {getFieldConfig("tab5", "field1")?.label || "Beverage Type"}
+                </label>
+                <select
+                  id="hydration-beverage-type"
+                  value={hydrationBeverageType}
+                  onChange={(e) => setHydrationBeverageType(e.target.value)}
+                  className={`w-full p-2.5 border rounded-lg appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200 enhanced-select ${
+                    !hydrationBeverageType
+                      ? "border-blue-500 ring-2 ring-blue-200 dark:ring-blue-800 animate-pulse"
+                      : ""
+                  }`}
+                  required={getFieldConfig("tab5", "field1")?.required}
+                >
+                  <option value="">Select beverage type</option>
+                  <option value="Water">Water</option>
+                  <option value="Coffee">Coffee</option>
+                  <option value="Tea">Tea</option>
+                  <option value="Soda">Soda</option>
+                  <option value="Juice">Juice</option>
+                  <option value="Sports Drink">Sports Drink</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            )}
+
+            {/* Custom Beverage Type */}
+            {hydrationBeverageType === "Other" && getFieldConfig("tab5", "field2")?.enabled && (
+              <div className="mb-4 animate-fade-in">
+                <label
+                  htmlFor="hydration-custom-type"
+                  className="block mb-2 text-lg font-medium text-gray-800 dark:text-gray-300"
+                >
+                  {getFieldConfig("tab5", "field2")?.label || "Custom Beverage Type"}
+                </label>
+                <input
+                  type="text"
+                  id="hydration-custom-type"
+                  value={hydrationCustomType}
+                  onChange={(e) => setHydrationCustomType(e.target.value)}
+                  className="w-full p-2.5 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200"
+                  placeholder={getFieldConfig("tab5", "field2")?.placeholder || "Enter beverage type"}
+                  required={hydrationBeverageType === "Other" && getFieldConfig("tab5", "field2")?.required}
+                />
+              </div>
+            )}
+
+            {/* Amount */}
+            {getFieldConfig("tab5", "field3")?.enabled && (
+              <div className="mb-4">
+                <label
+                  htmlFor="hydration-amount"
+                  className="block mb-2 text-lg font-medium text-gray-800 dark:text-gray-300"
+                >
+                  {getFieldConfig("tab5", "field3")?.label || "Amount"}
+                </label>
+                <div className="flex items-center">
+                  <input
+                    type="number"
+                    id="hydration-amount"
+                    value={hydrationAmount}
+                    onChange={(e) => setHydrationAmount(e.target.value)}
+                    className="w-full p-2.5 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200 mr-2"
+                    placeholder={getFieldConfig("tab5", "field3")?.placeholder || "Amount"}
+                    required={getFieldConfig("tab5", "field3")?.required}
+                    min={getFieldConfig("tab5", "field3")?.min || 1}
+                    max={getFieldConfig("tab5", "field3")?.max || 2000}
+                  />
+                  <select
+                    id="hydration-unit"
+                    value={hydrationUnit}
+                    onChange={(e) => setHydrationUnit(e.target.value as "oz" | "mL" | "cups")}
+                    className="p-2.5 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200 enhanced-select"
+                  >
+                    <option value="mL">mL</option>
+                    <option value="oz">oz</option>
+                    <option value="cups">cups</option>
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* Temperature */}
+            {getFieldConfig("tab5", "field5")?.enabled && (
+              <div className="mb-4">
+                <label
+                  htmlFor="hydration-temperature"
+                  className="block mb-2 flex items-center text-lg font-medium text-gray-800 dark:text-gray-300"
+                >
+                  <Thermometer size={20} className="mr-2 text-red-500" />
+                  {getFieldConfig("tab5", "field5")?.label || "Temperature"}
+                </label>
+                <select
+                  id="hydration-temperature"
+                  value={hydrationTemperature}
+                  onChange={(e) => setHydrationTemperature(e.target.value)}
+                  className="w-full p-2.5 border rounded-lg appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200 enhanced-select"
+                  required={getFieldConfig("tab5", "field5")?.required}
+                >
+                  <option value="">Select temperature</option>
+                  <option value="Cold">Cold</option>
+                  <option value="Cool">Cool</option>
+                  <option value="Room Temperature">Room Temperature</option>
+                  <option value="Warm">Warm</option>
+                  <option value="Hot">Hot</option>
+                </select>
+              </div>
+            )}
+
+            {/* Time of Day */}
+            {getFieldConfig("tab5", "field6")?.enabled && (
+              <div className="mb-4">
+                <label
+                  htmlFor="hydration-time-of-day"
+                  className="block mb-2 flex items-center text-lg font-medium text-gray-800 dark:text-gray-300"
+                >
+                  <Clock size={20} className="mr-2 text-purple-500" />
+                  {getFieldConfig("tab5", "field6")?.label || "Time of Day"}
+                </label>
+                <select
+                  id="hydration-time-of-day"
+                  value={hydrationTimeOfDay}
+                  onChange={(e) => setHydrationTimeOfDay(e.target.value)}
+                  className="w-full p-2.5 border rounded-lg appearance-none bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200 enhanced-select"
+                  required={getFieldConfig("tab5", "field6")?.required}
+                >
+                  <option value="">Select time of day</option>
+                  <option value="Morning">Morning</option>
+                  <option value="Afternoon">Afternoon</option>
+                  <option value="Evening">Evening</option>
+                  <option value="Night">Night</option>
+                </select>
+              </div>
+            )}
+
+            {/* Hydration Goal */}
+            {getFieldConfig("tab5", "field7")?.enabled && (
+              <div className="mb-4">
+                <label
+                  htmlFor="hydration-goal"
+                  className="block mb-2 text-lg font-medium text-gray-800 dark:text-gray-300"
+                >
+                  {getFieldConfig("tab5", "field7")?.label || "Hydration Goal"}
+                </label>
+                <input
+                  type="number"
+                  id="hydration-goal"
+                  value={hydrationGoal}
+                  onChange={(e) => setHydrationGoal(e.target.value)}
+                  className="w-full p-2.5 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 text-lg text-gray-800 dark:text-gray-200"
+                  placeholder={getFieldConfig("tab5", "field7")?.placeholder || "Daily goal in mL or oz"}
+                  required={getFieldConfig("tab5", "field7")?.required}
+                  min={getFieldConfig("tab5", "field7")?.min || 1}
+                  max={getFieldConfig("tab5", "field7")?.max || 5000}
+                />
+                <p className="text-sm text-gray-500 mt-1">
+                  {getFieldConfig("tab5", "field7")?.helpText || "Set your daily hydration goal"}
+                </p>
+              </div>
+            )}
+
+            {/* Notes */}
+            {getFieldConfig("tab5", "field8")?.enabled && (
+              <div className="mb-4">
+                <label
+                  htmlFor="hydration-notes"
+                  className="block mb-2 flex items-center text-lg font-medium text-gray-800 dark:text-gray-300"
+                >
+                  <FileText size={20} className="mr-2 text-green-500" />
+                  {getFieldConfig("tab5", "field8")?.label || "Notes"}
+                  {getFieldConfig("tab5", "field8")?.helpText && (
+                    <span className="ml-2 text-sm text-gray-500">({getFieldConfig("tab5", "field8")?.helpText})</span>
+                  )}
+                </label>
+                <textarea
+                  id="hydration-notes"
+                  value={hydrationNotes}
+                  onChange={(e) => setHydrationNotes(e.target.value.slice(0, 256))}
+                  maxLength={256}
+                  className="w-full p-2.5 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 min-h-[80px] text-lg text-gray-800 dark:text-gray-200"
+                  rows={2}
+                  placeholder={
+                    getFieldConfig("tab5", "field8")?.placeholder ||
+                    "Add any additional notes about this hydration entry..."
+                  }
+                  required={getFieldConfig("tab5", "field8")?.required}
+                ></textarea>
+                <div className="text-right text-lg text-gray-600 mt-1">{hydrationNotes.length}/256 characters</div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Save button */}
+      <div className="mt-6 flex justify-center">
+        <button
+          onClick={handleSubmit}
+          disabled={!isSaveEnabled}
+          className={`px-6 py-3 rounded-lg text-white font-medium ${
+            isSaveEnabled ? "bg-blue-600 hover:bg-blue-700 active:bg-blue-800" : "bg-gray-400 cursor-not-allowed"
+          }`}
+        >
+          Save Entry
+        </button>
       </div>
-    </>
+    </div>
   )
 }
 

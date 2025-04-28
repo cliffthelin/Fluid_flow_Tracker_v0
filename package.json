@@ -58,7 +58,12 @@
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^0.9.6",
     "zod": "^3.24.1",
-    "dexie": "latest"
+    "@dnd-kit/core": "latest",
+    "dexie": "latest",
+    "idb": "latest",
+    "@dnd-kit/sortable": "latest",
+    "@dnd-kit/utilities": "latest",
+    "fs": "latest"
   },
   "devDependencies": {
     "@types/node": "^22",

@@ -1,0 +1,108 @@
+{
+  "Health Measurements": [
+    {
+      "Name": "Urine Volume",
+      "Acronym": "UV",
+      "Common Units": "mL, oz",
+      "Common Units Full Name": "milliliters, ounces",
+      "Entry Text": "Enter the volume of urine",
+      "IsActive": true
+    },
+    {
+      "Name": "Void Time",
+      "Acronym": "VT",
+      "Common Units": "sec, min",
+      "Common Units Full Name": "seconds, minutes",
+      "Entry Text": "Enter the time taken to void",
+      "IsActive": true
+    },
+    {
+      "Name": "Urine Flow Rate",
+      "Acronym": "UFR",
+      "Common Units": "mL/sec",
+      "Common Units Full Name": "milliliters per second",
+      "Entry Text": "Enter the urine flow rate",
+      "IsActive": true
+    }
+  ],
+  "Urethral Stricture Measurements": [
+    {
+      "Name": "Stricture Length",
+      "Acronym": "SL",
+      "Common Units": "cm, mm",
+      "Common Units Full Name": "centimeters, millimeters",
+      "Entry Text": "Enter the stricture length",
+      "IsActive": true
+    },
+    {
+      "Name": "Stricture Location",
+      "Acronym": "SLOC",
+      "Common Units": "position",
+      "Common Units Full Name": "anatomical position",
+      "Entry Text": "Enter the stricture location",
+      "IsActive": true
+    }
+  ],
+  "Sleep Tracking": [
+    {
+      "Name": "Sleep Duration",
+      "Acronym": "SD",
+      "Common Units": "hours",
+      "Common Units Full Name": "hours of sleep",
+      "Entry Text": "Enter the total hours of sleep",
+      "IsActive": true
+    },
+    {
+      "Name": "Sleep Quality",
+      "Acronym": "SQ",
+      "Common Units": "1-10",
+      "Common Units Full Name": "scale from 1 to 10",
+      "Entry Text": "Rate your sleep quality from 1 (poor) to 10 (excellent)",
+      "IsActive": true
+    }
+  ],
+  "Medication Tracking": [
+    {
+      "Name": "Medication Name",
+      "Acronym": "MN",
+      "Common Units": "text",
+      "Common Units Full Name": "name of medication",
+      "Entry Text": "Enter the name of the medication",
+      "IsActive": true
+    },
+    {
+      "Name": "Dosage",
+      "Acronym": "DOS",
+      "Common Units": "mg",
+      "Common Units Full Name": "milligrams",
+      "Entry Text": "Enter the dosage in milligrams",
+      "IsActive": true
+    }
+  ],
+  "ADHD Moment Tracking": [
+    {
+      "Name": "Trigger",
+      "Acronym": "TRG",
+      "Common Units": "text",
+      "Common Units Full Name": "description of trigger",
+      "Entry Text": "Describe what triggered the ADHD moment",
+      "IsActive": true
+    },
+    {
+      "Name": "Duration",
+      "Acronym": "DUR",
+      "Common Units": "minutes",
+      "Common Units Full Name": "minutes",
+      "Entry Text": "Enter how long the moment lasted",
+      "IsActive": true
+    },
+    {
+      "Name": "Intensity",
+      "Acronym": "INT",
+      "Common Units": "1-10",
+      "Common Units Full Name": "scale from 1 to 10",
+      "Entry Text": "Rate the intensity from 1 (mild) to 10 (severe)",
+      "IsActive": true
+    }
+  ]
+}
