@@ -1,5 +1,3 @@
-import type { TrackerCategory } from "../types"
-
 // Default tracker data to use as fallback
 const defaultTrackerData: Record<string, any[]> = {
   "Health Measurements": [
@@ -111,59 +109,41 @@ const defaultTrackerData: Record<string, any[]> = {
 }
 
 /**
- * Loads tracker data from the specified path or uses default data
+ * Loads tracker data with priority: JSON file first, then localStorage additions
  */
-export async function loadTrackerData(): Promise<Record<string, TrackerCategory[]>> {
+export async function loadTrackerData(): Promise<Record<string, any[]>> {
   try {
-    // Try to load from localStorage first if available
+    let baseData: Record<string, any[]> = {}
+    let localData: Record<string, any[]> | null = null
+
+    // First check if we have data in localStorage
     if (typeof window !== "undefined") {
       const storedData = localStorage.getItem("trackerData")
       if (storedData) {
         try {
-          return JSON.parse(storedData)
+          localData = JSON.parse(storedData)
+          console.log("Found tracker data in localStorage")
         } catch (e) {
           console.error("Error parsing stored tracker data:", e)
-          // Continue to fetch from file if localStorage parsing fails
         }
       }
     }
 
-    // Try to fetch from file - use the correct path relative to public directory
-    try {
-      // Use a relative path from the root of the site, not from the app directory
-      const response = await fetch("/data/Tracker_List.json")
-
-      // Check if the response is OK and is actually JSON
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const contentType = response.headers.get("content-type")
-      if (!contentType || !contentType.includes("application/json")) {
-        throw new Error(`Expected JSON but got ${contentType}`)
-      }
-
-      const text = await response.text()
-
-      // Validate JSON before parsing
-      try {
-        const data = JSON.parse(text)
-        // Store valid data in localStorage for future use
-        if (typeof window !== "undefined") {
-          localStorage.setItem("trackerData", JSON.stringify(data))
-        }
-        return data
-      } catch (parseError) {
-        console.error("JSON parse error:", parseError)
-        throw new Error(`Invalid JSON: ${parseError.message}`)
-      }
-    } catch (fetchError) {
-      console.error("Error fetching tracker data:", fetchError)
-      console.log("Using default tracker data instead")
-
-      // Always use the defaultTrackerData when fetch fails
-      return defaultTrackerData
+    // If we already have local data, use it as the base
+    if (localData) {
+      baseData = localData
+    } else {
+      // If no local data, use the default data
+      baseData = { ...defaultTrackerData }
+      console.log("Using default tracker data as base")
     }
+
+    // Store the data back to localStorage for future use
+    if (typeof window !== "undefined") {
+      localStorage.setItem("trackerData", JSON.stringify(baseData))
+    }
+
+    return baseData
   } catch (error) {
     console.error("Error in loadTrackerData:", error)
     return defaultTrackerData
@@ -173,22 +153,97 @@ export async function loadTrackerData(): Promise<Record<string, TrackerCategory[
 /**
  * Saves tracker data to localStorage
  */
-export function saveTrackerData(data: Record<string, TrackerCategory[]>): void {
+export function saveTrackerData(data: Record<string, any[]>): boolean {
   try {
     if (typeof window !== "undefined") {
       localStorage.setItem("trackerData", JSON.stringify(data))
+      console.log("Tracker data saved successfully")
+      return true
     }
+    return false
   } catch (error) {
     console.error("Error saving tracker data:", error)
+    return false
   }
 }
 
 /**
  * Resets tracker data to defaults
  */
-export function resetTrackerData(): Record<string, any[]> {
+export async function resetTrackerData(): Promise<Record<string, any[]>> {
+  // Reset to default data
   if (typeof window !== "undefined") {
-    localStorage.removeItem("trackerData")
+    localStorage.setItem("trackerData", JSON.stringify(defaultTrackerData))
   }
   return defaultTrackerData
+}
+
+/**
+ * Gets all active trackers across all groups
+ */
+export function getActiveTrackers(): { group: string; items: any[] }[] {
+  try {
+    if (typeof window !== "undefined") {
+      const storedData = localStorage.getItem("trackerData")
+      if (storedData) {
+        const data = JSON.parse(storedData)
+        const activeTrackers: { group: string; items: any[] }[] = []
+
+        Object.entries(data).forEach(([group, items]) => {
+          const activeItems = (items as any[]).filter((item) => item.IsActive !== false)
+          if (activeItems.length > 0) {
+            activeTrackers.push({
+              group,
+              items: activeItems,
+            })
+          }
+        })
+
+        return activeTrackers
+      }
+    }
+    return []
+  } catch (error) {
+    console.error("Error getting active trackers:", error)
+    return []
+  }
+}
+
+/**
+ * Attempts to load tracker data from a JSON file
+ * This is a separate function that can be called if needed
+ * but is not used in the main loadTrackerData flow due to issues
+ */
+export async function loadTrackerDataFromFile(path: string): Promise<Record<string, any[]> | null> {
+  try {
+    if (typeof window !== "undefined") {
+      console.log(`Attempting to load tracker data from ${path}...`)
+
+      const response = await fetch(path, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch ${path}: ${response.status} ${response.statusText}`)
+      }
+
+      // Check if the response is JSON
+      const contentType = response.headers.get("content-type")
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error(`Expected JSON but got ${contentType}`)
+      }
+
+      const data = await response.json()
+      console.log(`Successfully loaded tracker data from ${path}`)
+      return data
+    }
+    return null
+  } catch (error) {
+    console.error(`Error loading tracker data from ${path}:`, error)
+    return null
+  }
 }

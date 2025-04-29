@@ -1233,7 +1233,362 @@ function DataManagement(props: DataManagementProps) {
       fileInputRef.current.value = ""
     }
   }
+
+  // Generate demo data
+  const handleGenerateDemoData = async () => {
+    if (!confirm("This will generate demo data for testing. Continue?")) return
+
+    setIsGeneratingData(true)
+    try {
+      // Generate demo data
+      const demoData = generateDemoData()
+
+      // Update state with demo data
+      setUroLogs((prev) => [...prev, ...demoData.uroLogs])
+      setHydroLogs((prev) => [...prev, ...demoData.hydroLogs])
+      setKegelLogs((prev) => [...prev, ...demoData.kegelLogs])
+
+      // Convert to dynamic entries and update state
+      const newEntries = convertToEntries(demoData.uroLogs, demoData.hydroLogs, demoData.kegelLogs, appConfig)
+      setDynamicEntries((prev) => [...prev, ...newEntries])
+
+      // Update monthly groups
+      const updatedGroups = groupEntriesByMonth([...dynamicEntries, ...newEntries])
+      setMonthlyGroups(updatedGroups)
+
+      // Update statistics
+      calculateDataStats()
+
+      setMessage({
+        type: "success",
+        text: `Generated ${demoData.uroLogs.length + demoData.hydroLogs.length + demoData.kegelLogs.length} demo entries.`,
+      })
+
+      // Clear message after 5 seconds
+      setTimeout(() => setMessage(null), 5000)
+    } catch (error) {
+      console.error("Error generating demo data:", error)
+      setMessage({
+        type: "error",
+        text: "Failed to generate demo data. Please try again.",
+      })
+    } finally {
+      setIsGeneratingData(false)
+    }
+  }
+
+  // Delete all demo data
+  const handleDeleteDemoData = async () => {
+    if (!confirm("This will delete all demo data. This action cannot be undone. Continue?")) return
+
+    try {
+      // Delete demo data from database
+      await deleteDemoData()
+
+      // Update state by filtering out demo entries
+      setDynamicEntries((prev) => prev.filter((entry) => !entry.isDemo))
+      setUroLogs((prev) => prev.filter((log) => !log.isDemo))
+      setHydroLogs((prev) => prev.filter((log) => !log.isDemo))
+      setKegelLogs((prev) => prev.filter((log) => !log.isDemo))
+
+      // Update monthly groups
+      const updatedGroups = groupEntriesByMonth(dynamicEntries.filter((entry) => !entry.isDemo))
+      setMonthlyGroups(updatedGroups)
+
+      // Update statistics
+      calculateDataStats()
+
+      setMessage({
+        type: "success",
+        text: "All demo data deleted successfully.",
+      })
+
+      // Clear message after 5 seconds
+      setTimeout(() => setMessage(null), 5000)
+    } catch (error) {
+      console.error("Error deleting demo data:", error)
+      setMessage({
+        type: "error",
+        text: "Failed to delete demo data. Please try again.",
+      })
+    }
+  }
+
+  // Toggle showing demo entries
+  const handleToggleShowDemoEntries = () => {
+    setShowDemoEntries((prev) => !prev)
+  }
+
+  // Render the component
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-2xl font-bold mb-6">{title2 || "Data Management"}</h1>
+
+      {/* Message display */}
+      {message && (
+        <div
+          className={`mb-4 p-4 rounded ${
+            message.type === "success" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+          }`}
+        >
+          {message.text}
+        </div>
+      )}
+
+      {/* Data statistics */}
+      <div className="mb-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total entries */}
+        <div className="bg-white dark:bg-gray-800 p-4 rounded shadow">
+          <h3 className="text-lg font-semibold mb-2">Total Entries</h3>
+          <p className="text-3xl font-bold">{dynamicEntries.length}</p>
+          <div className="mt-2 text-sm">
+            {Object.entries(entryTypeCounts).map(([type, count]) => (
+              <div key={type} className="flex justify-between">
+                <span>{type}:</span>
+                <span>{count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Demo vs. Real */}
+        <div className="bg-white dark:bg-gray-800 p-4 rounded shadow">
+          <h3 className="text-lg font-semibold mb-2">Demo vs. Real</h3>
+          <div className="flex justify-between">
+            <div>
+              <p className="text-sm">Demo Entries</p>
+              <p className="text-2xl font-bold">{dynamicEntries.filter((entry) => entry.isDemo).length}</p>
+            </div>
+            <div>
+              <p className="text-sm">Real Entries</p>
+              <p className="text-2xl font-bold">{dynamicEntries.filter((entry) => !entry.isDemo).length}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Backup status */}
+        <div className="bg-white dark:bg-gray-800 p-4 rounded shadow">
+          <h3 className="text-lg font-semibold mb-2">Backup Status</h3>
+          <p className="text-sm">Last Export</p>
+          <p className="text-lg font-bold">{lastExportDate ? new Date(lastExportDate).toLocaleString() : "Never"}</p>
+          <p className="text-sm mt-2">
+            {notBackedUpCount} {notBackedUpCount === 1 ? "entry" : "entries"} not backed up
+          </p>
+        </div>
+
+        {/* Monthly breakdown */}
+        <div className="bg-white dark:bg-gray-800 p-4 rounded shadow">
+          <h3 className="text-lg font-semibold mb-2">Monthly Breakdown</h3>
+          <div className="text-sm max-h-32 overflow-y-auto">
+            {Object.entries(monthlyStats)
+              .sort(([a], [b]) => (a > b ? -1 : 1))
+              .slice(0, 5)
+              .map(([month, counts]) => {
+                const [year, monthNum] = month.split("-")
+                const monthName = new Date(Number.parseInt(year), Number.parseInt(monthNum) - 1, 1).toLocaleString(
+                  "default",
+                  {
+                    month: "short",
+                  },
+                )
+                const total = Object.values(counts).reduce((sum, count) => sum + count, 0)
+
+                return (
+                  <div key={month} className="flex justify-between">
+                    <span>
+                      {monthName} {year}:
+                    </span>
+                    <span>{total}</span>
+                  </div>
+                )
+              })}
+          </div>
+        </div>
+      </div>
+
+      {/* Action buttons */}
+      <div className="mb-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Export data */}
+        <button onClick={exportData} className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded">
+          Export Data
+        </button>
+
+        {/* Import data */}
+        <div className="relative">
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded w-full"
+          >
+            Import Data
+          </button>
+          <input type="file" ref={fileInputRef} onChange={importData} accept=".json" className="hidden" />
+        </div>
+
+        {/* Generate demo data */}
+        <button
+          onClick={handleGenerateDemoData}
+          disabled={isGeneratingData}
+          className="bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded disabled:opacity-50"
+        >
+          {isGeneratingData ? "Generating..." : "Generate Demo Data"}
+        </button>
+
+        {/* Delete demo data */}
+        <button onClick={handleDeleteDemoData} className="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded">
+          Delete Demo Data
+        </button>
+      </div>
+
+      {/* Toggle demo entries */}
+      <div className="mb-4 flex items-center">
+        <input
+          type="checkbox"
+          id="showDemoEntries"
+          checked={showDemoEntries}
+          onChange={handleToggleShowDemoEntries}
+          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+        />
+        <label htmlFor="showDemoEntries" className="ml-2 text-sm">
+          Show demo entries
+        </label>
+      </div>
+
+      {/* Monthly groups */}
+      {isLoading ? (
+        <div className="text-center py-8">Loading data...</div>
+      ) : monthlyGroups.length === 0 ? (
+        <div className="text-center py-8">No data available. Try generating demo data or importing data.</div>
+      ) : (
+        <div className="space-y-6">
+          {monthlyGroups.map((group) => (
+            <div key={group.key} className="border rounded-lg overflow-hidden">
+              {/* Month header */}
+              <div
+                className="bg-gray-100 dark:bg-gray-700 p-4 cursor-pointer flex justify-between items-center"
+                onClick={() => toggleMonth(group.key)}
+              >
+                <h3 className="text-lg font-semibold">{group.label}</h3>
+                <div className="flex items-center">
+                  <span className="mr-4">
+                    {Object.values(group.entries).reduce((sum, entries) => sum + entries.length, 0)} entries
+                  </span>
+                  <svg
+                    className={`w-5 h-5 transform ${expandedMonths[group.key] ? "rotate-180" : ""}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+
+              {/* Month content */}
+              {expandedMonths[group.key] && (
+                <div className="p-4">
+                  {/* Entry type tabs */}
+                  <div className="mb-4 border-b">
+                    <div className="flex overflow-x-auto">
+                      {Object.entries(group.entries).map(([entryType, entries]) => (
+                        <button
+                          key={entryType}
+                          className={`px-4 py-2 whitespace-nowrap ${
+                            activeTab === entryType
+                              ? "border-b-2 border-blue-500 text-blue-600"
+                              : "text-gray-600 dark:text-gray-300"
+                          }`}
+                          onClick={() => setActiveTab(entryType)}
+                        >
+                          {entryType} ({entries.length})
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Entry type content */}
+                  {Object.entries(group.entries).map(
+                    ([entryType, entries]) =>
+                      activeTab === entryType && (
+                        <div key={entryType} className="overflow-x-auto">
+                          <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50 dark:bg-gray-800">
+                              <tr>
+                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                  Date & Time
+                                </th>
+                                {entries.length > 0 &&
+                                  Object.keys(entries[0].fields).map((fieldName) => (
+                                    <th
+                                      key={fieldName}
+                                      className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                    >
+                                      {fieldName}
+                                    </th>
+                                  ))}
+                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                  Demo
+                                </th>
+                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                  Actions
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                              {entries
+                                .filter((entry) => showDemoEntries || !entry.isDemo)
+                                .map((entry) => (
+                                  <tr
+                                    key={entry.timestamp}
+                                    className={entry.isDemo ? "bg-yellow-50 dark:bg-yellow-900/20" : ""}
+                                  >
+                                    <td className="px-4 py-2 whitespace-nowrap text-sm">
+                                      {formatDate(entry.timestamp)}
+                                    </td>
+                                    {Object.entries(entry.fields).map(([fieldName, value]) => (
+                                      <td key={fieldName} className="px-4 py-2 whitespace-nowrap text-sm">
+                                        {Array.isArray(value)
+                                          ? value.join(", ")
+                                          : typeof value === "boolean"
+                                            ? value
+                                              ? "Yes"
+                                              : "No"
+                                            : String(value)}
+                                      </td>
+                                    ))}
+                                    <td className="px-4 py-2 whitespace-nowrap text-sm">
+                                      <div className="flex items-center">
+                                        <input
+                                          type="checkbox"
+                                          checked={entry.isDemo || false}
+                                          onChange={() => handleToggleDemo(entry.timestamp)}
+                                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                        />
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-2 whitespace-nowrap text-sm">
+                                      <button
+                                        onClick={() => deleteEntry(entry.entryType, entry.timestamp)}
+                                        className="text-red-600 hover:text-red-900"
+                                      >
+                                        Delete
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ),
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
-// Add the default export at the end of the file
 export default DataManagement

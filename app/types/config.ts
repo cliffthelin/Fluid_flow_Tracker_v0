@@ -100,7 +100,7 @@ export interface AppConfig {
     exportFormat: "csv" | "json" | "txt"
   }
   application: {
-    defaultView: "entry" | "stats" | "data" | "resources" | "help" | "config"
+    defaultView: "stats" // Changed from "entry" to "stats"
     showNotifications: boolean
   }
   // Form configuration by page > section > tab > field
@@ -246,11 +246,11 @@ export const healthMeasurements = [
 // Default configuration
 export const DEFAULT_CONFIG: AppConfig = {
   appearance: {
-    darkMode: false,
+    darkMode: true,
     fontSize: 0,
     highContrastMode: false,
-    headerText: "My Uro Log",
-    subheaderText: "Monitor Your Urological Health",
+    headerText: "YourTracker", // Changed from "My Uro Log" to "YourTracker"
+    subheaderText: "Private Customized Tracking", // Changed from "Monitor Your Urological Health" to "Private Customized Tracking"
   },
   dataManagement: {
     dataRetentionDays: 365,
@@ -258,7 +258,7 @@ export const DEFAULT_CONFIG: AppConfig = {
     exportFormat: "csv",
   },
   application: {
-    defaultView: "entry",
+    defaultView: "stats",
     showNotifications: true,
   },
   pages: {
@@ -1365,15 +1365,18 @@ export function getFieldConfig(
   return config.pages[pageId]?.sections[sectionId]?.tabs[tabId]?.fields[fieldId]
 }
 
-export function saveConfig(config: AppConfig): void {
-  localStorage.setItem("appConfig", JSON.stringify(config))
-}
-
+// Update the loadConfig function to properly handle loading from localStorage and applying defaults
 export function loadConfig(): AppConfig {
+  if (typeof window === "undefined") {
+    return DEFAULT_CONFIG
+  }
+
   const savedConfig = localStorage.getItem("appConfig")
   if (savedConfig) {
     try {
-      return JSON.parse(savedConfig) as AppConfig
+      const parsedConfig = JSON.parse(savedConfig) as AppConfig
+      // Ensure all required properties exist by merging with defaults
+      return mergeWithDefaultConfig(parsedConfig)
     } catch (error) {
       console.error("Error parsing saved configuration:", error)
     }
@@ -1381,27 +1384,116 @@ export function loadConfig(): AppConfig {
   return DEFAULT_CONFIG
 }
 
-export function mergeWithDefaultConfig(config: Partial<AppConfig>): AppConfig {
-  return {
-    ...DEFAULT_CONFIG,
-    ...config,
-    appearance: {
-      ...DEFAULT_CONFIG.appearance,
-      ...(config.appearance || {}),
-    },
-    dataManagement: {
-      ...DEFAULT_CONFIG.dataManagement,
-      ...(config.dataManagement || {}),
-    },
-    application: {
-      ...DEFAULT_CONFIG.application,
-      ...(config.application || {}),
-    },
-    pages: {
-      ...DEFAULT_CONFIG.pages,
-      ...(config.pages || {}),
-    },
+// Update the saveConfig function to ensure it works properly
+export function saveConfig(config: AppConfig): void {
+  if (typeof window === "undefined") {
+    return
   }
+
+  try {
+    // Ensure we're saving a complete config by merging with defaults
+    const completeConfig = mergeWithDefaultConfig(config)
+    localStorage.setItem("appConfig", JSON.stringify(completeConfig))
+    console.log("Configuration saved successfully:", completeConfig)
+  } catch (error) {
+    console.error("Error saving configuration:", error)
+  }
+}
+
+// Update the mergeWithDefaultConfig function to handle nested properties better
+export function mergeWithDefaultConfig(config: Partial<AppConfig>): AppConfig {
+  // Create a deep copy of DEFAULT_CONFIG to avoid modifying it
+  const result = JSON.parse(JSON.stringify(DEFAULT_CONFIG)) as AppConfig
+
+  // Only override properties that exist in the provided config
+  if (config.appearance) {
+    result.appearance = {
+      ...result.appearance,
+      ...config.appearance,
+    }
+  }
+
+  if (config.dataManagement) {
+    result.dataManagement = {
+      ...result.dataManagement,
+      ...config.dataManagement,
+    }
+  }
+
+  if (config.application) {
+    result.application = {
+      ...result.application,
+      ...config.application,
+    }
+  }
+
+  if (config.pages) {
+    // For pages, we need to handle the nested structure
+    Object.keys(config.pages).forEach((pageId) => {
+      if (result.pages[pageId]) {
+        // Page exists in default config, merge it
+        result.pages[pageId] = {
+          ...result.pages[pageId],
+          ...config.pages[pageId],
+        }
+
+        // Handle sections
+        if (config.pages[pageId].sections) {
+          Object.keys(config.pages[pageId].sections).forEach((sectionId) => {
+            if (result.pages[pageId].sections[sectionId]) {
+              // Section exists, merge it
+              result.pages[pageId].sections[sectionId] = {
+                ...result.pages[pageId].sections[sectionId],
+                ...config.pages[pageId].sections[sectionId],
+              }
+
+              // Handle tabs
+              if (config.pages[pageId].sections[sectionId].tabs) {
+                Object.keys(config.pages[pageId].sections[sectionId].tabs).forEach((tabId) => {
+                  if (result.pages[pageId].sections[sectionId].tabs[tabId]) {
+                    // Tab exists, merge it
+                    result.pages[pageId].sections[sectionId].tabs[tabId] = {
+                      ...result.pages[pageId].sections[sectionId].tabs[tabId],
+                      ...config.pages[pageId].sections[sectionId].tabs[tabId],
+                    }
+
+                    // Handle fields
+                    if (config.pages[pageId].sections[sectionId].tabs[tabId].fields) {
+                      Object.keys(config.pages[pageId].sections[sectionId].tabs[tabId].fields).forEach((fieldId) => {
+                        if (result.pages[pageId].sections[sectionId].tabs[tabId].fields[fieldId]) {
+                          // Field exists, merge it
+                          result.pages[pageId].sections[sectionId].tabs[tabId].fields[fieldId] = {
+                            ...result.pages[pageId].sections[sectionId].tabs[tabId].fields[fieldId],
+                            ...config.pages[pageId].sections[sectionId].tabs[tabId].fields[fieldId],
+                          }
+                        } else {
+                          // Field doesn't exist, add it
+                          result.pages[pageId].sections[sectionId].tabs[tabId].fields[fieldId] =
+                            config.pages[pageId].sections[sectionId].tabs[tabId].fields[fieldId]
+                        }
+                      })
+                    }
+                  } else {
+                    // Tab doesn't exist, add it
+                    result.pages[pageId].sections[sectionId].tabs[tabId] =
+                      config.pages[pageId].sections[sectionId].tabs[tabId]
+                  }
+                })
+              }
+            } else {
+              // Section doesn't exist, add it
+              result.pages[pageId].sections[sectionId] = config.pages[pageId].sections[sectionId]
+            }
+          })
+        }
+      } else {
+        // Page doesn't exist, add it
+        result.pages[pageId] = config.pages[pageId]
+      }
+    })
+  }
+
+  return result
 }
 
 // Calculate field value based on formula

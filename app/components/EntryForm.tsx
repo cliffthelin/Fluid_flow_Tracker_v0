@@ -5,8 +5,10 @@ import { useState, useEffect, useRef } from "react"
 import { Clock, AlertTriangle, FileText, Coffee, Dumbbell, Thermometer, Droplet, Activity } from "lucide-react"
 import type { UroLog, UrineColor, UrgencyRating, ConcernType, FluidType, HydroLog, KegelLog } from "../types"
 import type { AppConfig, FormFieldConfig } from "../types/config"
+// Add this import at the top
+import { updateConfigWithTrackerTabs } from "../utils/trackerTabGenerator"
 
-interface FlowEntryFormProps {
+interface EntryFormProps {
   addUroLog: (entry: UroLog) => void
   addHydroLog: (entry: HydroLog) => void
   addKegelLog: (entry: KegelLog) => void
@@ -67,7 +69,7 @@ interface FormState {
   hydrationNotes: string
 }
 
-const FlowEntryForm: React.FC<FlowEntryFormProps> = ({ addUroLog, addHydroLog, addKegelLog, appConfig, title2 }) => {
+const EntryForm: React.FC<EntryFormProps> = ({ addUroLog, addHydroLog, addKegelLog, appConfig, title2 }) => {
   // Get configuration for form fields
   const getFieldConfig = (tabId: string, fieldId: string): FormFieldConfig | undefined => {
     return appConfig.pages["page1"]?.sections["section1"]?.tabs[tabId]?.fields[fieldId]
@@ -515,6 +517,17 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({ addUroLog, addHydroLog, a
       }
     }
   }, [])
+
+  // In the EntryForm component, update the useEffect that initializes the component
+  useEffect(() => {
+    // Update the appConfig with tracker tabs
+    const updatedConfig = updateConfigWithTrackerTabs(appConfig)
+
+    // Use the updated config for the rest of the initialization
+    const tabsConfig = updatedConfig.pages.page1?.sections.section1?.tabs || {}
+
+    // Rest of your existing code...
+  }, [appConfig])
 
   return (
     <div className="flow-entry-form">
@@ -1514,4 +1527,4 @@ const FlowEntryForm: React.FC<FlowEntryFormProps> = ({ addUroLog, addHydroLog, a
   )
 }
 
-export default FlowEntryForm
+export default EntryForm

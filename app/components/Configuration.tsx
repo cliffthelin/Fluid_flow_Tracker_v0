@@ -10,9 +10,14 @@ import {
   Edit,
   Check,
   Download,
+  Upload,
   AlertTriangle,
   Plus,
   Trash2,
+  Eye,
+  EyeOff,
+  Database,
+  HardDrive,
 } from "lucide-react"
 import type { AppConfig, PageConfig, SectionConfig, TabConfig, FormFieldConfig } from "../types/config"
 import { DEFAULT_CONFIG, saveConfig, healthMeasurements } from "../types/config"
@@ -25,8 +30,9 @@ import { CSS } from "@dnd-kit/utilities"
 
 // Add the import for the trackerService at the top of the file
 import { loadTrackerData, saveTrackerData, resetTrackerData } from "../services/trackerService"
+import TrackerDataValidator from "./TrackerDataValidator"
 
-// Add this component:
+// First, update the SortableItem component to include isActive toggle
 const SortableItem = ({
   id,
   item,
@@ -46,7 +52,7 @@ const SortableItem = ({
   const isEditing = editingTracker?.index === index
 
   return (
-    <div ref={setNodeRef} style={style} className="border rounded-lg p-4 bg-white dark:bg-gray-800 shadow-sm">
+    <div ref={setNodeRef} style={style} className="border rounded-lg p-4 bg-white dark:bg-gray-800 shadow-sm mb-3">
       <div className="flex justify-between items-start">
         <div className="flex items-center">
           <div
@@ -136,6 +142,18 @@ const SortableItem = ({
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 min-h-[80px]"
             />
           </div>
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id={`isActive-${index}`}
+              checked={item.IsActive !== false}
+              onChange={(e) => handleTrackerItemChange(index, "IsActive", e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <label htmlFor={`isActive-${index}`} className="ml-2 text-sm font-medium">
+              Active
+            </label>
+          </div>
         </div>
       ) : (
         <div className="mt-2 space-y-1 text-sm">
@@ -147,6 +165,12 @@ const SortableItem = ({
           </p>
           <p>
             <span className="font-medium">Entry Text:</span> {item["Entry Text"]}
+          </p>
+          <p>
+            <span className="font-medium">Status:</span>{" "}
+            <span className={item.IsActive !== false ? "text-green-600" : "text-red-600"}>
+              {item.IsActive !== false ? "Active" : "Inactive"}
+            </span>
           </p>
         </div>
       )}
@@ -161,6 +185,118 @@ interface ConfigurationProps {
   setFontSize: (value: boolean) => void
   appConfig: AppConfig
   setAppConfig: (config: AppConfig) => void
+}
+
+// JSON repair function
+const repairJSON = (jsonString: string): string => {
+  // Remove any non-JSON content before the first { and after the last }
+  const firstBrace = jsonString.indexOf("{")
+  const lastBrace = jsonString.lastIndexOf("}")
+
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    jsonString = jsonString.substring(firstBrace, lastBrace + 1)
+  }
+
+  // Fix common array syntax errors
+  let repaired = jsonString
+
+  // Fix missing commas in arrays
+  repaired = repaired.replace(/\]\s*\[/g, "],[")
+  repaired = repaired.replace(/"\s*\[/g, '",[')
+  repaired = repaired.replace(/\]\s*"/g, '],"')
+
+  // Fix trailing commas in arrays
+  repaired = repaired.replace(/,\s*\]/g, "]")
+
+  // Fix missing quotes around property names
+  repaired = repaired.replace(/(\{|,)\s*([a-zA-Z0-9_]+)\s*:/g, '$1"$2":')
+
+  // Fix missing commas between object properties
+  repaired = repaired.replace(/"\s*\{/g, '",{')
+  repaired = repaired.replace(/\}\s*"/g, '},"')
+
+  // Fix unquoted string values
+  repaired = repaired.replace(/:(\s*)([a-zA-Z0-9_]+)(\s*)(,|})/g, ':$1"$2"$3$4')
+
+  // Fix specific issue with array elements missing commas
+  repaired = repaired.replace(/\}\s*\{/g, "},{")
+
+  return repaired
+}
+
+// Function to attempt to parse JSON with multiple strategies
+const tryParseJSON = (jsonString: string): any => {
+  // Try direct parsing first
+  try {
+    return JSON.parse(jsonString)
+  } catch (e) {
+    console.log("Direct parsing failed, attempting repair...")
+  }
+
+  // Try with basic repair
+  try {
+    const repaired = repairJSON(jsonString)
+    return JSON.parse(repaired)
+  } catch (e) {
+    console.log("Basic repair failed, attempting line-by-line repair...")
+  }
+
+  // Try more aggressive repair - line by line
+  try {
+    // Split by lines, fix each line, then rejoin
+    const lines = jsonString.split("\n")
+    for (let i = 0; i < lines.length; i++) {
+      // Fix common issues in each line
+      lines[i] = lines[i].replace(/,\s*$/, "") // Remove trailing commas
+
+      // Fix specific issue with missing commas between array elements
+      if (i > 0 && lines[i].trim().startsWith("{") && lines[i - 1].trim().endsWith("}")) {
+        lines[i - 1] = lines[i - 1] + ","
+      }
+    }
+
+    const lineByLineRepaired = lines.join("\n")
+    return JSON.parse(lineByLineRepaired)
+  } catch (e) {
+    console.log("Line-by-line repair failed, attempting manual JSON construction...")
+  }
+
+  // Last resort - try to manually construct a valid JSON object
+  try {
+    // Extract all valid key-value pairs using regex
+    const keyValuePairs: Record<string, any> = {}
+    const regex = /"([^"]+)"\s*:\s*("([^"]*)"|\{[^}]*\}|\[[^\]]*\]|[0-9]+|true|false|null)/g
+    let match
+
+    while ((match = regex.exec(jsonString)) !== null) {
+      const key = match[1]
+      const value = match[2]
+
+      // Try to parse the value
+      try {
+        if (value.startsWith('"') && value.endsWith('"')) {
+          keyValuePairs[key] = value.slice(1, -1)
+        } else if (value === "true") {
+          keyValuePairs[key] = true
+        } else if (value === "false") {
+          keyValuePairs[key] = false
+        } else if (value === "null") {
+          keyValuePairs[key] = null
+        } else if (!isNaN(Number(value))) {
+          keyValuePairs[key] = Number(value)
+        } else if (value.startsWith("{") || value.startsWith("[")) {
+          keyValuePairs[key] = JSON.parse(value)
+        }
+      } catch (e) {
+        console.log(`Failed to parse value for key ${key}:`, e)
+      }
+    }
+
+    return keyValuePairs
+  } catch (e) {
+    console.log("All repair attempts failed")
+    throw new Error("Unable to parse JSON after multiple repair attempts")
+  }
 }
 
 const Configuration: React.FC<ConfigurationProps> = ({
@@ -191,16 +327,28 @@ const Configuration: React.FC<ConfigurationProps> = ({
   const [trackerData, setTrackerData] = useState<Record<string, any[]>>({})
   const [selectedTrackerGroup, setSelectedTrackerGroup] = useState<string>("")
   const [editingTracker, setEditingTracker] = useState<{ index: number; field: string } | null>(null)
-  const [newTrackerItem, setNewTrackerItem] = useState<Record<string, string>>({
+  // Update the newTrackerItem state to include IsActive
+  const [newTrackerItem, setNewTrackerItem] = useState<Record<string, any>>({
     Name: "",
     Acronym: "",
     "Common Units": "",
     "Common Units Full Name": "",
     "Entry Text": "",
+    IsActive: true,
   })
   const [isAddingNewTracker, setIsAddingNewTracker] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  // Add a search filter for tracker items
+  const [searchQuery, setSearchQuery] = useState("")
+
+  // Add these state variables inside the Configuration component
+  const [showActiveOnly, setShowActiveOnly] = useState(false)
+  const [dataSource, setDataSource] = useState<"merged" | "json" | "local">("merged")
+
+  // Add this state for the import modal
+  const [showImportModal, setShowImportModal] = useState(false)
+  const [importFileContent, setImportFileContent] = useState<string | null>(null)
 
   // Load saved configuration
   useEffect(() => {
@@ -253,6 +401,8 @@ const Configuration: React.FC<ConfigurationProps> = ({
     setSelectedCommonUnits(initialUnits)
   }, [appConfig])
 
+  // Update the useEffect that loads tracker data to handle errors better
+
   // Update the useEffect to load the tracker data using the service
   useEffect(() => {
     const fetchTrackerData = async () => {
@@ -269,6 +419,15 @@ const Configuration: React.FC<ConfigurationProps> = ({
       } catch (err) {
         console.error("Error fetching tracker data:", err)
         setError(`Error loading tracker data: ${err instanceof Error ? err.message : String(err)}`)
+
+        // Use default data from the service
+        const defaultData = await resetTrackerData()
+        setTrackerData(defaultData)
+
+        if (Object.keys(defaultData).length > 0) {
+          setSelectedTrackerGroup(Object.keys(defaultData)[0])
+        }
+
         setConfigMessage({ type: "error", text: "Failed to load tracker data. Using default values." })
         setTimeout(() => setConfigMessage(null), 3000)
       } finally {
@@ -278,6 +437,19 @@ const Configuration: React.FC<ConfigurationProps> = ({
 
     fetchTrackerData()
   }, [])
+
+  // Ensure subheader text is properly initialized
+  useEffect(() => {
+    if (appConfig.appearance.subheaderText) {
+      setLocalConfig((prev) => ({
+        ...prev,
+        appearance: {
+          ...prev.appearance,
+          subheaderText: appConfig.appearance.subheaderText,
+        },
+      }))
+    }
+  }, [appConfig.appearance.subheaderText])
 
   // Toggle expanded state for an item
   const toggleExpanded = (itemId: string) => {
@@ -295,13 +467,18 @@ const Configuration: React.FC<ConfigurationProps> = ({
   // Save configuration
   const saveConfiguration = () => {
     try {
+      // Make sure we're working with the latest state
+      const configToSave = { ...localConfig }
+
       // Update parent state for controlled values
-      setDarkMode(localConfig.appearance.darkMode)
-      setFontSize(localConfig.appearance.fontSize)
-      setAppConfig(localConfig)
+      setDarkMode(configToSave.appearance.darkMode)
+      setFontSize(configToSave)
+      setAppConfig(configToSave)
+
+      console.log("Saving configuration with subheader:", configToSave.appearance.subheaderText)
 
       // Save all config to localStorage
-      saveConfig(localConfig)
+      saveConfig(configToSave)
 
       // Show success message
       setConfigMessage({ type: "success", text: "Configuration saved successfully!" })
@@ -313,12 +490,32 @@ const Configuration: React.FC<ConfigurationProps> = ({
     }
   }
 
+  // Add a function to verify the configuration was saved
+  const verifyConfigSaved = () => {
+    const savedConfig = localStorage.getItem("appConfig")
+    if (savedConfig) {
+      try {
+        const parsed = JSON.parse(savedConfig)
+        console.log("Verified saved config:", parsed)
+        setConfigMessage({ type: "success", text: "Configuration verified in localStorage!" })
+        setTimeout(() => setConfigMessage(null), 3000)
+      } catch (e) {
+        console.error("Error verifying saved config:", e)
+        setConfigMessage({ type: "error", text: "Error verifying saved configuration." })
+        setTimeout(() => setConfigMessage(null), 3000)
+      }
+    } else {
+      setConfigMessage({ type: "error", text: "No saved configuration found in localStorage." })
+      setTimeout(() => setConfigMessage(null), 3000)
+    }
+  }
+
   // Reset configuration to defaults
   const resetConfiguration = () => {
     if (confirm("Are you sure you want to reset all configuration settings to defaults?")) {
       setLocalConfig(DEFAULT_CONFIG)
       setDarkMode(DEFAULT_CONFIG.appearance.darkMode)
-      setFontSize(DEFAULT_CONFIG.appearance.fontSize)
+      setFontSize(DEFAULT_CONFIG)
       setAppConfig(DEFAULT_CONFIG)
       saveConfig(DEFAULT_CONFIG)
       setConfigMessage({ type: "success", text: "Configuration reset to defaults." })
@@ -637,13 +834,24 @@ const Configuration: React.FC<ConfigurationProps> = ({
     })
   }
 
-  // Function to add a new tracker item
+  // Update the handleAddTrackerItem function to include validation
   const handleAddTrackerItem = () => {
-    if (!selectedTrackerGroup || Object.values(newTrackerItem).some((val) => !val)) return
+    if (!selectedTrackerGroup) {
+      setConfigMessage({ type: "error", text: "Please select a tracker group first." })
+      setTimeout(() => setConfigMessage(null), 3000)
+      return
+    }
+
+    // Validate required fields
+    if (!newTrackerItem.Name || !newTrackerItem.Acronym) {
+      setConfigMessage({ type: "error", text: "Name and Acronym are required fields." })
+      setTimeout(() => setConfigMessage(null), 3000)
+      return
+    }
 
     setTrackerData((prev) => {
       const newData = { ...prev }
-      const items = [...newData[selectedTrackerGroup]]
+      const items = [...(newData[selectedTrackerGroup] || [])]
       items.push({ ...newTrackerItem })
       newData[selectedTrackerGroup] = items
       return newData
@@ -656,8 +864,13 @@ const Configuration: React.FC<ConfigurationProps> = ({
       "Common Units": "",
       "Common Units Full Name": "",
       "Entry Text": "",
+      IsActive: true,
     })
     setIsAddingNewTracker(false)
+
+    // Show success message
+    setConfigMessage({ type: "success", text: "New tracker item added successfully!" })
+    setTimeout(() => setConfigMessage(null), 3000)
   }
 
   // Function to delete a tracker item
@@ -749,23 +962,204 @@ const Configuration: React.FC<ConfigurationProps> = ({
     }
   }
 
-  // Save tracker data
+  // Update the saveTrackerDataHandler to show more detailed feedback
   const saveTrackerDataHandler = async () => {
     try {
-      const success = await saveTrackerData(trackerData)
-
-      if (success) {
-        setConfigMessage({ type: "success", text: "Tracker data saved successfully!" })
-      } else {
-        setConfigMessage({ type: "error", text: "Error saving tracker data. Please try again." })
-      }
+      saveTrackerData(trackerData)
+      setConfigMessage({ type: "success", text: "Tracker data saved successfully!" })
       setTimeout(() => setConfigMessage(null), 3000)
     } catch (error) {
       console.error("Error saving tracker data:", error)
-      setConfigMessage({ type: "error", text: "Error saving tracker data. Please try again." })
+      setConfigMessage({
+        type: "error",
+        text: `Error saving tracker data: ${error instanceof Error ? error.message : String(error)}`,
+      })
       setTimeout(() => setConfigMessage(null), 3000)
     }
   }
+
+  // Add a function to export tracker data to JSON file
+  const exportTrackerDataToJson = () => {
+    try {
+      const dataStr = JSON.stringify(trackerData, null, 2)
+      const dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(dataStr)
+
+      const exportFileName = "tracker-list-export.json"
+
+      const linkElement = document.createElement("a")
+      linkElement.setAttribute("href", dataUri)
+      linkElement.setAttribute("download", exportFileName)
+      document.body.appendChild(linkElement)
+
+      linkElement.click()
+      document.body.removeChild(linkElement)
+
+      setConfigMessage({ type: "success", text: "Tracker data exported successfully!" })
+      setTimeout(() => setConfigMessage(null), 3000)
+    } catch (error) {
+      console.error("Error exporting tracker data:", error)
+      setConfigMessage({ type: "error", text: "Error exporting tracker data. Please try again." })
+      setTimeout(() => setConfigMessage(null), 3000)
+    }
+  }
+
+  // Add a function to handle file selection before import
+  const handleFileSelection = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = async (e) => {
+      try {
+        const content = e.target?.result as string
+        setImportFileContent(content)
+        setShowImportModal(true)
+      } catch (error) {
+        console.error("Error reading file:", error)
+        setConfigMessage({
+          type: "error",
+          text: `Error reading file: ${error instanceof Error ? error.message : String(error)}`,
+        })
+        setTimeout(() => setConfigMessage(null), 3000)
+      }
+    }
+
+    reader.readAsText(file)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
+  }
+
+  // Function to import tracker data from JSON file - Replace All mode
+  const importTrackerDataReplaceAll = () => {
+    if (!importFileContent) return
+
+    try {
+      console.log("File content length:", importFileContent.length)
+
+      // Try to parse the JSON with our robust parsing function
+      const importedData = tryParseJSON(importFileContent)
+
+      // Basic validation - check if it's a valid tracker data structure
+      if (typeof importedData === "object" && importedData !== null) {
+        setTrackerData(importedData)
+
+        // If the imported data has groups, select the first one
+        if (Object.keys(importedData).length > 0) {
+          setSelectedTrackerGroup(Object.keys(importedData)[0])
+        }
+
+        setConfigMessage({ type: "success", text: "Tracker data imported successfully (Replace All)!" })
+        setTimeout(() => setConfigMessage(null), 3000)
+      } else {
+        throw new Error("Invalid tracker data format")
+      }
+    } catch (error) {
+      console.error("Error importing tracker data:", error)
+      setConfigMessage({
+        type: "error",
+        text: `Error importing tracker data: ${error instanceof Error ? error.message : String(error)}`,
+      })
+      setTimeout(() => setConfigMessage(null), 3000)
+    }
+
+    // Close the modal
+    setShowImportModal(false)
+    setImportFileContent(null)
+  }
+
+  // Function to import tracker data from JSON file - Add to Current mode
+  const importTrackerDataAddToCurrent = () => {
+    if (!importFileContent) return
+
+    try {
+      console.log("File content length:", importFileContent.length)
+
+      // Try to parse the JSON with our robust parsing function
+      const importedData = tryParseJSON(importFileContent)
+
+      // Basic validation - check if it's a valid tracker data structure
+      if (typeof importedData === "object" && importedData !== null) {
+        setTrackerData((prevData) => {
+          const newData = { ...prevData }
+
+          // Iterate through each group in the imported data
+          Object.entries(importedData).forEach(([groupName, importedItems]) => {
+            if (!Array.isArray(importedItems)) return
+
+            // If the group doesn't exist in current data, create it
+            if (!newData[groupName]) {
+              newData[groupName] = []
+            } else if (!Array.isArray(newData[groupName])) {
+              newData[groupName] = []
+            }
+
+            // Add each item from imported data if it doesn't already exist
+            importedItems.forEach((importedItem) => {
+              // Check if item with same Name and Acronym already exists
+              const isDuplicate = newData[groupName].some(
+                (existingItem) =>
+                  existingItem.Name === importedItem.Name && existingItem.Acronym === importedItem.Acronym,
+              )
+
+              // If not a duplicate, add it
+              if (!isDuplicate) {
+                newData[groupName].push(importedItem)
+              }
+            })
+          })
+
+          return newData
+        })
+
+        setConfigMessage({ type: "success", text: "Tracker data imported successfully (Add to Current)!" })
+        setTimeout(() => setConfigMessage(null), 3000)
+      } else {
+        throw new Error("Invalid tracker data format")
+      }
+    } catch (error) {
+      console.error("Error importing tracker data:", error)
+      setConfigMessage({
+        type: "error",
+        text: `Error importing tracker data: ${error instanceof Error ? error.message : String(error)}`,
+      })
+      setTimeout(() => setConfigMessage(null), 3000)
+    }
+
+    // Close the modal
+    setShowImportModal(false)
+    setImportFileContent(null)
+  }
+
+  // Add this function inside the Configuration component
+  const getFilteredTrackerItems = () => {
+    if (!selectedTrackerGroup) return []
+
+    // Make sure trackerData[selectedTrackerGroup] is an array
+    const groupItems = trackerData[selectedTrackerGroup]
+    if (!Array.isArray(groupItems)) return []
+
+    let items = [...groupItems]
+
+    // Apply active filter if enabled
+    if (showActiveOnly) {
+      items = items.filter((item) => item.IsActive !== false)
+    }
+
+    // Apply search filter
+    if (searchQuery) {
+      items = items.filter(
+        (item) =>
+          item.Name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.Acronym?.toLowerCase().includes(searchQuery.toLowerCase()),
+      )
+    }
+
+    return items
+  }
+
+  // Replace the filteredTrackerItems variable with this call
+  const filteredTrackerItems = getFilteredTrackerItems()
 
   // Render field editor
   const renderFieldEditor = (
@@ -781,7 +1175,9 @@ const Configuration: React.FC<ConfigurationProps> = ({
     return (
       <div
         key={fieldId}
-        className={`border rounded-lg p-3 mb-2 ${field.enabled ? "bg-white dark:bg-gray-800" : "bg-gray-100 dark:bg-gray-700 opacity-70"}`}
+        className={`border rounded-lg p-3 mb-2 ${
+          field.enabled ? "bg-white dark:bg-gray-800" : "bg-gray-100 dark:bg-gray-700 opacity-70"
+        }`}
       >
         <div className="flex justify-between items-center">
           <div className="flex items-center">
@@ -1267,7 +1663,9 @@ const Configuration: React.FC<ConfigurationProps> = ({
     return (
       <div
         key={tabId}
-        className={`border rounded-lg p-3 mb-3 ${tab.enabled ? "bg-white dark:bg-gray-800" : "bg-gray-100 dark:bg-gray-700 opacity-70"}`}
+        className={`border rounded-lg p-3 mb-3 ${
+          tab.enabled ? "bg-white dark:bg-gray-800" : "bg-gray-100 dark:bg-gray-700 opacity-70"
+        }`}
       >
         <div className="flex justify-between items-center">
           <div className="flex items-center flex-grow">
@@ -1481,7 +1879,7 @@ const Configuration: React.FC<ConfigurationProps> = ({
               <input
                 type="text"
                 id="headerText"
-                value={localConfig.appearance.headerText}
+                value={localConfig.appearance.headerText || "YourTracker"}
                 onChange={(e) =>
                   setLocalConfig((prev) => ({
                     ...prev,
@@ -1502,7 +1900,7 @@ const Configuration: React.FC<ConfigurationProps> = ({
               <input
                 type="text"
                 id="subheaderText"
-                value={localConfig.appearance.subheaderText}
+                value={localConfig.appearance.subheaderText || "Private Customized Tracking"}
                 onChange={(e) =>
                   setLocalConfig((prev) => ({
                     ...prev,
@@ -1746,46 +2144,185 @@ const Configuration: React.FC<ConfigurationProps> = ({
                 </div>
               </div>
 
+              {/* Add this JSX right after the tracker group selection dropdown in the trackers tab */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
+                <div className="flex items-center">
+                  <div className="flex items-center mr-4">
+                    <input
+                      type="checkbox"
+                      id="showActiveOnly"
+                      checked={showActiveOnly}
+                      onChange={() => setShowActiveOnly(!showActiveOnly)}
+                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <label htmlFor="showActiveOnly" className="ml-2 text-sm font-medium">
+                      {showActiveOnly ? (
+                        <span className="flex items-center text-green-600 dark:text-green-400">
+                          <Eye size={16} className="mr-1" /> Show active only
+                        </span>
+                      ) : (
+                        <span className="flex items-center">
+                          <EyeOff size={16} className="mr-1" /> Show all
+                        </span>
+                      )}
+                    </label>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-medium">Data Source:</span>
+                  <div className="flex border rounded-md overflow-hidden">
+                    <button
+                      onClick={() => setDataSource("merged")}
+                      className={`px-2 py-1 text-xs flex items-center ${
+                        dataSource === "merged"
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                      }`}
+                      title="Show merged data from both JSON file and local storage"
+                    >
+                      <Database size={12} className="mr-1" /> Merged
+                    </button>
+                    <button
+                      onClick={() => setDataSource("json")}
+                      className={`px-2 py-1 text-xs flex items-center ${
+                        dataSource === "json"
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                      }`}
+                      title="Show data from JSON file only"
+                    >
+                      <Database size={12} className="mr-1" /> JSON
+                    </button>
+                    <button
+                      onClick={() => setDataSource("local")}
+                      className={`px-2 py-1 text-xs flex items-center ${
+                        dataSource === "local"
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                      }`}
+                      title="Show local modifications only"
+                    >
+                      <HardDrive size={12} className="mr-1" /> Local
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               {selectedTrackerGroup && (
                 <>
+                  <div className="mb-4">
+                    <label htmlFor="searchTrackers" className="block text-sm font-medium mb-1">
+                      Search Trackers
+                    </label>
+                    <input
+                      id="searchTrackers"
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search by name or acronym..."
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700"
+                    />
+                  </div>
                   <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                    <SortableContext
-                      items={trackerData[selectedTrackerGroup].map((item, index) => `item-${index}`)}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      <div className="space-y-2">
-                        {trackerData[selectedTrackerGroup].map((item, index) => (
-                          <SortableItem
-                            key={`item-${index}`}
-                            id={`item-${index}`}
-                            index={index}
-                            item={item}
-                            selectedTrackerGroup={selectedTrackerGroup}
-                            handleTrackerItemChange={handleTrackerItemChange}
-                            handleDeleteTrackerItem={handleDeleteTrackerItem}
-                            editingTracker={editingTracker}
-                            setEditingTracker={setEditingTracker}
-                          />
-                        ))}
+                    {Array.isArray(filteredTrackerItems) && filteredTrackerItems.length > 0 ? (
+                      <SortableContext
+                        items={filteredTrackerItems.map((_, index) => `item-${index}`)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        <div className="space-y-2">
+                          {filteredTrackerItems.map((item, index) => (
+                            <SortableItem
+                              key={`item-${index}`}
+                              id={`item-${index}`}
+                              index={index}
+                              item={item}
+                              selectedTrackerGroup={selectedTrackerGroup}
+                              handleTrackerItemChange={handleTrackerItemChange}
+                              handleDeleteTrackerItem={handleDeleteTrackerItem}
+                              editingTracker={editingTracker}
+                              setEditingTracker={setEditingTracker}
+                            />
+                          ))}
+                        </div>
+                      </SortableContext>
+                    ) : (
+                      <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                        {searchQuery
+                          ? "No tracker items match your search."
+                          : "No tracker items in this group. Add one to get started."}
                       </div>
-                    </SortableContext>
+                    )}
                   </DndContext>
 
                   {isAddingNewTracker ? (
                     <div className="border rounded-lg p-3 mb-2 bg-white dark:bg-gray-800">
                       <h4 className="font-medium mb-2">New Tracker Item</h4>
-                      <div className="grid grid-cols-2 gap-4">
-                        {Object.keys(newTrackerItem).map((field) => (
-                          <div key={field}>
-                            <label className="block text-sm font-medium mb-1">{field}</label>
-                            <input
-                              type="text"
-                              value={newTrackerItem[field]}
-                              onChange={(e) => setNewTrackerItem({ ...newTrackerItem, [field]: e.target.value })}
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700"
-                            />
-                          </div>
-                        ))}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-1">
+                            Name <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={newTrackerItem.Name}
+                            onChange={(e) => setNewTrackerItem({ ...newTrackerItem, Name: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">
+                            Acronym <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={newTrackerItem.Acronym}
+                            onChange={(e) => setNewTrackerItem({ ...newTrackerItem, Acronym: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Common Units</label>
+                          <input
+                            type="text"
+                            value={newTrackerItem["Common Units"]}
+                            onChange={(e) => setNewTrackerItem({ ...newTrackerItem, "Common Units": e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Common Units Full Name</label>
+                          <input
+                            type="text"
+                            value={newTrackerItem["Common Units Full Name"]}
+                            onChange={(e) =>
+                              setNewTrackerItem({ ...newTrackerItem, "Common Units Full Name": e.target.value })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700"
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="block text-sm font-medium mb-1">Entry Text</label>
+                          <textarea
+                            value={newTrackerItem["Entry Text"]}
+                            onChange={(e) => setNewTrackerItem({ ...newTrackerItem, "Entry Text": e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 min-h-[80px]"
+                          />
+                        </div>
+                        <div className="flex items-center">
+                          <input
+                            type="checkbox"
+                            id="newItemIsActive"
+                            checked={newTrackerItem.IsActive}
+                            onChange={(e) => setNewTrackerItem({ ...newTrackerItem, IsActive: e.target.checked })}
+                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <label htmlFor="newItemIsActive" className="ml-2 text-sm font-medium">
+                            Active
+                          </label>
+                        </div>
                       </div>
                       <div className="mt-3 flex justify-end space-x-2">
                         <button
@@ -1812,24 +2349,38 @@ const Configuration: React.FC<ConfigurationProps> = ({
                     </button>
                   )}
 
-                  <div className="flex justify-between mt-4">
+                  <div className="flex justify-between mt-4 mb-4">
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={exportTrackerDataToJson}
+                        className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center text-sm"
+                      >
+                        <Download size={14} className="mr-1" />
+                        Export JSON
+                      </button>
+                      <label className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center text-sm cursor-pointer">
+                        <Upload size={14} className="mr-1" />
+                        Import JSON
+                        <input
+                          type="file"
+                          className="hidden"
+                          accept="application/json"
+                          onChange={handleFileSelection}
+                          ref={fileInputRef}
+                        />
+                      </label>
+                    </div>
                     <button
                       onClick={resetTrackerDataHandler}
-                      className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center"
+                      className="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center text-sm"
                     >
-                      <RotateCcw size={18} className="mr-2" />
+                      <RotateCcw size={14} className="mr-1" />
                       Reset to Defaults
-                    </button>
-                    <button
-                      onClick={saveTrackerDataHandler}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
-                    >
-                      <Save size={18} className="mr-2" />
-                      Save Tracker Data
                     </button>
                   </div>
                 </>
               )}
+              <TrackerDataValidator />
             </>
           )}
         </div>
@@ -1858,13 +2409,89 @@ const Configuration: React.FC<ConfigurationProps> = ({
           <RotateCcw size={18} className="mr-2" />
           Reset to Defaults
         </button>
-        <button
-          onClick={saveConfiguration}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
-        >
-          <Save size={18} className="mr-2" />
-          Save Configuration
-        </button>
+        <div className="flex space-x-2">
+          <button
+            onClick={verifyConfigSaved}
+            className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 flex items-center"
+          >
+            Verify Saved Config
+          </button>
+          <button
+            onClick={saveConfiguration}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
+          >
+            <Save size={18} className="mr-2" />
+            Save Configuration
+          </button>
+        </div>
+      </div>
+
+      {/* Import Modal */}
+      <ImportModal
+        showImportModal={showImportModal}
+        setShowImportModal={setShowImportModal}
+        importFileContent={importFileContent}
+        setImportFileContent={setImportFileContent}
+        importTrackerDataReplaceAll={importTrackerDataReplaceAll}
+        importTrackerDataAddToCurrent={importTrackerDataAddToCurrent}
+      />
+    </div>
+  )
+}
+
+// Import Modal
+interface ImportModalProps {
+  showImportModal: boolean
+  setShowImportModal: (show: boolean) => void
+  importFileContent: string | null
+  setImportFileContent: (content: string | null) => void
+  importTrackerDataReplaceAll: () => void
+  importTrackerDataAddToCurrent: () => void
+}
+
+const ImportModal: React.FC<ImportModalProps> = ({
+  showImportModal,
+  setShowImportModal,
+  importFileContent,
+  setImportFileContent,
+  importTrackerDataReplaceAll,
+  importTrackerDataAddToCurrent,
+}) => {
+  if (!showImportModal) return null
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-md w-full">
+        <h3 className="text-lg font-bold mb-4">Import JSON Data</h3>
+        <p className="mb-4">Choose how you want to import the data:</p>
+
+        <div className="flex flex-col space-y-3">
+          <button
+            onClick={() => importTrackerDataReplaceAll()}
+            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 flex items-center justify-center"
+          >
+            <RotateCcw size={16} className="mr-2" />
+            Replace All Data
+          </button>
+
+          <button
+            onClick={() => importTrackerDataAddToCurrent()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center justify-center"
+          >
+            <Plus size={16} className="mr-2" />
+            Add to Current Data
+          </button>
+
+          <button
+            onClick={() => {
+              setShowImportModal(false)
+              setImportFileContent(null)
+            }}
+            className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600"
+          >
+            Cancel
+          </button>
+        </div>
       </div>
     </div>
   )

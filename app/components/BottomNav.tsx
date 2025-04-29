@@ -42,9 +42,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeSection, setActiveSection }
           aria-pressed={activeSection === "stats"}
         >
           <BarChart size={24} className={activeSection === "stats" ? "text-green-400" : ""} />
-          <span className={`text-xs mt-1 font-bold ${activeSection === "stats" ? "text-green-400" : ""}`}>
-            UroLog Stats
-          </span>
+          <span className={`text-xs mt-1 font-bold ${activeSection === "stats" ? "text-green-400" : ""}`}>Stats</span>
         </button>
         <button
           onClick={() => setActiveSection("data")}

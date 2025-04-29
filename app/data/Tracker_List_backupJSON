@@ -260,283 +260,6 @@
       }
     ]
   },
-  "Skills": {
-    "Musical Instrument Practice Tracking": [
-      {
-        "DisplayOrder": 1,
-        "IsActive": false,
-        "Name": "Date",
-        "Acronym": "Date",
-        "Common Units": "YYYY-MM-DD",
-        "Common Units Full Name": "Year-Month-Day",
-        "Entry Text": "Enter the date of your practice session."
-      },
-      {
-        "DisplayOrder": 2,
-        "IsActive": false,
-        "Name": "Instrument",
-        "Acronym": "Instrument",
-        "Common Units": "Text, Dropdown (e.g., Guitar, Piano, Violin, Drums)",
-        "Common Units Full Name": "The musical instrument you are practicing",
-        "Entry Text": "Specify the instrument you practiced today."
-      },
-      {
-        "DisplayOrder": 3,
-        "IsActive": false,
-        "Name": "Duration",
-        "Acronym": "Duration",
-        "Common Units": "minutes",
-        "Common Units Full Name": "Total time spent practicing in minutes",
-        "Entry Text": "Record the total duration of your practice session."
-      },
-      {
-        "DisplayOrder": 4,
-        "IsActive": false,
-        "Name": "Specific Exercises/Pieces Practiced",
-        "Acronym": "Practice Items",
-        "Common Units": "Text",
-        "Common Units Full Name": "List of the specific songs, scales, exercises, etc., you worked on",
-        "Entry Text": "List the specific musical pieces or exercises you practiced."
-      },
-      {
-        "DisplayOrder": 5,
-        "IsActive": false,
-        "Name": "Focus Area(s)",
-        "Acronym": "Focus",
-        "Common Units": "Checkbox (Technique, Rhythm, Theory, Ear Training, Sight-Reading, Song Repertoire)",
-        "Common Units Full Name": "The main areas you concentrated on during practice",
-        "Entry Text": "Check the main areas you focused on during this session."
-      },
-      {
-        "DisplayOrder": 6,
-        "IsActive": false,
-        "Name": "Tempo (if applicable)",
-        "Acronym": "Tempo",
-        "Common Units": "BPM (Beats Per Minute)",
-        "Common Units Full Name": "The tempo you practiced at for specific pieces",
-        "Entry Text": "If applicable, note the tempo you used for specific exercises or songs."
-      },
-      {
-        "DisplayOrder": 7,
-        "IsActive": false,
-        "Name": "Accuracy/Mistakes",
-        "Acronym": "Accuracy",
-        "Common Units": "Scale 1-5 (Many Mistakes to Very Accurate), Descriptive",
-        "Common Units Full Name": "Your assessment of your accuracy",
-        "Entry Text": "Rate your accuracy or describe the types of mistakes you made."
-      },
-      {
-        "DisplayOrder": 8,
-        "IsActive": false,
-        "Name": "Rhythm/Timing",
-        "Acronym": "Rhythm",
-        "Common Units": "Scale 1-5 (Poor to Excellent), Descriptive",
-        "Common Units Full Name": "Your assessment of your rhythmic precision",
-        "Entry Text": "Rate your rhythmic accuracy or describe any timing issues."
-      },
-      {
-        "DisplayOrder": 9,
-        "IsActive": false,
-        "Name": "Tone/Sound Quality",
-        "Acronym": "Tone",
-        "Common Units": "Scale 1-5 (Poor to Excellent), Descriptive",
-        "Common Units Full Name": "Your assessment of the quality of your sound",
-        "Entry Text": "Rate the quality of your tone or describe any issues with your sound."
-      },
-      {
-        "DisplayOrder": 10,
-        "IsActive": false,
-        "Name": "Enjoyment Level",
-        "Acronym": "Enjoyment",
-        "Common Units": "Scale 1-5 (Low to High)",
-        "Common Units Full Name": "How much you enjoyed the practice session",
-        "Entry Text": "Rate how much you enjoyed your practice session."
-      },
-      {
-        "DisplayOrder": 11,
-        "IsActive": false,
-        "Name": "Frustration Level",
-        "Acronym": "Frustration",
-        "Common Units": "Scale 1-5 (Low to High)",
-        "Common Units Full Name": "How frustrated you felt during practice",
-        "Entry Text": "Rate your level of frustration during the session."
-      },
-      {
-        "DisplayOrder": 12,
-        "IsActive": false,
-        "Name": "Progress Made Today",
-        "Acronym": "Progress",
-        "Common Units": "Scale 1-5 (No Progress to Significant Progress), Descriptive",
-        "Common Units Full Name": "Your overall assessment of the progress you made",
-        "Entry Text": "Rate the progress you feel you made today or describe any breakthroughs."
-      },
-      {
-        "DisplayOrder": 13,
-        "IsActive": false,
-        "Name": "Challenges Encountered",
-        "Acronym": "Challenges",
-        "Common Units": "Text",
-        "Common Units Full Name": "Specific difficulties you faced during practice",
-        "Entry Text": "Note any specific challenges you encountered."
-      },
-      {
-        "DisplayOrder": 14,
-        "IsActive": false,
-        "Name": "Learnings/Insights",
-        "Acronym": "Learnings",
-        "Common Units": "Text",
-        "Common Units Full Name": "Any new things you learned or understood during practice",
-        "Entry Text": "Note any new insights or understandings you gained."
-      },
-      {
-        "DisplayOrder": 15,
-        "IsActive": false,
-        "Name": "Next Steps/Goals for Next Session",
-        "Acronym": "Next Steps",
-        "Common Units": "Text",
-        "Common Units Full Name": "What you plan to work on in your next practice session",
-        "Entry Text": "Outline what you want to focus on during your next practice."
-      },
-      {
-        "DisplayOrder": 16,
-        "IsActive": false,
-        "Name": "Notes/Observations",
-        "Acronym": "Notes",
-        "Common Units": "Text",
-        "Common Units Full Name": "Free text description",
-        "Entry Text": "Add any other relevant notes about your practice session."
-      }
-    ],
-    "Writers": [
-      {
-        "DisplayOrder": 1,
-        "IsActive": false,
-        "Name": "Writing Duration",
-        "Acronym": "Write Dur",
-        "Common Units": "minutes",
-        "Common Units Full Name": "minutes",
-        "Entry Text": "Record the total time you spent writing today in minutes."
-      },
-      {
-        "DisplayOrder": 2,
-        "IsActive": false,
-        "Name": "Words Written",
-        "Acronym": "Words",
-        "Common Units": "count",
-        "Common Units Full Name": "number of words",
-        "Entry Text": "Record the total number of words you wrote today."
-      },
-      {
-        "DisplayOrder": 3,
-        "IsActive": false,
-        "Name": "Writing Focus Level",
-        "Acronym": "Write Focus",
-        "Common Units": "Scale 1-10, Descriptive",
-        "Common Units Full Name": "Scale from 1 (highly distracted) to 10 (deeply focused), Descriptive words (e.g., in the zone, struggling, interrupted)",
-        "Entry Text": "Rate your level of focus and concentration during your writing session."
-      },
-      {
-        "DisplayOrder": 4,
-        "IsActive": false,
-        "Name": "Flow State (Writing)",
-        "Acronym": "Write Flow",
-        "Common Units": "Scale 1-10, Descriptive",
-        "Common Units Full Name": "Scale from 1 (no flow) to 10 (deep flow), Descriptive words (e.g., effortless, engaged, blocked)",
-        "Entry Text": "Rate your experience of being in a state of flow while writing."
-      },
-      {
-        "DisplayOrder": 5,
-        "IsActive": false,
-        "Name": "Scenes/Sections Completed",
-        "Acronym": "Scenes Done",
-        "Common Units": "count",
-        "Common Units Full Name": "number of scenes or sections",
-        "Entry Text": "Record the number of scenes or sections you completed in your writing today."
-      },
-      {
-        "DisplayOrder": 6,
-        "IsActive": false,
-        "Name": "Editing/Revision Time",
-        "Acronym": "Edit Time",
-        "Common Units": "minutes",
-        "Common Units Full Name": "minutes",
-        "Entry Text": "Record the total time you spent editing or revising your writing today in minutes."
-      },
-      {
-        "DisplayOrder": 7,
-        "IsActive": false,
-        "Name": "Ideas/Inspiration Level",
-        "Acronym": "Idea Level",
-        "Common Units": "Scale 1-10, Descriptive",
-        "Common Units Full Name": "Scale from 1 (no ideas) to 10 (abundant ideas), Descriptive words (e.g., inspired, stagnant, brainstorming)",
-        "Entry Text": "Rate your level of ideas and inspiration for your writing today."
-      },
-      {
-        "DisplayOrder": 8,
-        "IsActive": false,
-        "Name": "Satisfaction with Writing",
-        "Acronym": "Write Sat",
-        "Common Units": "Scale 1-10, Descriptive",
-        "Common Units Full Name": "Scale from 1 (very dissatisfied) to 10 (very satisfied), Descriptive words (e.g., proud, frustrated, content)",
-        "Entry Text": "Rate your overall satisfaction with your writing session today."
-      },
-      {
-        "DisplayOrder": 9,
-        "IsActive": false,
-        "Name": "Time Spent Planning/Outlining",
-        "Acronym": "Plan Time",
-        "Common Units": "minutes",
-        "Common Units Full Name": "minutes",
-        "Entry Text": "Record the total time you spent planning or outlining your writing today in minutes."
-      },
-      {
-        "DisplayOrder": 10,
-        "IsActive": false,
-        "Name": "Research Time",
-        "Acronym": "Research Time",
-        "Common Units": "minutes",
-        "Common Units Full Name": "minutes",
-        "Entry Text": "Record the total time you spent on research related to your writing today in minutes."
-      }
-    ],
-    "Resources": [
-      {
-        "DisplayOrder": 1,
-        "IsActive": true,
-        "Name": "Coursera",
-        "Link": "https://www.coursera.org/",
-        "Summary": "Online learning platform offering courses, specializations, and degrees in various skills from universities and companies."
-      },
-      {
-        "DisplayOrder": 2,
-        "IsActive": true,
-        "Name": "edX",
-        "Link": "https://www.edx.org/",
-        "Summary": "Offers massive open online courses (MOOCs) from top universities worldwide across a wide range of disciplines."
-      },
-      {
-        "DisplayOrder": 3,
-        "IsActive": true,
-        "Name": "Khan Academy",
-        "Link": "https://www.khanacademy.org/",
-        "Summary": "Free educational resources covering math, science, computing, history, art history, economics, and more."
-      },
-      {
-        "DisplayOrder": 4,
-        "IsActive": true,
-        "Name": "NaNoWriMo (National Novel Writing Month)",
-        "Link": "https://nanowrimo.org/",
-        "Summary": "Community and resources for writers, focusing on completing a novel draft in November, but offers year-round support."
-      },
-      {
-        "DisplayOrder": 5,
-        "IsActive": true,
-        "Name": "JustinGuitar.com",
-        "Link": "https://www.justinguitar.com/",
-        "Summary": "Popular free online guitar lessons for various levels, covering technique, theory, and songs."
-      }
-    ]
-  },
   "Exercise": {
     "Swimming Activity Tracking": [
       {
@@ -2172,6 +1895,15 @@
       {
         "DisplayOrder": 1,
         "IsActive": false,
+        "Name": "Urination Duration",
+        "Acronym": "TimeUrination",
+        "Common Units": "Seconds",
+        "Common Units Full Name": "Recorded time of Urination",
+        "Entry Text": "Use the timer or enter the seconds for your time to Urinate"
+      },
+      {
+        "DisplayOrder": 2,
+        "IsActive": false,
         "Name": "Date",
         "Acronym": "DateEntry",
         "Common Units": "YYYY-MM-DD",
@@ -2179,7 +1911,7 @@
         "Entry Text": "Enter the date of the tracking entry."
       },
       {
-        "DisplayOrder": 2,
+        "DisplayOrder": 3,
         "IsActive": false,
         "Name": "Time of Day",
         "Acronym": "TimeEntry",
@@ -2187,15 +1919,7 @@
         "Common Units Full Name": "Specific time or general time period",
         "Entry Text": "Note the time of day for this observation."
       },
-      {
-        "DisplayOrder": 3,
-        "IsActive": false,
-        "Name": "Urination Duration",
-        "Acronym": "TimeUrination",
-        "Common Units": "Seconds",
-        "Common Units Full Name": "Recorded time of Urination",
-        "Entry Text": "Use the timer or enter the seconds for your time to Urinate"
-      },
+
       {
         "DisplayOrder": 4,
         "IsActive": false,
@@ -3349,7 +3073,6 @@
       },
       {
         "DisplayOrder": 13,
-        "IsActive": false,
         "Name": "Gratitude Journal Entries",
         "Acronym": "Gratitude Entries",
         "Common Units": "count",
@@ -3721,152 +3444,12 @@
         "IsActive": false,
         "Name": "Cleaning Wipes",
         "Acronym": "CW",
-        "Common Units": "Containers",
-        "Common Units Full Name": "Number of containers",
-        "Entry Text": "Record the number of containers of cleaning wipes remaining."
-      },
-      {
-        "DisplayOrder": 8,
-        "IsActive": false,
-        "Name": "All-Purpose Cleaner",
-        "Acronym": "APC",
-        "Common Units": "Bottles",
-        "Common Units Full Name": "Number of bottles",
-        "Entry Text": "Record the number of bottles of all-purpose cleaner remaining."
-      },
-      {
-        "DisplayOrder": 9,
-        "IsActive": false,
-        "Name": "Bathroom Cleaner",
-        "Acronym": "BC",
-        "Common Units": "Bottles",
-        "Common Units Full Name": "Number of bottles",
-        "Entry Text": "Record the number of bottles of bathroom cleaner remaining."
-      },
-      {
-        "DisplayOrder": 10,
-        "IsActive": false,
-        "Name": "Trash Bags",
-        "Acronym": "TB",
-        "Common Units": "Rolls/Bags",
-        "Common Units Full Name": "Number of rolls or individual bags",
-        "Entry Text": "Record the number of trash bag rolls or individual bags remaining."
-      },
-      {
-        "DisplayOrder": 11,
-        "IsActive": false,
-        "Name": "Hand Soap",
-        "Acronym": "HS",
-        "Common Units": "Bottles",
-        "Common Units Full Name": "Number of bottles",
-        "Entry Text": "Record the number of hand soap bottles remaining."
-      },
-      {
-        "DisplayOrder": 12,
-        "IsActive": false,
-        "Name": "Shampoo",
-        "Acronym": "Shamp",
-        "Common Units": "Bottles",
-        "Common Units Full Name": "Number of bottles",
-        "Entry Text": "Record the number of shampoo bottles remaining."
-      },
-      {
-        "DisplayOrder": 13,
-        "IsActive": false,
-        "Name": "Conditioner",
-        "Acronym": "Cond",
-        "Common Units": "Bottles",
-        "Common Units Full Name": "Number of bottles",
-        "Entry Text": "Record the number of conditioner bottles remaining."
-      },
-      {
-        "DisplayOrder": 14,
-        "IsActive": false,
-        "Name": "Toothpaste",
-        "Acronym": "TPaste",
-        "Common Units": "Tubes",
-        "Common Units Full Name": "Number of tubes",
-        "Entry Text": "Record the number of toothpaste tubes remaining."
-      },
-      {
-        "DisplayOrder": 15,
-        "IsActive": false,
-        "Name": "Toothbrushes",
-        "Acronym": "TB",
-        "Common Units": "Count",
-        "Common Units Full Name": "Number of toothbrushes",
-        "Entry Text": "Record the number of toothbrushes remaining."
-      },
-      {
-        "DisplayOrder": 16,
-        "IsActive": false,
-        "Name": "Mouthwash",
-        "Acronym": "MW",
-        "Common Units": "Bottles",
-        "Common Units Full Name": "Number of bottles",
-        "Entry Text": "Record the number of mouthwash bottles remaining."
-      },
-      {
-        "DisplayOrder": 17,
-        "IsActive": false,
-        "Name": "Lotion",
-        "Acronym": "Lot",
-        "Common Units": "Bottles",
-        "Common Units Full Name": "Number of bottles",
-        "Entry Text": "Record the number of lotion bottles/containers remaining."
-      },
-      {
-        "DisplayOrder": 18,
-        "IsActive": false,
-        "Name": "Batteries",
-        "Acronym": "Bat",
-        "Common Units": "Count",
-        "Common Units Full Name": "Number of batteries (specify size if needed)",
-        "Entry Text": "Record the number of batteries remaining (specify size, e.g., AA, AAA)."
-      },
-      {
-        "DisplayOrder": 19,
-        "IsActive": false,
-        "Name": "Light Bulbs",
-        "Acronym": "Bulbs",
-        "Common Units": "Count",
-        "Common Units Full Name": "Number of light bulbs",
-        "Entry Text": "Record the number of light bulbs remaining (specify type if needed)."
-      }
-    ],
-    "Resources": [
-      {
-        "DisplayOrder": 1,
-        "IsActive": true,
-        "Name": "Good Housekeeping - Cleaning",
-        "Link": "https://www.goodhousekeeping.com/home/cleaning/",
-        "Summary": "Tips, tricks, and product recommendations for cleaning various areas of the home."
-      },
-      {
-        "DisplayOrder": 2,
-        "IsActive": true,
-        "Name": "The Spruce - Home Organization",
-        "Link": "https://www.thespruce.com/home-organization-4176921",
-        "Summary": "Articles and guides on decluttering, organizing spaces, and managing household tasks."
-      },
-      {
-        "DisplayOrder": 3,
-        "IsActive": true,
-        "Name": "FlyLady.net",
-        "Link": "https://www.flylady.net/d/getting-started/",
-        "Summary": "A system for establishing cleaning and organizing routines through small daily steps and zone cleaning."
-      },
-      {
-        "DisplayOrder": 4,
-        "IsActive": true,
-        "Name": "Real Simple - Cleaning & Organizing",
-        "Link": "https://www.realsimple.com/home-organizing/cleaning-organizing",
-        "Summary": "Practical advice and solutions for simplifying home life, including cleaning and organizing strategies."
+        "Common Units": "Containers
       }
     ]
   },
-  "Learning": {
-    "Language Learning Activity Tracking": [
+  "Skills": {
+    "Musical Instrument Practice Tracking": [
       {
         "DisplayOrder": 1,
         "IsActive": false,
@@ -3874,133 +3457,133 @@
         "Acronym": "Date",
         "Common Units": "YYYY-MM-DD",
         "Common Units Full Name": "Year-Month-Day",
-        "Entry Text": "Enter the date of your language learning activity."
+        "Entry Text": "Enter the date of your practice session."
       },
       {
         "DisplayOrder": 2,
         "IsActive": false,
-        "Name": "Language",
-        "Acronym": "Language",
-        "Common Units": "Text, Dropdown (e.g., Spanish, French, Japanese)",
-        "Common Units Full Name": "The language you are learning",
-        "Entry Text": "Specify the language you focused on today."
+        "Name": "Instrument",
+        "Acronym": "Instrument",
+        "Common Units": "Text, Dropdown (e.g., Guitar, Piano, Violin, Drums)",
+        "Common Units Full Name": "The musical instrument you are practicing",
+        "Entry Text": "Specify the instrument you practiced today."
       },
       {
         "DisplayOrder": 3,
         "IsActive": false,
-        "Name": "Activity Type",
-        "Acronym": "Activity",
-        "Common Units": "Dropdown (Vocabulary Practice, Grammar Study, Reading, Listening, Speaking Practice, Writing Practice, Cultural Immersion)",
-        "Common Units Full Name": "The type of language learning activity",
-        "Entry Text": "Select the main type of language learning activity you engaged in."
+        "Name": "Duration",
+        "Acronym": "Duration",
+        "Common Units": "minutes",
+        "Common Units Full Name": "Total time spent practicing in minutes",
+        "Entry Text": "Record the total duration of your practice session."
       },
       {
         "DisplayOrder": 4,
         "IsActive": false,
-        "Name": "Duration",
-        "Acronym": "Duration",
-        "Common Units": "minutes",
-        "Common Units Full Name": "Total time spent on the activity in minutes",
-        "Entry Text": "Record the total duration of this language learning session."
+        "Name": "Specific Exercises/Pieces Practiced",
+        "Acronym": "Practice Items",
+        "Common Units": "Text",
+        "Common Units Full Name": "List of the specific songs, scales, exercises, etc., you worked on",
+        "Entry Text": "List the specific musical pieces or exercises you practiced."
       },
       {
         "DisplayOrder": 5,
         "IsActive": false,
-        "Name": "Specific Resource/Tool Used",
-        "Acronym": "Resource",
-        "Common Units": "Text (e.g., Duolingo, textbook name, conversation partner)",
-        "Common Units Full Name": "The specific resource or tool you used",
-        "Entry Text": "Note the specific app, book, website, or person you interacted with."
+        "Name": "Focus Area(s)",
+        "Acronym": "Focus",
+        "Common Units": "Checkbox (Technique, Rhythm, Theory, Ear Training, Sight-Reading, Song Repertoire)",
+        "Common Units Full Name": "The main areas you concentrated on during practice",
+        "Entry Text": "Check the main areas you focused on during this session."
       },
       {
         "DisplayOrder": 6,
         "IsActive": false,
-        "Name": "Vocabulary Learned/Reviewed",
-        "Acronym": "Vocab",
-        "Common Units": "Count",
-        "Common Units Full Name": "Number of new or reviewed vocabulary words",
-        "Entry Text": "Record the number of new vocabulary words you learned or reviewed."
+        "Name": "Tempo (if applicable)",
+        "Acronym": "Tempo",
+        "Common Units": "BPM (Beats Per Minute)",
+        "Common Units Full Name": "The tempo you practiced at for specific pieces",
+        "Entry Text": "If applicable, note the tempo you used for specific exercises or songs."
       },
       {
         "DisplayOrder": 7,
         "IsActive": false,
-        "Name": "Grammar Topics Studied",
-        "Acronym": "Grammar",
-        "Common Units": "Text",
-        "Common Units Full Name": "Specific grammar points studied",
-        "Entry Text": "Note the specific grammar topics you studied today (e.g., past tense, subjunctive)."
+        "Name": "Accuracy/Mistakes",
+        "Acronym": "Accuracy",
+        "Common Units": "Scale 1-5 (Many Mistakes to Very Accurate), Descriptive",
+        "Common Units Full Name": "Your assessment of your accuracy",
+        "Entry Text": "Rate your accuracy or describe the types of mistakes you made."
       },
       {
         "DisplayOrder": 8,
         "IsActive": false,
-        "Name": "Reading Material",
-        "Acronym": "Reading",
-        "Common Units": "Text (e.g., article title, page numbers)",
-        "Common Units Full Name": "The material you read",
-        "Entry Text": "Note what you read in the target language."
+        "Name": "Rhythm/Timing",
+        "Acronym": "Rhythm",
+        "Common Units": "Scale 1-5 (Poor to Excellent), Descriptive",
+        "Common Units Full Name": "Your assessment of your rhythmic precision",
+        "Entry Text": "Rate your rhythmic accuracy or describe any timing issues."
       },
       {
         "DisplayOrder": 9,
         "IsActive": false,
-        "Name": "Listening Material",
-        "Acronym": "Listening",
-        "Common Units": "Text (e.g., podcast episode, video title)",
-        "Common Units Full Name": "The material you listened to",
-        "Entry Text": "Note what you listened to in the target language."
+        "Name": "Tone/Sound Quality",
+        "Acronym": "Tone",
+        "Common Units": "Scale 1-5 (Poor to Excellent), Descriptive",
+        "Common Units Full Name": "Your assessment of the quality of your sound",
+        "Entry Text": "Rate the quality of your tone or describe any issues with your sound."
       },
       {
         "DisplayOrder": 10,
         "IsActive": false,
-        "Name": "Speaking Practice (Duration/Topic)",
-        "Acronym": "Speaking",
-        "Common Units": "minutes, Text (topic)",
-        "Common Units Full Name": "Duration of speaking practice and the topic discussed",
-        "Entry Text": "Record how long you spent speaking and the topic of conversation (if applicable)."
+        "Name": "Enjoyment Level",
+        "Acronym": "Enjoyment",
+        "Common Units": "Scale 1-5 (Low to High)",
+        "Common Units Full Name": "How much you enjoyed the practice session",
+        "Entry Text": "Rate how much you enjoyed your practice session."
       },
       {
         "DisplayOrder": 11,
         "IsActive": false,
-        "Name": "Writing Practice (Topic/Length)",
-        "Acronym": "Writing",
-        "Common Units": "Text (topic), Word Count",
-        "Common Units Full Name": "The topic you wrote about and the number of words/characters",
-        "Entry Text": "Note what you wrote about and the length (e.g., a paragraph, 100 words)."
+        "Name": "Frustration Level",
+        "Acronym": "Frustration",
+        "Common Units": "Scale 1-5 (Low to High)",
+        "Common Units Full Name": "How frustrated you felt during practice",
+        "Entry Text": "Rate your level of frustration during the session."
       },
       {
         "DisplayOrder": 12,
         "IsActive": false,
-        "Name": "Comprehension Level (Self-Assessed)",
-        "Acronym": "Comprehension",
-        "Common Units": "Scale 1-5 (Low to High)",
-        "Common Units Full Name": "Your self-assessment of your understanding",
-        "Entry Text": "Rate your comprehension level during the activity."
+        "Name": "Progress Made Today",
+        "Acronym": "Progress",
+        "Common Units": "Scale 1-5 (No Progress to Significant Progress), Descriptive",
+        "Common Units Full Name": "Your overall assessment of the progress you made",
+        "Entry Text": "Rate the progress you feel you made today or describe any breakthroughs."
       },
       {
         "DisplayOrder": 13,
         "IsActive": false,
-        "Name": "Fluency Level (Self-Assessed)",
-        "Acronym": "Fluency",
-        "Common Units": "Scale 1-5 (Low to High)",
-        "Common Units Full Name": "Your self-assessment of your fluency",
-        "Entry Text": "Rate your perceived fluency during the activity (especially speaking/writing)."
+        "Name": "Challenges Encountered",
+        "Acronym": "Challenges",
+        "Common Units": "Text",
+        "Common Units Full Name": "Specific difficulties you faced during practice",
+        "Entry Text": "Note any specific challenges you encountered."
       },
       {
         "DisplayOrder": 14,
         "IsActive": false,
-        "Name": "Motivation Level",
-        "Acronym": "Motivation",
-        "Common Units": "Scale 1-5 (Low to High)",
-        "Common Units Full Name": "Your level of motivation during the session",
-        "Entry Text": "Rate your motivation level for learning today."
+        "Name": "Learnings/Insights",
+        "Acronym": "Learnings",
+        "Common Units": "Text",
+        "Common Units Full Name": "Any new things you learned or understood during practice",
+        "Entry Text": "Note any new insights or understandings you gained."
       },
       {
         "DisplayOrder": 15,
         "IsActive": false,
-        "Name": "Enjoyment Level",
-        "Acronym": "Enjoyment",
-        "Common Units": "Scale 1-5 (Low to High)",
-        "Common Units Full Name": "How much you enjoyed the activity",
-        "Entry Text": "Rate how much you enjoyed the language learning activity."
+        "Name": "Next Steps/Goals for Next Session",
+        "Acronym": "Next Steps",
+        "Common Units": "Text",
+        "Common Units Full Name": "What you plan to work on in your next practice session",
+        "Entry Text": "Outline what you want to focus on during your next practice."
       },
       {
         "DisplayOrder": 16,
@@ -4009,45 +3592,137 @@
         "Acronym": "Notes",
         "Common Units": "Text",
         "Common Units Full Name": "Free text description",
-        "Entry Text": "Add any other relevant notes about your language learning session, such as challenges, breakthroughs, or areas to focus on."
+        "Entry Text": "Add any other relevant notes about your practice session."
+      }
+    ],
+    "Writers": [
+      {
+        "DisplayOrder": 1,
+        "IsActive": false,
+        "Name": "Writing Duration",
+        "Acronym": "Write Dur",
+        "Common Units": "minutes",
+        "Common Units Full Name": "minutes",
+        "Entry Text": "Record the total time you spent writing today in minutes."
+      },
+      {
+        "DisplayOrder": 2,
+        "IsActive": false,
+        "Name": "Words Written",
+        "Acronym": "Words",
+        "Common Units": "count",
+        "Common Units Full Name": "number of words",
+        "Entry Text": "Record the total number of words you wrote today."
+      },
+      {
+        "DisplayOrder": 3,
+        "IsActive": false,
+        "Name": "Writing Focus Level",
+        "Acronym": "Write Focus",
+        "Common Units": "Scale 1-10, Descriptive",
+        "Common Units Full Name": "Scale from 1 (highly distracted) to 10 (deeply focused), Descriptive words (e.g., in the zone, struggling, interrupted)",
+        "Entry Text": "Rate your level of focus and concentration during your writing session."
+      },
+      {
+        "DisplayOrder": 4,
+        "IsActive": false,
+        "Name": "Flow State (Writing)",
+        "Acronym": "Write Flow",
+        "Common Units": "Scale 1-10, Descriptive",
+        "Common Units Full Name": "Scale from 1 (no flow) to 10 (deep flow), Descriptive words (e.g., effortless, engaged, blocked)",
+        "Entry Text": "Rate your experience of being in a state of flow while writing."
+      },
+      {
+        "DisplayOrder": 5,
+        "IsActive": false,
+        "Name": "Scenes/Sections Completed",
+        "Acronym": "Scenes Done",
+        "Common Units": "count",
+        "Common Units Full Name": "number of scenes or sections",
+        "Entry Text": "Record the number of scenes or sections you completed in your writing today."
+      },
+      {
+        "DisplayOrder": 6,
+        "IsActive": false,
+        "Name": "Editing/Revision Time",
+        "Acronym": "Edit Time",
+        "Common Units": "minutes",
+        "Common Units Full Name": "minutes",
+        "Entry Text": "Record the total time you spent editing or revising your writing today in minutes."
+      },
+      {
+        "DisplayOrder": 7,
+        "IsActive": false,
+        "Name": "Ideas/Inspiration Level",
+        "Acronym": "Idea Level",
+        "Common Units": "Scale 1-10, Descriptive",
+        "Common Units Full Name": "Scale from 1 (no ideas) to 10 (abundant ideas), Descriptive words (e.g., inspired, stagnant, brainstorming)",
+        "Entry Text": "Rate your level of ideas and inspiration for your writing today."
+      },
+      {
+        "DisplayOrder": 8,
+        "IsActive": false,
+        "Name": "Satisfaction with Writing",
+        "Acronym": "Write Sat",
+        "Common Units": "Scale 1-10, Descriptive",
+        "Common Units Full Name": "Scale from 1 (very dissatisfied) to 10 (very satisfied), Descriptive words (e.g., proud, frustrated, content)",
+        "Entry Text": "Rate your overall satisfaction with your writing session today."
+      },
+      {
+        "DisplayOrder": 9,
+        "IsActive": false,
+        "Name": "Time Spent Planning/Outlining",
+        "Acronym": "Plan Time",
+        "Common Units": "minutes",
+        "Common Units Full Name": "minutes",
+        "Entry Text": "Record the total time you spent planning or outlining your writing today in minutes."
+      },
+      {
+        "DisplayOrder": 10,
+        "IsActive": false,
+        "Name": "Research Time",
+        "Acronym": "Research Time",
+        "Common Units": "minutes",
+        "Common Units Full Name": "minutes",
+        "Entry Text": "Record the total time you spent on research related to your writing today in minutes."
       }
     ],
     "Resources": [
       {
         "DisplayOrder": 1,
         "IsActive": true,
-        "Name": "Duolingo",
-        "Link": "https://www.duolingo.com/",
-        "Summary": "Gamified language learning platform offering free courses in numerous languages."
+        "Name": "Coursera",
+        "Link": "https://www.coursera.org/",
+        "Summary": "Online learning platform offering courses, specializations, and degrees in various skills from universities and companies."
       },
       {
         "DisplayOrder": 2,
         "IsActive": true,
-        "Name": "Memrise",
-        "Link": "https://www.memrise.com/",
-        "Summary": "Focuses on vocabulary acquisition using spaced repetition and user-generated content."
+        "Name": "edX",
+        "Link": "https://www.edx.org/",
+        "Summary": "Offers massive open online courses (MOOCs) from top universities worldwide across a wide range of disciplines."
       },
       {
         "DisplayOrder": 3,
         "IsActive": true,
-        "Name": "Babbel",
-        "Link": "https://www.babbel.com/",
-        "Summary": "Subscription-based language learning app focusing on conversational skills."
+        "Name": "Khan Academy",
+        "Link": "https://www.khanacademy.org/",
+        "Summary": "Free educational resources covering math, science, computing, history, art history, economics, and more."
       },
       {
         "DisplayOrder": 4,
         "IsActive": true,
-        "Name": "italki",
-        "Link": "https://www.italki.com/",
-        "Summary": "Connects language learners with native speaker tutors for online lessons and conversation practice."
+        "Name": "NaNoWriMo (National Novel Writing Month)",
+        "Link": "https://nanowrimo.org/",
+        "Summary": "Community and resources for writers, focusing on completing a novel draft in November, but offers year-round support."
       },
-       {
+      {
         "DisplayOrder": 5,
         "IsActive": true,
-        "Name": "Forvo",
-        "Link": "https://forvo.com/",
-        "Summary": "Crowdsourced pronunciation dictionary; listen to words pronounced by native speakers."
+        "Name": "JustinGuitar.com",
+        "Link": "https://www.justinguitar.com/",
+        "Summary": "Popular free online guitar lessons for various levels, covering technique, theory, and songs."
       }
     ]
-  }
+  },
 }

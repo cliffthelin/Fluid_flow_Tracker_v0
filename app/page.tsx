@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react"
 import Header from "./components/Header"
-import FlowEntryForm from "./components/FlowEntryForm"
-import Stats from "./components/FluidStats"
+import EntryForm from "./components/EntryForm"
+import Stats from "./components/Stats"
 import DataManagement, { generateDemoData, hasDemoData, deleteDemoData } from "./components/DataManagement"
 import Resources from "./components/Resources"
 import Help from "./components/Help"
@@ -24,14 +24,17 @@ import Configuration from "./components/Configuration"
 import type { AppConfig } from "./types/config"
 import { loadConfig, DEFAULT_CONFIG } from "./types/config"
 
+// Add this import at the top
+import { updateConfigWithTrackerTabs } from "./utils/trackerTabGenerator"
+
 export default function Home() {
-  const [darkMode, setDarkMode] = useState(false)
+  const [darkMode, setDarkMode] = useState(true) // Default to true
   const [isOnline, setIsOnline] = useState(true)
   const [fontSize, setFontSize] = useState(0) // 0 is default, negative is smaller, positive is larger
   const [isLoading, setIsLoading] = useState(true)
   const [dataInitialized, setDataInitialized] = useState(false)
   const [activeSection, setActiveSection] = useState<"entry" | "stats" | "data" | "resources" | "help" | "config">(
-    "entry",
+    "stats", // Default to stats view
   )
   const [dbCounts, setDbCounts] = useState<{ uroLogs: number; hydroLogs: number }>({ uroLogs: 0, hydroLogs: 0 })
   const [hasDemoDataState, setHasDemoDataState] = useState(false)
@@ -41,22 +44,50 @@ export default function Home() {
 
   // Update the useEffect that initializes the database to include auto-backup restoration
   useEffect(() => {
+    // Clear any cached header and subheader text values
+    const clearCachedHeaderValues = () => {
+      // Get the current config from localStorage
+      const savedConfig = localStorage.getItem("appConfig")
+      if (savedConfig) {
+        try {
+          const parsedConfig = JSON.parse(savedConfig) as AppConfig
+
+          // Force the header and subheader text to the default values
+          parsedConfig.appearance.headerText = DEFAULT_CONFIG.appearance.headerText
+          parsedConfig.appearance.subheaderText = DEFAULT_CONFIG.appearance.subheaderText
+          parsedConfig.appearance.darkMode = true // Force dark mode to be on
+          parsedConfig.application.defaultView = "stats" // Set stats as default view
+
+          // Save the updated config back to localStorage
+          localStorage.setItem("appConfig", JSON.stringify(parsedConfig))
+
+          // Update the app state
+          setAppConfig(parsedConfig)
+          setDarkMode(true)
+          setActiveSection("stats")
+        } catch (error) {
+          console.error("Error clearing cached header values:", error)
+        }
+      }
+    }
+
+    // Run this once on initial load
+    clearCachedHeaderValues()
+
     // Load app configuration
     const config = loadConfig()
-    setAppConfig(config)
+
+    // Update config with tracker tabs
+    const updatedConfig = updateConfigWithTrackerTabs(config)
 
     // Apply configuration settings
-    setDarkMode(config.appearance.darkMode)
-    setFontSize(config.appearance.fontSize)
+    setAppConfig(updatedConfig)
+    setDarkMode(updatedConfig.appearance.darkMode)
+    setFontSize(updatedConfig.appearance.fontSize)
 
     // Set initial active section from config if available
     if (config.application.defaultView) {
       setActiveSection(config.application.defaultView)
-    }
-
-    // Check system preference for dark mode if not set in config
-    if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches && !config.appearance.darkMode) {
-      setDarkMode(true)
     }
 
     // Initialize database
@@ -282,7 +313,7 @@ export default function Home() {
           {isLoading ? (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-              <p className="ml-3 text-gray-600 dark:text-gray-300">Initializing My Uro Log...</p>
+              <p className="ml-3 text-gray-600 dark:text-gray-300">Initializing YourTracker...</p>
             </div>
           ) : (
             <div className="space-y-6">
@@ -292,7 +323,7 @@ export default function Home() {
                     <Plus className="mr-2 text-blue-500" size={24} />
                     <h2 className="text-xl font-semibold">Add New Entry</h2>
                   </div>
-                  <FlowEntryForm
+                  <EntryForm
                     addUroLog={addUroLog}
                     addHydroLog={addHydroLog}
                     addKegelLog={addKegelLog}
