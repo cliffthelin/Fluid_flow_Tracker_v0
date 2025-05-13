@@ -5,17 +5,15 @@ import { useState, useEffect } from "react"
 import { Moon, Sun, Droplets, ZoomIn, ZoomOut, HelpCircle, Trash } from "lucide-react"
 import GettingStartedModal from "./GettingStartedModal"
 import { deleteAllUroLogs, deleteAllHydroLogs, getDatabaseCounts } from "../services/db"
-import type { AppConfig } from "@/app/AppConfig" // Import AppConfig
 
 interface HeaderProps {
   darkMode: boolean
   setDarkMode: (darkMode: boolean) => void
   fontSize: number
   setFontSize: (size: number) => void
-  appConfig: AppConfig // Add this line
 }
 
-const Header: React.FC<HeaderProps> = ({ darkMode, setDarkMode, fontSize, setFontSize, appConfig }) => {
+const Header: React.FC<HeaderProps> = ({ darkMode, setDarkMode, fontSize, setFontSize }) => {
   const [showGettingStarted, setShowGettingStarted] = useState(false)
   const [showDeleteDemoData, setShowDeleteDemoData] = useState(false)
   const [dbCounts, setDbCounts] = useState<{ uroLogs: number; hydroLogs: number }>({ uroLogs: 0, hydroLogs: 0 })
@@ -67,12 +65,10 @@ const Header: React.FC<HeaderProps> = ({ darkMode, setDarkMode, fontSize, setFon
       <div className="container mx-auto max-w-4xl px-4 sm:px-6 py-4">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl sm:text-4xl font-bold flex items-center text-blue-700 dark:text-white">
-              <Droplets className="mr-2 h-8 w-8 text-blue-700 dark:text-blue-400" /> {appConfig.appearance.headerText}
+            <h1 className="text-3xl sm:text-4xl font-bold flex items-center text-blue-700 dark:text-blue-400">
+              <Droplets className="mr-2 h-8 w-8" /> My Uro Log
             </h1>
-            <p className="text-lg text-blue-600 dark:text-gray-300 mt-0.5">
-              {appConfig.appearance.subheaderText || "Private Customized Tracking"}
-            </p>
+            <p className="text-lg text-blue-600 dark:text-gray-400 mt-0.5">Monitor Your Urological Health</p>
           </div>
           <div className="flex items-center space-x-2">
             {showDeleteDemoData && (

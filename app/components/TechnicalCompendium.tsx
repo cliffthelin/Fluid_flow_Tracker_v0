@@ -57,9 +57,41 @@ export function TechnicalCompendium() {
     )
   }
 
+  // Simple function to escape HTML tags
+  const escapeHtml = (unsafe: string) => {
+    return unsafe.replace(/</g, "&lt;").replace(/>/g, "&gt;")
+  }
+
+  // Function to render a line with bold text
+  const renderLineWithBold = (line: string, key: number, className: string) => {
+    if (line.includes("**")) {
+      const parts = line.split("**")
+      return (
+        <p key={key} className={className}>
+          {parts.map((part, i) => (i % 2 === 0 ? part : <strong key={i}>{part}</strong>))}
+        </p>
+      )
+    }
+    return (
+      <p key={key} className={className}>
+        {line}
+      </p>
+    )
+  }
+
   return (
     <div className="prose prose-blue dark:prose-invert max-w-none">
       {compendiumContent.split("\n").map((line, index) => {
+        // Skip lines that are clearly HTML or CSS
+        if (
+          (line.trim().startsWith("<") && line.includes(">")) ||
+          line.trim().startsWith("--") ||
+          line.trim() === "}" ||
+          line.trim().startsWith("<!DOCTYPE")
+        ) {
+          return null
+        }
+
         // Handle headings
         if (line.startsWith("# ")) {
           return (
@@ -92,18 +124,14 @@ export function TechnicalCompendium() {
 
         // Handle lists
         if (line.startsWith("- ")) {
-          // Check if the line contains bold text
           const content = line.substring(2)
           if (content.includes("**")) {
             const parts = content.split("**")
-            if (parts.length >= 3) {
-              return (
-                <li key={index} className="ml-6 list-disc text-gray-800 dark:text-gray-100">
-                  <strong>{parts[1]}</strong>
-                  {parts[2]}
-                </li>
-              )
-            }
+            return (
+              <li key={index} className="ml-6 list-disc text-gray-800 dark:text-gray-100">
+                {parts.map((part, i) => (i % 2 === 0 ? part : <strong key={i}>{part}</strong>))}
+              </li>
+            )
           }
           return (
             <li key={index} className="ml-6 list-disc text-gray-800 dark:text-gray-100">
@@ -127,26 +155,8 @@ export function TechnicalCompendium() {
           return <div key={index} className="h-4"></div>
         }
 
-        // Handle paragraphs with bold text
-        if (line.includes("**")) {
-          const parts = line.split("**")
-          if (parts.length >= 3) {
-            return (
-              <p key={index} className="my-2 text-gray-800 dark:text-gray-100">
-                {parts[0]}
-                <strong>{parts[1]}</strong>
-                {parts[2]}
-              </p>
-            )
-          }
-        }
-
-        // Regular paragraph
-        return (
-          <p key={index} className="my-2 text-gray-800 dark:text-gray-100">
-            {line}
-          </p>
-        )
+        // Handle paragraphs (including those with bold text)
+        return renderLineWithBold(line, index, "my-2 text-gray-800 dark:text-gray-100")
       })}
     </div>
   )

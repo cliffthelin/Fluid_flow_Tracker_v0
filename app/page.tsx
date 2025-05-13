@@ -2,92 +2,48 @@
 
 import { useState, useEffect } from "react"
 import Header from "./components/Header"
-import EntryForm from "./components/EntryForm"
-import Stats from "./components/Stats"
-import DataManagement, { generateDemoData, hasDemoData, deleteDemoData } from "./components/DataManagement"
+import FlowEntryForm from "./components/FlowEntryForm"
+import Stats from "./components/FluidStats"
+import DataManagement from "./components/DataManagement"
 import Resources from "./components/Resources"
 import Help from "./components/Help"
 import InstallPrompt from "./components/InstallPrompt"
 import PWARegistration from "./components/PWARegistration"
 import BottomNav from "./components/BottomNav"
-import type { UroLog, HydroLog, KegelLog } from "./types"
-import { addUroLog as dbAddUroLog, addHydroLog as dbAddHydroLog, addKegelLog as dbAddKegelLog } from "./services/db"
-import { Plus, BarChart, Database, BookMarked, BookOpen, Trash, Settings } from "lucide-react"
+import type { UroLog, HydroLog } from "./types"
+import { addUroLog as dbAddUroLog, addHydroLog as dbAddHydroLog } from "./services/db"
+import { Plus, BarChart, Database, BookMarked, BookOpen } from "lucide-react"
 
 // Add imports for auto-backup system
 import { createAutoBackup, restoreFromAutoBackup, hasAutoBackup } from "./services/autoBackup"
 
-// Add import for the Configuration component
-import Configuration from "./components/Configuration"
-
-// Import configuration types and functions
-import type { AppConfig } from "./types/config"
-import { loadConfig, DEFAULT_CONFIG } from "./types/config"
-
-// Add this import at the top
-import { updateConfigWithTrackerTabs } from "./utils/trackerTabGenerator"
-
 export default function Home() {
-  const [darkMode, setDarkMode] = useState(true) // Default to true
+  const [darkMode, setDarkMode] = useState(false)
   const [isOnline, setIsOnline] = useState(true)
   const [fontSize, setFontSize] = useState(0) // 0 is default, negative is smaller, positive is larger
   const [isLoading, setIsLoading] = useState(true)
   const [dataInitialized, setDataInitialized] = useState(false)
-  const [activeSection, setActiveSection] = useState<"entry" | "stats" | "data" | "resources" | "help" | "config">(
-    "stats", // Default to stats view
-  )
+  const [activeSection, setActiveSection] = useState<"entry" | "stats" | "data" | "resources" | "help">("entry")
   const [dbCounts, setDbCounts] = useState<{ uroLogs: number; hydroLogs: number }>({ uroLogs: 0, hydroLogs: 0 })
   const [hasDemoDataState, setHasDemoDataState] = useState(false)
 
-  // Add state for app configuration
-  const [appConfig, setAppConfig] = useState<AppConfig>(DEFAULT_CONFIG)
-
   // Update the useEffect that initializes the database to include auto-backup restoration
   useEffect(() => {
-    // Clear any cached header and subheader text values
-    const clearCachedHeaderValues = () => {
-      // Get the current config from localStorage
-      const savedConfig = localStorage.getItem("appConfig")
-      if (savedConfig) {
-        try {
-          const parsedConfig = JSON.parse(savedConfig) as AppConfig
-
-          // Force the header and subheader text to the default values
-          parsedConfig.appearance.headerText = DEFAULT_CONFIG.appearance.headerText
-          parsedConfig.appearance.subheaderText = DEFAULT_CONFIG.appearance.subheaderText
-          parsedConfig.appearance.darkMode = true // Force dark mode to be on
-          parsedConfig.application.defaultView = "stats" // Set stats as default view
-
-          // Save the updated config back to localStorage
-          localStorage.setItem("appConfig", JSON.stringify(parsedConfig))
-
-          // Update the app state
-          setAppConfig(parsedConfig)
-          setDarkMode(true)
-          setActiveSection("stats")
-        } catch (error) {
-          console.error("Error clearing cached header values:", error)
-        }
-      }
+    // Check system preference for dark mode
+    if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      setDarkMode(true)
     }
 
-    // Run this once on initial load
-    clearCachedHeaderValues()
+    // Load saved dark mode preference
+    const savedDarkMode = localStorage.getItem("darkMode")
+    if (savedDarkMode !== null) {
+      setDarkMode(savedDarkMode === "true")
+    }
 
-    // Load app configuration
-    const config = loadConfig()
-
-    // Update config with tracker tabs
-    const updatedConfig = updateConfigWithTrackerTabs(config)
-
-    // Apply configuration settings
-    setAppConfig(updatedConfig)
-    setDarkMode(updatedConfig.appearance.darkMode)
-    setFontSize(updatedConfig.appearance.fontSize)
-
-    // Set initial active section from config if available
-    if (config.application.defaultView) {
-      setActiveSection(config.application.defaultView)
+    // Load saved font size preference
+    const savedFontSize = localStorage.getItem("fontSize")
+    if (savedFontSize !== null) {
+      setFontSize(Number.parseInt(savedFontSize))
     }
 
     // Initialize database
@@ -142,17 +98,17 @@ export default function Home() {
   // Add a periodic auto-backup
   useEffect(() => {
     if (!isLoading && dataInitialized) {
-      // Create auto-backup based on configuration setting
+      // Create auto-backup every 10 minutes while the app is open
       const backupInterval = setInterval(
         () => {
           createAutoBackup()
         },
-        appConfig.dataManagement.autoBackupFrequency * 60 * 1000,
+        10 * 60 * 1000,
       )
 
       return () => clearInterval(backupInterval)
     }
-  }, [isLoading, dataInitialized, appConfig.dataManagement.autoBackupFrequency])
+  }, [isLoading, dataInitialized])
 
   useEffect(() => {
     if (!isLoading && dataInitialized) {
@@ -165,15 +121,10 @@ export default function Home() {
           setDbCounts({ uroLogs: uroLogCount, hydroLogs: hydroLogCount })
 
           // Check if there's demo data
-          const hasDemo = await hasDemoData()
+          const uroLogs = await db.uroLogs.toArray()
+          const hydroLogs = await db.hydroLogs.toArray()
+          const hasDemo = uroLogs.some((log) => log.isDemo === true) || hydroLogs.some((log) => log.isDemo === true)
           setHasDemoDataState(hasDemo)
-
-          // If there are no entries, generate demo data and go to the help section
-          if (uroLogCount === 0 && hydroLogCount === 0) {
-            console.log("No entries found, generating demo data...")
-            generateDemoData()
-            setActiveSection("help")
-          }
         } catch (error) {
           console.error("Error checking for entries:", error)
         }
@@ -200,8 +151,19 @@ export default function Home() {
   // Check for demo data periodically
   useEffect(() => {
     const checkDemoData = async () => {
-      const hasDemo = await hasDemoData()
-      setHasDemoDataState(hasDemo)
+      try {
+        const { db } = await import("./services/db")
+
+        // Get all entries and filter them in memory
+        const uroLogs = await db.uroLogs.toArray()
+        const hydroLogs = await db.hydroLogs.toArray()
+
+        // Check if any entry has isDemo set to true
+        const hasDemo = uroLogs.some((log) => log.isDemo === true) || hydroLogs.some((log) => log.isDemo === true)
+        setHasDemoDataState(hasDemo)
+      } catch (error) {
+        console.error("Error checking for demo data:", error)
+      }
     }
 
     // Check initially and then every 5 seconds
@@ -210,20 +172,6 @@ export default function Home() {
 
     return () => clearInterval(interval)
   }, [])
-
-  const handleDeleteDemoData = async () => {
-    await deleteDemoData()
-    setHasDemoDataState(false)
-
-    // If we're on the data management page, refresh the data
-    if (activeSection === "data") {
-      // Force a re-render of the data management component
-      setActiveSection("stats")
-      setTimeout(() => {
-        setActiveSection("data")
-      }, 10)
-    }
-  }
 
   const addUroLog = async (entry: UroLog) => {
     try {
@@ -253,48 +201,14 @@ export default function Home() {
     }
   }
 
-  const addKegelLog = async (entry: KegelLog) => {
-    try {
-      // Add to IndexedDB
-      await dbAddKegelLog(entry)
-      // Create a backup after adding new data
-      createAutoBackup()
-      // Navigate to stats page after saving
-      setActiveSection("stats")
-    } catch (error) {
-      console.error("Error adding KegelLog entry:", error)
-      alert("Error saving entry. Please try again.")
-    }
-  }
-
   const fontSizeClass = `font-size-${fontSize}`
 
   // Render the components directly without CollapsibleSection wrappers
   return (
-    <main
-      className={`min-h-screen ${darkMode ? "dark" : ""} ${fontSizeClass} font-bold-enabled ${appConfig.appearance.highContrastMode ? "high-contrast" : ""}`}
-    >
+    <main className={`min-h-screen ${darkMode ? "dark" : ""} ${fontSizeClass} font-bold-enabled`}>
       <PWARegistration />
       <div className="bg-blue-50 dark:bg-slate-900 min-h-screen pb-32">
-        <Header
-          darkMode={darkMode}
-          setDarkMode={setDarkMode}
-          fontSize={fontSize}
-          setFontSize={setFontSize}
-          appConfig={appConfig} // Add this line
-        />
-
-        {/* Persistent Delete Demo Data button */}
-        {hasDemoDataState && (
-          <div className="fixed top-20 right-4 z-50">
-            <button
-              onClick={handleDeleteDemoData}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center shadow-md"
-            >
-              <Trash className="mr-2" size={18} /> Delete Demo Data
-            </button>
-          </div>
-        )}
+        <Header darkMode={darkMode} setDarkMode={setDarkMode} fontSize={fontSize} setFontSize={setFontSize} />
 
         <div className="container mx-auto max-w-4xl px-4 sm:px-6 pt-4 pb-32">
           {!isOnline && (
@@ -313,7 +227,7 @@ export default function Home() {
           {isLoading ? (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-              <p className="ml-3 text-gray-600 dark:text-gray-300">Initializing YourTracker...</p>
+              <p className="ml-3 text-gray-600 dark:text-gray-300">Initializing My Uro Log...</p>
             </div>
           ) : (
             <div className="space-y-6">
@@ -323,12 +237,7 @@ export default function Home() {
                     <Plus className="mr-2 text-blue-500" size={24} />
                     <h2 className="text-xl font-semibold">Add New Entry</h2>
                   </div>
-                  <EntryForm
-                    addUroLog={addUroLog}
-                    addHydroLog={addHydroLog}
-                    addKegelLog={addKegelLog}
-                    appConfig={appConfig}
-                  />
+                  <FlowEntryForm addUroLog={addUroLog} addHydroLog={addHydroLog} />
                 </div>
               )}
 
@@ -338,7 +247,7 @@ export default function Home() {
                     <BarChart className="mr-2 text-green-500" size={24} />
                     <h2 className="text-xl font-semibold">Stats</h2>
                   </div>
-                  <Stats appConfig={appConfig} />
+                  <Stats />
                 </div>
               )}
 
@@ -369,23 +278,6 @@ export default function Home() {
                     <h2 className="text-xl font-semibold">Help</h2>
                   </div>
                   <Help />
-                </div>
-              )}
-
-              {activeSection === "config" && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-100 dark:border-gray-700 p-4">
-                  <div className="flex items-center mb-4">
-                    <Settings className="mr-2 text-pink-500" size={24} />
-                    <h2 className="text-xl font-semibold">Configuration</h2>
-                  </div>
-                  <Configuration
-                    darkMode={darkMode}
-                    setDarkMode={setDarkMode}
-                    fontSize={fontSize}
-                    setFontSize={setFontSize}
-                    appConfig={appConfig}
-                    setAppConfig={setAppConfig}
-                  />
                 </div>
               )}
             </div>

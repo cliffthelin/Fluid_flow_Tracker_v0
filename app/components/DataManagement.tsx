@@ -1,90 +1,12 @@
 "use client"
 
 import type React from "react"
+
 import { useState, useEffect, useRef } from "react"
+import { Download, Upload, Trash2, Database, Share2, Check, AlertTriangle, RefreshCw, Plus } from "lucide-react"
 import type { UroLog, HydroLog, KegelLog } from "../types"
-import { loadConfig, saveConfig, DEFAULT_CONFIG, type AppConfig } from "../types/config"
-import { toggleDemoStatus } from "../db/trackerQueries"
-import { useToast } from "@/components/ui/use-toast"
-
-// Define a more flexible entry type that can accommodate any field structure
-interface DynamicEntry {
-  timestamp: string
-  entryType: string
-  fields: Record<string, any>
-  config?: {
-    fieldDefinitions: Record<
-      string,
-      {
-        id: string
-        label: string
-        type: string
-        required?: boolean
-        options?: { value: string; label: string }[]
-      }
-    >
-    tabConfig?: {
-      id: string
-      label: string
-      icon?: string
-    }
-  }
-  isDemo?: boolean
-}
-
-// Mock data for testing
-const mockUroLogs: UroLog[] = [
-  {
-    timestamp: new Date().toISOString(),
-    flowRate: 10.5,
-    volume: 300,
-    duration: 30,
-    color: "Light Yellow",
-    urgency: "Normal",
-  },
-  {
-    timestamp: new Date(Date.now() - 86400000).toISOString(), // Yesterday
-    flowRate: 9.8,
-    volume: 280,
-    duration: 28,
-    color: "Clear",
-    urgency: "Normal",
-  },
-]
-
-const mockHydroLogs: HydroLog[] = [
-  {
-    timestamp: new Date().toISOString(),
-    type: "Water",
-    amount: 250,
-    unit: "mL",
-  },
-  {
-    timestamp: new Date(Date.now() - 86400000).toISOString(), // Yesterday
-    type: "Coffee",
-    amount: 180,
-    unit: "mL",
-  },
-]
-
-const mockKegelLogs: KegelLog[] = [
-  {
-    timestamp: new Date().toISOString(),
-    reps: 15,
-    holdTime: 5,
-    sets: 3,
-    totalTime: 225,
-    completed: true,
-  },
-  {
-    timestamp: new Date(Date.now() - 86400000).toISOString(), // Yesterday
-    reps: 12,
-    holdTime: 4,
-    sets: 2,
-    totalTime: 96,
-    completed: true,
-  },
-]
+import { isShareAvailable, safeShare } from "../services/share"
+import AutoBackupSettings from "./AutoBackupSettings"
 
 // Add the hasDemoDataState prop to the interface
 interface DataManagementProps {
@@ -95,8 +17,17 @@ interface DataManagementProps {
 interface MonthlyGroup {
   key: string
   label: string
-  entries: Record<string, DynamicEntry[]>
-  averages: Record<string, Record<string, number>>
+  uroLogs: UroLog[]
+  hydroLogs: HydroLog[]
+  kegelLogs: KegelLog[]
+  averageFlowRate: number
+  averageVolume: number
+  averageDuration: number
+  averageFluidIntake: number
+  averageKegelReps: number
+  averageKegelHoldTime: number
+  averageKegelSets: number
+  averageKegelTotalTime: number
 }
 
 // Export the generateDemoData function so it can be used in other components
@@ -310,376 +241,103 @@ export async function deleteDemoData(): Promise<void> {
   }
 }
 
-// Convert legacy logs to dynamic entries
-function convertToEntries(
-  uroLogs: UroLog[],
-  hydroLogs: HydroLog[],
-  kegelLogs: KegelLog[],
-  appConfig: AppConfig,
-): DynamicEntry[] {
-  const entries: DynamicEntry[] = []
-
-  // Get field definitions from config
-  const getUroLogFieldDefinitions = () => {
-    const tabConfig = appConfig.pages.page1?.sections.section1?.tabs.tab1
-    if (!tabConfig) return {}
-
-    const fieldDefinitions: Record<string, any> = {}
-    Object.entries(tabConfig.fields).forEach(([_, field]) => {
-      fieldDefinitions[field.id] = {
-        id: field.id,
-        label: field.label,
-        type: field.type,
-        required: field.required,
-        options: field.options,
-      }
-    })
-    return fieldDefinitions
-  }
-
-  const getHydroLogFieldDefinitions = () => {
-    const tabConfig = appConfig.pages.page1?.sections.section1?.tabs.tab2
-    if (!tabConfig) return {}
-
-    const fieldDefinitions: Record<string, any> = {}
-    Object.entries(tabConfig.fields).forEach(([_, field]) => {
-      fieldDefinitions[field.id] = {
-        id: field.id,
-        label: field.label,
-        type: field.type,
-        required: field.required,
-        options: field.options,
-      }
-    })
-    return fieldDefinitions
-  }
-
-  const getKegelLogFieldDefinitions = () => {
-    const tabConfig = appConfig.pages.page1?.sections.section1?.tabs.tab3
-    if (!tabConfig) return {}
-
-    const fieldDefinitions: Record<string, any> = {}
-    Object.entries(tabConfig.fields).forEach(([_, field]) => {
-      fieldDefinitions[field.id] = {
-        id: field.id,
-        label: field.label,
-        type: field.type,
-        required: field.required,
-        options: field.options,
-      }
-    })
-    return fieldDefinitions
-  }
-
-  // Convert UroLogs
-  uroLogs.forEach((log) => {
-    entries.push({
-      timestamp: log.timestamp,
-      entryType: "UroLog",
-      fields: {
-        volume: log.volume,
-        duration: log.duration,
-        flowRate: log.flowRate,
-        color: log.color,
-        urgency: log.urgency,
-        concerns: log.concerns,
-        notes: log.notes,
-      },
-      config: {
-        fieldDefinitions: getUroLogFieldDefinitions(),
-        tabConfig: {
-          id: "tab1",
-          label: "UroLog",
-          icon: "droplet",
-        },
-      },
-      isDemo: log.isDemo,
-    })
-  })
-
-  // Convert HydroLogs
-  hydroLogs.forEach((log) => {
-    entries.push({
-      timestamp: log.timestamp,
-      entryType: "HydroLog",
-      fields: {
-        type: log.type,
-        customType: log.customType,
-        amount: log.amount,
-        unit: log.unit,
-        notes: log.notes,
-      },
-      config: {
-        fieldDefinitions: getHydroLogFieldDefinitions(),
-        tabConfig: {
-          id: "tab2",
-          label: "HydroLog",
-          icon: "coffee",
-        },
-      },
-      isDemo: log.isDemo,
-    })
-  })
-
-  // Convert KegelLogs
-  kegelLogs.forEach((log) => {
-    entries.push({
-      timestamp: log.timestamp,
-      entryType: "KegelLog",
-      fields: {
-        reps: log.reps,
-        holdTime: log.holdTime,
-        sets: log.sets,
-        totalTime: log.totalTime,
-        completed: log.completed,
-        notes: log.notes,
-      },
-      config: {
-        fieldDefinitions: getKegelLogFieldDefinitions(),
-        tabConfig: {
-          id: "tab3",
-          label: "KegelLog",
-          icon: "dumbbell",
-        },
-      },
-      isDemo: log.isDemo,
-    })
-  })
-
-  return entries
-}
-
-// Function to group entries by month
-function groupEntriesByMonth(entries: DynamicEntry[]): MonthlyGroup[] {
+// Function to group logs by month - fixed to use timestamp instead of time
+export function groupLogsByMonth(uroLogs: UroLog[], hydroLogs: HydroLog[], kegelLogs: KegelLog[]): MonthlyGroup[] {
   const monthlyGroups: { [key: string]: MonthlyGroup } = {}
 
-  entries.forEach((entry) => {
-    const date = new Date(entry.timestamp)
-    const year = date.getFullYear()
-    const month = date.getMonth()
-    const key = `${year}-${month + 1}`
-    const label = `${new Intl.DateTimeFormat("en-US", { month: "long" }).format(date)} ${year}`
+  // Helper function to process logs and update monthly groups
+  const processLogs = (logs: (UroLog | HydroLog | KegelLog)[], logType: "uroLogs" | "hydroLogs" | "kegelLogs") => {
+    logs.forEach((log: UroLog | HydroLog | KegelLog) => {
+      const date = new Date(log.timestamp) // Fixed: use timestamp instead of time
+      const year = date.getFullYear()
+      const month = date.getMonth()
+      const key = `${year}-${month + 1}`
+      const label = `${new Intl.DateTimeFormat("en-US", { month: "long" }).format(date)} ${year}`
 
-    if (!monthlyGroups[key]) {
-      monthlyGroups[key] = {
-        key,
-        label,
-        entries: {},
-        averages: {},
-      }
-    }
-
-    // Initialize entry type array if it doesn't exist
-    if (!monthlyGroups[key].entries[entry.entryType]) {
-      monthlyGroups[key].entries[entry.entryType] = []
-    }
-
-    // Add entry to the appropriate type array
-    monthlyGroups[key].entries[entry.entryType].push(entry)
-  })
-
-  // Calculate averages for each entry type and field
-  Object.values(monthlyGroups).forEach((group) => {
-    Object.entries(group.entries).forEach(([entryType, entries]) => {
-      if (!group.averages[entryType]) {
-        group.averages[entryType] = {}
+      if (!monthlyGroups[key]) {
+        monthlyGroups[key] = {
+          key,
+          label,
+          uroLogs: [],
+          hydroLogs: [],
+          kegelLogs: [],
+          averageFlowRate: 0,
+          averageVolume: 0,
+          averageDuration: 0,
+          averageFluidIntake: 0,
+          averageKegelReps: 0,
+          averageKegelHoldTime: 0,
+          averageKegelSets: 0,
+          averageKegelTotalTime: 0,
+        }
       }
 
-      // Get all numeric fields from the first entry
-      if (entries.length > 0) {
-        const firstEntry = entries[0]
-        Object.entries(firstEntry.fields).forEach(([fieldName, value]) => {
-          if (typeof value === "number") {
-            // Calculate average for this numeric field
-            const sum = entries.reduce((total, entry) => {
-              const fieldValue = entry.fields[fieldName]
-              return typeof fieldValue === "number" ? total + fieldValue : total
-            }, 0)
-            group.averages[entryType][fieldName] = sum / entries.length
-          }
-        })
-      }
+      monthlyGroups[key][logType].push(log as any)
     })
+  }
+
+  // Process each type of log
+  processLogs(uroLogs, "uroLogs")
+  processLogs(hydroLogs, "hydroLogs")
+  processLogs(kegelLogs, "kegelLogs")
+
+  // Calculate averages for each month
+  Object.values(monthlyGroups).forEach((group) => {
+    if (group.uroLogs.length > 0) {
+      group.averageFlowRate = group.uroLogs.reduce((sum, log) => sum + log.flowRate, 0) / group.uroLogs.length
+      group.averageVolume = group.uroLogs.reduce((sum, log) => sum + log.volume, 0) / group.uroLogs.length
+      group.averageDuration = group.uroLogs.reduce((sum, log) => sum + log.duration, 0) / group.uroLogs.length
+    }
+
+    if (group.hydroLogs.length > 0) {
+      // Calculate average fluid intake - convert all to mL for consistency
+      const totalIntake = group.hydroLogs.reduce((sum, log) => {
+        const amount = log.unit === "oz" ? log.amount * 29.5735 : log.amount
+        return sum + amount
+      }, 0)
+      group.averageFluidIntake = totalIntake / group.hydroLogs.length
+    }
+
+    if (group.kegelLogs.length > 0) {
+      group.averageKegelReps = group.kegelLogs.reduce((sum, log) => sum + log.reps, 0) / group.kegelLogs.length
+      group.averageKegelHoldTime = group.kegelLogs.reduce((sum, log) => sum + log.holdTime, 0) / group.kegelLogs.length
+      group.averageKegelSets = group.kegelLogs.reduce((sum, log) => sum + log.sets, 0) / group.kegelLogs.length
+      group.averageKegelTotalTime =
+        group.kegelLogs.reduce((sum, log) => sum + log.totalTime, 0) / group.kegelLogs.length
+    }
   })
 
   return Object.values(monthlyGroups).sort((a, b) => (a.key > b.key ? -1 : 1))
 }
 
-const EntryRow = ({ entry, onDelete, onToggleDemo }) => {
-  // Existing code...
-
-  return (
-    <tr className={entry.isDemo ? "bg-yellow-50 dark:bg-yellow-900/20" : ""}>
-      {/* Existing columns... */}
-
-      <td className="px-4 py-2 text-sm">
-        <div className="flex items-center">
-          <input
-            type="checkbox"
-            checked={entry.isDemo || false}
-            onChange={() => onToggleDemo(entry.id)}
-            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-          />
-          <span className="ml-2">{entry.isDemo ? "Demo" : "Real"}</span>
-        </div>
-      </td>
-
-      <td className="px-4 py-2 text-sm">{/* Existing delete button... */}</td>
-    </tr>
-  )
-}
-
-function DataManagement(props: DataManagementProps) {
-  // Existing state...
-  const [showDemoEntries, setShowDemoEntries] = useState<boolean>(true)
+const DataManagement: React.FC<DataManagementProps> = ({ title2, hasDemoDataState }) => {
   const [uroLogs, setUroLogs] = useState<UroLog[]>([])
   const [hydroLogs, setHydroLogs] = useState<HydroLog[]>([])
   const [kegelLogs, setKegelLogs] = useState<KegelLog[]>([])
-  const [dynamicEntries, setDynamicEntries] = useState<DynamicEntry[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [monthlyGroups, setMonthlyGroups] = useState<MonthlyGroup[]>([])
   const [expandedMonths, setExpandedMonths] = useState<Record<string, boolean>>({})
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
   const [isGeneratingData, setIsGeneratingData] = useState(false)
+  const [hasDemoData, setHasDemoData] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [appConfig, setAppConfig] = useState<AppConfig>(DEFAULT_CONFIG)
-  const [entryTypes, setEntryTypes] = useState<string[]>([])
-  const [entryTypeCounts, setEntryTypeCounts] = useState<Record<string, number>>({})
-  const { toast } = useToast()
-
-  // Add these state variables inside the DataManagement component
-  const [nonDemoStats, setNonDemoStats] = useState<Record<string, number>>({})
-  const [demoStats, setDemoStats] = useState<Record<string, number>>({})
-  const [lastExportDate, setLastExportDate] = useState<string | null>(null)
-  const [notBackedUpCount, setNotBackedUpCount] = useState<number>(0)
-
-  // Fixed: Properly initialize monthlyStats state
-  const [monthlyStats, setMonthlyStats] = useState<{
-    [key: string]: Record<string, number>
-  }>({})
-
-  const [activeTab, setActiveTab] = useState<string>("tab1")
-  const { title2 } = props
-
-  // Add this function inside the DataManagement component
-  const calculateDataStats = () => {
-    console.log("Calculating stats for entries:", dynamicEntries.length)
-
-    // Count entries by type
-    const entryCounts: Record<string, number> = {}
-    const nonDemoCounts: Record<string, number> = {}
-    const demoCounts: Record<string, number> = {}
-
-    dynamicEntries.forEach((entry) => {
-      // Update total counts
-      entryCounts[entry.entryType] = (entryCounts[entry.entryType] || 0) + 1
-
-      // Update demo/non-demo counts
-      if (entry.isDemo) {
-        demoCounts[entry.entryType] = (demoCounts[entry.entryType] || 0) + 1
-      } else {
-        nonDemoCounts[entry.entryType] = (nonDemoCounts[nonDemoCounts.entryType] || 0) + 1
-      }
-    })
-
-    setEntryTypeCounts(entryCounts)
-    setNonDemoStats(nonDemoCounts)
-    setDemoStats(demoCounts)
-
-    // Get last export date from localStorage
-    const lastExport = localStorage.getItem("lastDataExport")
-    setLastExportDate(lastExport)
-
-    // Calculate records not backed up (assuming last export date as backup date)
-    let notBackedUp = 0
-    if (lastExport) {
-      const lastExportTime = new Date(lastExport).getTime()
-      notBackedUp = dynamicEntries.filter((entry) => new Date(entry.timestamp).getTime() > lastExportTime).length
-    } else {
-      notBackedUp = dynamicEntries.length
-    }
-    setNotBackedUpCount(notBackedUp)
-
-    // Calculate monthly stats
-    const monthly: { [key: string]: Record<string, number> } = {}
-
-    // Process each entry for monthly stats
-    dynamicEntries.forEach((entry) => {
-      const date = new Date(entry.timestamp)
-      const year = date.getFullYear()
-      const month = date.getMonth()
-      const key = `${year}-${month + 1}`
-
-      if (!monthly[key]) {
-        monthly[key] = {}
-      }
-
-      monthly[key][entry.entryType] = (monthly[key][entry.entryType] || 0) + 1
-    })
-
-    setMonthlyStats(monthly)
-    console.log("Monthly stats calculated:", monthly)
-  }
-
-  const handleToggleDemo = async (id: string) => {
-    try {
-      const isDemo = await toggleDemoStatus(activeTab, id)
-
-      // Update the entries in state
-      setDynamicEntries((prevEntries) => prevEntries.map((entry) => (entry.id === id ? { ...entry, isDemo } : entry)))
-
-      toast({
-        title: `Entry marked as ${isDemo ? "demo" : "real"}`,
-        description: `The entry has been updated.`,
-        variant: "default",
-      })
-    } catch (error) {
-      console.error("Error toggling demo status:", error)
-      toast({
-        title: "Error",
-        description: "Failed to update entry demo status.",
-        variant: "destructive",
-      })
-    }
-  }
 
   // Fetch data from the database
   useEffect(() => {
-    // Load app configuration
-    const config = loadConfig()
-    setAppConfig(config)
-
-    // Try to fetch real data
     const fetchData = async () => {
+      setIsLoading(true)
       try {
         const { getAllUroLogs, getAllHydroLogs, getAllKegelLogs } = await import("../services/db")
-
-        // Fetch all data from the database
         const uroLogsData = await getAllUroLogs()
         const hydroLogsData = await getAllHydroLogs()
         const kegelLogsData = await getAllKegelLogs()
 
-        console.log("Fetched data:", {
-          uroLogs: uroLogsData.length,
-          hydroLogs: hydroLogsData.length,
-          kegelLogs: kegelLogsData.length,
-        })
-
-        // Update state with fetched data
         setUroLogs(uroLogsData)
         setHydroLogs(hydroLogsData)
         setKegelLogs(kegelLogsData)
 
-        // Convert to dynamic entries
-        const entries = convertToEntries(uroLogsData, hydroLogsData, kegelLogsData, config)
-        setDynamicEntries(entries)
-
-        // Extract unique entry types
-        const types = Array.from(new Set(entries.map((entry) => entry.entryType)))
-        setEntryTypes(types)
-
-        // Group entries by month
-        const groups = groupEntriesByMonth(entries)
+        // Group logs by month
+        const groups = groupLogsByMonth(uroLogsData, hydroLogsData, kegelLogsData)
         setMonthlyGroups(groups)
 
         // Initialize expanded state for the first month
@@ -687,36 +345,20 @@ function DataManagement(props: DataManagementProps) {
           setExpandedMonths({ [groups[0].key]: true })
         }
 
-        // Calculate data statistics
-        setTimeout(() => {
-          calculateDataStats()
-          setIsLoading(false)
-        }, 0)
+        // Check if demo data exists
+        const { db } = await import("../services/db")
+        const uroLogs = await db.uroLogs.toArray()
+        const hydroLogs = await db.hydroLogs.toArray()
+        const hasDemo = uroLogs.some((log) => log.isDemo === true) || hydroLogs.some((log) => log.isDemo === true)
+        setHasDemoData(hasDemo)
       } catch (error) {
         console.error("Error fetching data:", error)
-
-        // Use mock data as fallback
-        const mockEntries = convertToEntries(mockUroLogs, mockHydroLogs, mockKegelLogs, config)
-        setDynamicEntries(mockEntries)
-
-        // Extract unique entry types
-        const types = Array.from(new Set(mockEntries.map((entry) => entry.entryType)))
-        setEntryTypes(types)
-
-        // Group entries by month
-        const groups = groupEntriesByMonth(mockEntries)
-        setMonthlyGroups(groups)
-
-        // Initialize expanded state for the first month
-        if (groups.length > 0) {
-          setExpandedMonths({ [groups[0].key]: true })
-        }
-
-        // Calculate data statistics
-        setTimeout(() => {
-          calculateDataStats()
-          setIsLoading(false)
-        }, 0)
+        setMessage({
+          type: "error",
+          text: "Failed to load data. Please try again.",
+        })
+      } finally {
+        setIsLoading(false)
       }
     }
 
@@ -738,42 +380,30 @@ function DataManagement(props: DataManagementProps) {
   }
 
   // Delete an entry
-  const deleteEntry = async (entryType: string, timestamp: string) => {
+  const deleteEntry = async (type: "uroLog" | "hydroLog" | "kegelLog", timestamp: string) => {
     if (!confirm("Are you sure you want to delete this entry?")) return
 
     try {
-      // Map entry type to legacy type for database operations
-      let deleteFunction
-      if (entryType === "UroLog") {
-        const { deleteUroLog } = await import("../services/db")
-        deleteFunction = deleteUroLog
-      } else if (entryType === "HydroLog") {
-        const { deleteHydroLog } = await import("../services/db")
-        deleteFunction = deleteHydroLog
-      } else if (entryType === "KegelLog") {
-        const { deleteKegelLog } = await import("../services/db")
-        deleteFunction = deleteKegelLog
-      } else {
-        // For custom entry types, we would need a different approach
-        throw new Error(`Deletion not implemented for entry type: ${entryType}`)
+      const { deleteUroLog, deleteHydroLog, deleteKegelLog } = await import("../services/db")
+
+      if (type === "uroLog") {
+        await deleteUroLog(timestamp)
+        setUroLogs((prev) => prev.filter((log) => log.timestamp !== timestamp))
+      } else if (type === "hydroLog") {
+        await deleteHydroLog(timestamp)
+        setHydroLogs((prev) => prev.filter((log) => log.timestamp !== timestamp))
+      } else if (type === "kegelLog") {
+        await deleteKegelLog(timestamp)
+        setKegelLogs((prev) => prev.filter((log) => log.timestamp !== timestamp))
       }
 
-      // Delete from database
-      await deleteFunction(timestamp)
-
-      // Update state
-      setDynamicEntries((prev) =>
-        prev.filter((entry) => !(entry.timestamp === timestamp && entry.entryType === entryType)),
-      )
-
       // Update monthly groups
-      const updatedGroups = groupEntriesByMonth(
-        dynamicEntries.filter((entry) => !(entry.timestamp === timestamp && entry.entryType === entryType)),
+      const updatedGroups = groupLogsByMonth(
+        type === "uroLog" ? uroLogs.filter((log) => log.timestamp !== timestamp) : uroLogs,
+        type === "hydroLog" ? hydroLogs.filter((log) => log.timestamp !== timestamp) : hydroLogs,
+        type === "kegelLog" ? kegelLogs.filter((log) => log.timestamp !== timestamp) : kegelLogs,
       )
       setMonthlyGroups(updatedGroups)
-
-      // Update statistics after deletion
-      calculateDataStats()
 
       setMessage({
         type: "success",
@@ -791,69 +421,70 @@ function DataManagement(props: DataManagementProps) {
     }
   }
 
-  // Export data as JSON with configuration
+  // Export data as CSV
   const exportData = () => {
     try {
-      // Get app configuration for display order and active status
-      const appConfig = localStorage.getItem("appConfig")
-      let displayOrder = {}
-      let activeStatus = {}
+      // Create CSV content
+      let csvContent = "Date,Time,Type,Volume (mL),Duration (s),Flow Rate (mL/s),Color,Urgency,Concerns,Notes\n"
 
-      if (appConfig) {
-        try {
-          const parsedConfig = JSON.parse(appConfig)
+      // Add UroLog entries
+      uroLogs.forEach((log) => {
+        const date = new Date(log.timestamp)
+        const dateStr = date.toLocaleDateString()
+        const timeStr = date.toLocaleTimeString()
+        const volume = log.volume
+        const duration = log.duration
+        const flowRate = log.flowRate
+        const color = log.color || ""
+        const urgency = log.urgency || ""
+        const concerns = log.concerns ? log.concerns.join(", ") : ""
+        const notes = log.notes || ""
 
-          // Extract display order
-          displayOrder = {
-            tabs: getTabDisplayOrder(parsedConfig),
-            sections: getSectionDisplayOrder(parsedConfig),
-            fields: getFieldDisplayOrder(parsedConfig),
-          }
+        csvContent += `${dateStr},${timeStr},UroLog,${volume},${duration},${flowRate},"${color}","${urgency}","${concerns}","${notes}"\n`
+      })
 
-          // Extract active status
-          activeStatus = {
-            tabs: getTabActiveStatus(parsedConfig),
-            sections: getSectionActiveStatus(parsedConfig),
-            fields: getFieldActiveStatus(parsedConfig),
-          }
-        } catch (error) {
-          console.error("Error parsing app configuration:", error)
-        }
-      }
+      // Add HydroLog entries
+      hydroLogs.forEach((log) => {
+        const date = new Date(log.timestamp)
+        const dateStr = date.toLocaleDateString()
+        const timeStr = date.toLocaleTimeString()
+        const type = log.type
+        const customType = log.customType || ""
+        const amount = log.amount
+        const unit = log.unit
+        const notes = log.notes || ""
+        const volumeInMl = unit === "oz" ? amount * 29.5735 : amount
 
-      // Create export object with configuration, entries, and metadata
-      const exportData = {
-        version: "3.0",
-        exportDate: new Date().toISOString(),
-        configuration: appConfig ? JSON.parse(appConfig) : {},
-        entries: dynamicEntries,
-        metadata: {
-          displayOrder,
-          activeStatus,
-        },
-      }
+        csvContent += `${dateStr},${timeStr},HydroLog,${volumeInMl},,,,,,"${type}${
+          customType ? ` (${customType})` : ""
+        } - ${amount} ${unit} - ${notes}"\n`
+      })
 
-      // Convert to JSON
-      const jsonContent = JSON.stringify(exportData, null, 2)
+      // Add KegelLog entries
+      kegelLogs.forEach((log) => {
+        const date = new Date(log.timestamp)
+        const dateStr = date.toLocaleDateString()
+        const timeStr = date.toLocaleTimeString()
+        const reps = log.reps
+        const holdTime = log.holdTime
+        const sets = log.sets
+        const totalTime = log.totalTime
+        const completed = log.completed ? "Yes" : "No"
+        const notes = log.notes || ""
+
+        csvContent += `${dateStr},${timeStr},KegelLog,,${totalTime},,,,,"Reps: ${reps}, Hold: ${holdTime}s, Sets: ${sets}, Completed: ${completed} - ${notes}"\n`
+      })
 
       // Create a blob and download link
-      const blob = new Blob([jsonContent], { type: "application/json;charset=utf-8;" })
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
       const url = URL.createObjectURL(blob)
       const link = document.createElement("a")
       link.setAttribute("href", url)
-      link.setAttribute("download", `flow-tracker-export-${new Date().toISOString().split("T")[0]}.json`)
+      link.setAttribute("download", `flow-tracker-export-${new Date().toISOString().split("T")[0]}.csv`)
       link.style.visibility = "hidden"
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
-
-      // Save the export date to localStorage
-      const now = new Date().toISOString()
-      localStorage.setItem("lastDataExport", now)
-      setLastExportDate(now)
-
-      // Update not backed up count
-      setNotBackedUpCount(0)
 
       setMessage({
         type: "success",
@@ -871,128 +502,7 @@ function DataManagement(props: DataManagementProps) {
     }
   }
 
-  // Helper functions to extract display order and active status
-  function getTabDisplayOrder(config: any) {
-    const tabOrder = {}
-
-    if (config.pages) {
-      Object.entries(config.pages).forEach(([pageId, page]) => {
-        if (page.sections) {
-          Object.entries(page.sections).forEach(([sectionId, section]) => {
-            if (section.tabs) {
-              Object.entries(section.tabs).forEach(([tabId, tab]) => {
-                tabOrder[`${pageId}.${sectionId}.${tabId}`] = tab.order
-              })
-            }
-          })
-        }
-      })
-    }
-
-    return tabOrder
-  }
-
-  function getSectionDisplayOrder(config: any) {
-    const sectionOrder = {}
-
-    if (config.pages) {
-      Object.entries(config.pages).forEach(([pageId, page]) => {
-        if (page.sections) {
-          Object.entries(page.sections).forEach(([sectionId, section]) => {
-            sectionOrder[`${pageId}.${sectionId}`] = section.order
-          })
-        }
-      })
-    }
-
-    return sectionOrder
-  }
-
-  function getFieldDisplayOrder(config: any) {
-    const fieldOrder = {}
-
-    if (config.pages) {
-      Object.entries(config.pages).forEach(([pageId, page]) => {
-        if (page.sections) {
-          Object.entries(page.sections).forEach(([sectionId, section]) => {
-            if (section.tabs) {
-              Object.entries(section.tabs).forEach(([tabId, tab]) => {
-                if (tab.fields) {
-                  Object.entries(tab.fields).forEach(([fieldId, field]) => {
-                    fieldOrder[`${pageId}.${sectionId}.${tabId}.${fieldId}`] = field.order
-                  })
-                }
-              })
-            }
-          })
-        }
-      })
-    }
-
-    return fieldOrder
-  }
-
-  function getTabActiveStatus(config: any) {
-    const tabStatus = {}
-
-    if (config.pages) {
-      Object.entries(config.pages).forEach(([pageId, page]) => {
-        if (page.sections) {
-          Object.entries(page.sections).forEach(([sectionId, section]) => {
-            if (section.tabs) {
-              Object.entries(section.tabs).forEach(([tabId, tab]) => {
-                tabStatus[`${pageId}.${sectionId}.${tabId}`] = tab.enabled
-              })
-            }
-          })
-        }
-      })
-    }
-
-    return tabStatus
-  }
-
-  function getSectionActiveStatus(config: any) {
-    const sectionStatus = {}
-
-    if (config.pages) {
-      Object.entries(config.pages).forEach(([pageId, page]) => {
-        if (page.sections) {
-          Object.entries(page.sections).forEach(([sectionId, section]) => {
-            sectionStatus[`${pageId}.${sectionId}`] = section.enabled
-          })
-        }
-      })
-    }
-
-    return sectionStatus
-  }
-
-  function getFieldActiveStatus(config: any) {
-    const fieldStatus = {}
-
-    if (config.pages) {
-      Object.entries(config.pages).forEach(([pageId, page]) => {
-        if (page.sections) {
-          Object.entries(page.sections).forEach(([sectionId, section]) => {
-            if (section.tabs) {
-              Object.entries(section.tabs).forEach(([tabId, tab]) => {
-                if (tab.fields) {
-                  Object.entries(tab.fields).forEach(([fieldId, field]) => {
-                    fieldStatus[`${pageId}.${sectionId}.${tabId}.${fieldId}`] = field.enabled
-                  })
-                }
-              })
-            }
-          })
-        }
-      })
-    }
-
-    return fieldStatus
-  }
-
-  // Update the import functionality to handle display order and active status
+  // Import data from CSV
   const importData = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
@@ -1001,219 +511,140 @@ function DataManagement(props: DataManagementProps) {
     reader.onload = async (e) => {
       try {
         const content = e.target?.result as string
-        const importData = JSON.parse(content)
+        const lines = content.split("\n")
 
-        // Validate import format
-        if (!importData.entries || !Array.isArray(importData.entries)) {
-          throw new Error("Invalid import format: missing entries array")
-        }
+        // Skip header row
+        const dataRows = lines.slice(1).filter((line) => line.trim() !== "")
 
-        // Extract entries
-        const importedEntries = importData.entries as DynamicEntry[]
+        const newUroLogs: UroLog[] = []
+        const newHydroLogs: HydroLog[] = []
+        const newKegelLogs: KegelLog[] = []
 
-        // Extract configuration if available
-        const importedConfig = importData.configuration as AppConfig | undefined
+        // Process each row
+        for (const row of dataRows) {
+          const columns = row.split(",")
 
-        // Extract metadata if available
-        const metadata = importData.metadata
+          // Basic validation
+          if (columns.length < 4) continue
 
-        // Merge imported configuration with current configuration
-        if (importedConfig) {
-          // Create a merged configuration that preserves existing settings
-          // but adds any new entry types from the import
-          const mergedConfig = { ...appConfig }
+          const dateStr = columns[0]
+          const timeStr = columns[1]
+          const type = columns[2]
+          const date = new Date(`${dateStr} ${timeStr}`)
+          const timestamp = date.toISOString()
 
-          // Merge page1 section1 tabs (entry types)
-          if (importedConfig.pages?.page1?.sections?.section1?.tabs) {
-            const importedTabs = importedConfig.pages.page1.sections.section1.tabs
+          // Check if entry already exists
+          const existingUroLog = uroLogs.find((log) => log.timestamp === timestamp)
+          const existingHydroLog = hydroLogs.find((log) => log.timestamp === timestamp)
+          const existingKegelLog = kegelLogs.find((log) => log.timestamp === timestamp)
 
-            // Add any new tabs from the import
-            Object.entries(importedTabs).forEach(([tabId, tabConfig]) => {
-              if (!mergedConfig.pages.page1.sections.section1.tabs[tabId]) {
-                mergedConfig.pages.page1.sections.section1.tabs[tabId] = tabConfig
-              }
+          if (existingUroLog || existingHydroLog || existingKegelLog) {
+            console.log(`Skipping duplicate entry at ${timestamp}`)
+            continue
+          }
+
+          if (type === "UroLog") {
+            const volume = Number.parseFloat(columns[3])
+            const duration = Number.parseFloat(columns[4])
+            const flowRate = Number.parseFloat(columns[5])
+            const color = columns[6].replace(/"/g, "")
+            const urgency = columns[7].replace(/"/g, "")
+            const concerns = columns[8]
+              .replace(/"/g, "")
+              .split(", ")
+              .filter((c) => c)
+            const notes = columns[9].replace(/"/g, "")
+
+            newUroLogs.push({
+              timestamp,
+              volume,
+              duration,
+              flowRate,
+              color: color || undefined,
+              urgency: urgency || undefined,
+              concerns: concerns.length > 0 ? concerns : undefined,
+              notes: notes || undefined,
             })
-          }
+          } else if (type === "HydroLog") {
+            // Parse the notes field to extract type, amount, and unit
+            const notesField = columns[9].replace(/"/g, "")
+            const typeMatch = notesField.match(/^(.+?)(?:\s+$$(.+?)$$)?\s+-\s+(\d+\.?\d*)\s+(mL|oz)/)
 
-          // Save the merged configuration
-          saveConfig(mergedConfig)
-          setAppConfig(mergedConfig)
-        }
+            if (typeMatch) {
+              const fluidType = typeMatch[1].trim()
+              const customType = typeMatch[2] ? typeMatch[2].trim() : undefined
+              const amount = Number.parseFloat(typeMatch[3])
+              const unit = typeMatch[4] as "mL" | "oz"
+              const notes = notesField.split(" - ").slice(2).join(" - ").trim()
 
-        // Apply display order and active status if available
-        if (metadata && (metadata.displayOrder || metadata.activeStatus)) {
-          try {
-            // Get current app config
-            const currentConfig = { ...appConfig }
-            let configUpdated = false
-
-            // Update tab display order and active status
-            if (metadata.displayOrder?.tabs && metadata.activeStatus?.tabs) {
-              Object.entries(metadata.displayOrder.tabs).forEach(([path, order]) => {
-                const [pageId, sectionId, tabId] = path.split(".")
-                if (currentConfig.pages?.[pageId]?.sections?.[sectionId]?.tabs?.[tabId]) {
-                  currentConfig.pages[pageId].sections[sectionId].tabs[tabId].order = order as number
-                  configUpdated = true
-                }
-              })
-
-              Object.entries(metadata.activeStatus.tabs).forEach(([path, enabled]) => {
-                const [pageId, sectionId, tabId] = path.split(".")
-                if (currentConfig.pages?.[pageId]?.sections?.[sectionId]?.tabs?.[tabId]) {
-                  currentConfig.pages[pageId].sections[sectionId].tabs[tabId].enabled = enabled as boolean
-                  configUpdated = true
-                }
+              newHydroLogs.push({
+                timestamp,
+                type: fluidType as any,
+                customType,
+                amount,
+                unit,
+                notes: notes || undefined,
               })
             }
+          } else if (type === "KegelLog") {
+            // Parse the notes field to extract reps, hold time, sets, and completed
+            const notesField = columns[9].replace(/"/g, "")
+            const kegelMatch = notesField.match(
+              /Reps:\s+(\d+),\s+Hold:\s+(\d+)s,\s+Sets:\s+(\d+),\s+Completed:\s+(Yes|No)/,
+            )
 
-            // Update section display order and active status
-            if (metadata.displayOrder?.sections && metadata.activeStatus?.sections) {
-              Object.entries(metadata.displayOrder.sections).forEach(([path, order]) => {
-                const [pageId, sectionId] = path.split(".")
-                if (currentConfig.pages?.[pageId]?.sections?.[sectionId]) {
-                  currentConfig.pages[pageId].sections[sectionId].order = order as number
-                  configUpdated = true
-                }
-              })
+            if (kegelMatch) {
+              const reps = Number.parseInt(kegelMatch[1])
+              const holdTime = Number.parseInt(kegelMatch[2])
+              const sets = Number.parseInt(kegelMatch[3])
+              const completed = kegelMatch[4] === "Yes"
+              const totalTime = Number.parseInt(columns[4])
+              const notes = notesField.split(" - ").slice(1).join(" - ").trim()
 
-              Object.entries(metadata.activeStatus.sections).forEach(([path, enabled]) => {
-                const [pageId, sectionId] = path.split(".")
-                if (currentConfig.pages?.[pageId]?.sections?.[sectionId]) {
-                  currentConfig.pages[pageId].sections[sectionId].enabled = enabled as boolean
-                  configUpdated = true
-                }
-              })
-            }
-
-            // Update field display order and active status
-            if (metadata.displayOrder?.fields && metadata.activeStatus?.fields) {
-              Object.entries(metadata.displayOrder.fields).forEach(([path, order]) => {
-                const [pageId, sectionId, tabId, fieldId] = path.split(".")
-                if (currentConfig.pages?.[pageId]?.sections?.[sectionId]?.tabs?.[tabId]?.fields?.[fieldId]) {
-                  currentConfig.pages[pageId].sections[sectionId].tabs[tabId].fields[fieldId].order = order as number
-                  configUpdated = true
-                }
-              })
-
-              Object.entries(metadata.activeStatus.fields).forEach(([path, enabled]) => {
-                const [pageId, sectionId, tabId, fieldId] = path.split(".")
-                if (currentConfig.pages?.[pageId]?.sections?.[sectionId]?.tabs?.[tabId]?.fields?.[fieldId]) {
-                  currentConfig.pages[pageId].sections[sectionId].tabs[tabId].fields[fieldId].enabled =
-                    enabled as boolean
-                  configUpdated = true
-                }
+              newKegelLogs.push({
+                timestamp,
+                reps,
+                holdTime,
+                sets,
+                totalTime,
+                completed,
+                notes: notes || undefined,
               })
             }
-
-            // Save updated config if changes were made
-            if (configUpdated) {
-              saveConfig(currentConfig)
-              setAppConfig(currentConfig)
-              console.log("Display order and active status imported successfully")
-            }
-          } catch (error) {
-            console.error("Error importing display order and active status:", error)
           }
         }
-
-        // Check for duplicates
-        const existingTimestamps = new Set(dynamicEntries.map((entry) => `${entry.entryType}_${entry.timestamp}`))
-        const newEntries: DynamicEntry[] = []
-        const skippedEntries: DynamicEntry[] = []
-
-        importedEntries.forEach((entry) => {
-          const entryKey = `${entry.entryType}_${entry.timestamp}`
-          if (!existingTimestamps.has(entryKey)) {
-            newEntries.push(entry)
-            existingTimestamps.add(entryKey)
-          } else {
-            skippedEntries.push(entry)
-          }
-        })
 
         // Add new entries to the database
-        if (newEntries.length > 0) {
-          // Group entries by type
-          const entriesByType: Record<string, any[]> = {}
+        const { bulkAddUroLogs, bulkAddHydroLogs, bulkAddKegelLogs } = await import("../services/db")
 
-          newEntries.forEach((entry) => {
-            if (!entriesByType[entry.entryType]) {
-              entriesByType[entry.entryType] = []
-            }
-
-            // Convert dynamic entry back to legacy format for database
-            if (entry.entryType === "UroLog") {
-              entriesByType[entry.entryType].push({
-                timestamp: entry.timestamp,
-                volume: entry.fields.volume,
-                duration: entry.fields.duration,
-                flowRate: entry.fields.flowRate,
-                color: entry.fields.color,
-                urgency: entry.fields.urgency,
-                concerns: entry.fields.concerns,
-                notes: entry.fields.notes,
-                isDemo: entry.isDemo,
-              })
-            } else if (entry.entryType === "HydroLog") {
-              entriesByType[entry.entryType].push({
-                timestamp: entry.timestamp,
-                type: entry.fields.type,
-                customType: entry.fields.customType,
-                amount: entry.fields.amount,
-                unit: entry.fields.unit,
-                notes: entry.fields.notes,
-                isDemo: entry.isDemo,
-              })
-            } else if (entry.entryType === "KegelLog") {
-              entriesByType[entry.entryType].push({
-                timestamp: entry.timestamp,
-                reps: entry.fields.reps,
-                holdTime: entry.fields.holdTime,
-                sets: entry.fields.sets,
-                totalTime: entry.fields.totalTime,
-                completed: entry.fields.completed,
-                notes: entry.fields.notes,
-                isDemo: entry.isDemo,
-              })
-            }
-            // For custom entry types, we would need to handle them differently
-          })
-
-          // Add entries to database by type
-          const { bulkAddUroLogs, bulkAddHydroLogs, bulkAddKegelLogs } = await import("../services/db")
-
-          if (entriesByType["UroLog"] && entriesByType["UroLog"].length > 0) {
-            await bulkAddUroLogs(entriesByType["UroLog"])
-          }
-
-          if (entriesByType["HydroLog"] && entriesByType["HydroLog"].length > 0) {
-            await bulkAddHydroLogs(entriesByType["HydroLog"])
-          }
-
-          if (entriesByType["KegelLog"] && entriesByType["KegelLog"].length > 0) {
-            await bulkAddKegelLogs(entriesByType["KegelLog"])
-          }
-
-          // Update state
-          setDynamicEntries((prev) => [...prev, ...newEntries])
-
-          // Extract unique entry types
-          const allEntries = [...dynamicEntries, ...newEntries]
-          const types = Array.from(new Set(allEntries.map((entry) => entry.entryType)))
-          setEntryTypes(types)
-
-          // Update monthly groups
-          const updatedGroups = groupEntriesByMonth(allEntries)
-          setMonthlyGroups(updatedGroups)
-
-          // Update statistics
-          calculateDataStats()
+        if (newUroLogs.length > 0) {
+          await bulkAddUroLogs(newUroLogs)
         }
 
-        // Show success message
+        if (newHydroLogs.length > 0) {
+          await bulkAddHydroLogs(newHydroLogs)
+        }
+
+        if (newKegelLogs.length > 0) {
+          await bulkAddKegelLogs(newKegelLogs)
+        }
+
+        // Update state
+        setUroLogs((prev) => [...prev, ...newUroLogs])
+        setHydroLogs((prev) => [...prev, ...newHydroLogs])
+        setKegelLogs((prev) => [...prev, ...newKegelLogs])
+
+        // Update monthly groups
+        const updatedGroups = groupLogsByMonth(
+          [...uroLogs, ...newUroLogs],
+          [...hydroLogs, ...newHydroLogs],
+          [...kegelLogs, ...newKegelLogs],
+        )
+        setMonthlyGroups(updatedGroups)
+
         setMessage({
           type: "success",
-          text: `Import successful. Added ${newEntries.length} entries. Skipped ${skippedEntries.length} duplicates.`,
+          text: `Imported ${newUroLogs.length} UroLogs, ${newHydroLogs.length} HydroLogs, and ${newKegelLogs.length} KegelLogs.`,
         })
 
         // Clear message after 5 seconds
@@ -1222,7 +653,7 @@ function DataManagement(props: DataManagementProps) {
         console.error("Error importing data:", error)
         setMessage({
           type: "error",
-          text: `Failed to import data: ${error instanceof Error ? error.message : "Unknown error"}`,
+          text: "Failed to import data. Please check the file format and try again.",
         })
       }
     }
@@ -1236,36 +667,36 @@ function DataManagement(props: DataManagementProps) {
 
   // Generate demo data
   const handleGenerateDemoData = async () => {
-    if (!confirm("This will generate demo data for testing. Continue?")) return
+    if (!confirm("This will generate demo data for testing. Continue?")) {
+      return
+    }
 
     setIsGeneratingData(true)
     try {
-      // Generate demo data
-      const demoData = generateDemoData()
+      const result = generateDemoData()
 
-      // Update state with demo data
-      setUroLogs((prev) => [...prev, ...demoData.uroLogs])
-      setHydroLogs((prev) => [...prev, ...demoData.hydroLogs])
-      setKegelLogs((prev) => [...prev, ...demoData.kegelLogs])
-
-      // Convert to dynamic entries and update state
-      const newEntries = convertToEntries(demoData.uroLogs, demoData.hydroLogs, demoData.kegelLogs, appConfig)
-      setDynamicEntries((prev) => [...prev, ...newEntries])
+      // Update the state with the new demo data
+      setUroLogs((prev) => [...prev, ...result.uroLogs])
+      setHydroLogs((prev) => [...prev, ...result.hydroLogs])
+      setKegelLogs((prev) => [...prev, ...result.kegelLogs])
 
       // Update monthly groups
-      const updatedGroups = groupEntriesByMonth([...dynamicEntries, ...newEntries])
+      const updatedGroups = groupLogsByMonth(
+        [...uroLogs, ...result.uroLogs],
+        [...hydroLogs, ...result.hydroLogs],
+        [...kegelLogs, ...result.kegelLogs],
+      )
       setMonthlyGroups(updatedGroups)
 
-      // Update statistics
-      calculateDataStats()
+      setHasDemoData(true)
 
       setMessage({
         type: "success",
-        text: `Generated ${demoData.uroLogs.length + demoData.hydroLogs.length + demoData.kegelLogs.length} demo entries.`,
+        text: "Demo data generated successfully.",
       })
 
-      // Clear message after 5 seconds
-      setTimeout(() => setMessage(null), 5000)
+      // Clear message after 3 seconds
+      setTimeout(() => setMessage(null), 3000)
     } catch (error) {
       console.error("Error generating demo data:", error)
       setMessage({
@@ -1277,34 +708,37 @@ function DataManagement(props: DataManagementProps) {
     }
   }
 
-  // Delete all demo data
+  // Delete demo data
   const handleDeleteDemoData = async () => {
-    if (!confirm("This will delete all demo data. This action cannot be undone. Continue?")) return
+    if (!confirm("Are you sure you want to delete all demo data?")) {
+      return
+    }
 
     try {
-      // Delete demo data from database
       await deleteDemoData()
 
-      // Update state by filtering out demo entries
-      setDynamicEntries((prev) => prev.filter((entry) => !entry.isDemo))
+      // Update the state by filtering out demo data
       setUroLogs((prev) => prev.filter((log) => !log.isDemo))
       setHydroLogs((prev) => prev.filter((log) => !log.isDemo))
       setKegelLogs((prev) => prev.filter((log) => !log.isDemo))
 
       // Update monthly groups
-      const updatedGroups = groupEntriesByMonth(dynamicEntries.filter((entry) => !entry.isDemo))
+      const updatedGroups = groupLogsByMonth(
+        uroLogs.filter((log) => !log.isDemo),
+        hydroLogs.filter((log) => !log.isDemo),
+        kegelLogs.filter((log) => !log.isDemo),
+      )
       setMonthlyGroups(updatedGroups)
 
-      // Update statistics
-      calculateDataStats()
+      setHasDemoData(false)
 
       setMessage({
         type: "success",
-        text: "All demo data deleted successfully.",
+        text: "Demo data deleted successfully.",
       })
 
-      // Clear message after 5 seconds
-      setTimeout(() => setMessage(null), 5000)
+      // Clear message after 3 seconds
+      setTimeout(() => setMessage(null), 3000)
     } catch (error) {
       console.error("Error deleting demo data:", error)
       setMessage({
@@ -1314,279 +748,347 @@ function DataManagement(props: DataManagementProps) {
     }
   }
 
-  // Toggle showing demo entries
-  const handleToggleShowDemoEntries = () => {
-    setShowDemoEntries((prev) => !prev)
+  // Share data
+  const shareData = async () => {
+    if (!isShareAvailable()) {
+      alert("Sharing is not available on this device. Data will be copied to clipboard instead.")
+    }
+
+    try {
+      // Create a summary of the data
+      const summary = `Flow Tracker Data Summary
+      
+Total UroLogs: ${uroLogs.length}
+Total HydroLogs: ${hydroLogs.length}
+Total KegelLogs: ${kegelLogs.length}
+
+Average Flow Rate: ${
+        uroLogs.length > 0 ? (uroLogs.reduce((sum, log) => sum + log.flowRate, 0) / uroLogs.length).toFixed(2) : "N/A"
+      } mL/s
+Average Volume: ${
+        uroLogs.length > 0 ? (uroLogs.reduce((sum, log) => sum + log.volume, 0) / uroLogs.length).toFixed(2) : "N/A"
+      } mL
+Average Duration: ${
+        uroLogs.length > 0 ? (uroLogs.reduce((sum, log) => sum + log.duration, 0) / uroLogs.length).toFixed(2) : "N/A"
+      } seconds
+
+Data from ${new Date(Math.min(...uroLogs.map((log) => new Date(log.timestamp).getTime()))).toLocaleDateString()} to ${new Date().toLocaleDateString()}
+`
+
+      // Share the data
+      await safeShare({
+        title: "Flow Tracker Data Summary",
+        text: summary,
+      })
+
+      setMessage({
+        type: "success",
+        text: "Data shared successfully.",
+      })
+
+      // Clear message after 3 seconds
+      setTimeout(() => setMessage(null), 3000)
+    } catch (error) {
+      console.error("Error sharing data:", error)
+      setMessage({
+        type: "error",
+        text: "Failed to share data. Please try again.",
+      })
+    }
   }
 
-  // Render the component
+  // Render loading state
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <RefreshCw className="animate-spin h-8 w-8 text-blue-500 mr-2" />
+        <p>Loading data...</p>
+      </div>
+    )
+  }
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">{title2 || "Data Management"}</h1>
+    <div className="space-y-6">
+      {title2 && <div>{title2}</div>}
 
-      {/* Message display */}
-      {message && (
-        <div
-          className={`mb-4 p-4 rounded ${
-            message.type === "success" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-          }`}
-        >
-          {message.text}
-        </div>
-      )}
-
-      {/* Data statistics */}
-      <div className="mb-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total entries */}
-        <div className="bg-white dark:bg-gray-800 p-4 rounded shadow">
-          <h3 className="text-lg font-semibold mb-2">Total Entries</h3>
-          <p className="text-3xl font-bold">{dynamicEntries.length}</p>
-          <div className="mt-2 text-sm">
-            {Object.entries(entryTypeCounts).map(([type, count]) => (
-              <div key={type} className="flex justify-between">
-                <span>{type}:</span>
-                <span>{count}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Demo vs. Real */}
-        <div className="bg-white dark:bg-gray-800 p-4 rounded shadow">
-          <h3 className="text-lg font-semibold mb-2">Demo vs. Real</h3>
-          <div className="flex justify-between">
-            <div>
-              <p className="text-sm">Demo Entries</p>
-              <p className="text-2xl font-bold">{dynamicEntries.filter((entry) => entry.isDemo).length}</p>
-            </div>
-            <div>
-              <p className="text-sm">Real Entries</p>
-              <p className="text-2xl font-bold">{dynamicEntries.filter((entry) => !entry.isDemo).length}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Backup status */}
-        <div className="bg-white dark:bg-gray-800 p-4 rounded shadow">
-          <h3 className="text-lg font-semibold mb-2">Backup Status</h3>
-          <p className="text-sm">Last Export</p>
-          <p className="text-lg font-bold">{lastExportDate ? new Date(lastExportDate).toLocaleString() : "Never"}</p>
-          <p className="text-sm mt-2">
-            {notBackedUpCount} {notBackedUpCount === 1 ? "entry" : "entries"} not backed up
-          </p>
-        </div>
-
-        {/* Monthly breakdown */}
-        <div className="bg-white dark:bg-gray-800 p-4 rounded shadow">
-          <h3 className="text-lg font-semibold mb-2">Monthly Breakdown</h3>
-          <div className="text-sm max-h-32 overflow-y-auto">
-            {Object.entries(monthlyStats)
-              .sort(([a], [b]) => (a > b ? -1 : 1))
-              .slice(0, 5)
-              .map(([month, counts]) => {
-                const [year, monthNum] = month.split("-")
-                const monthName = new Date(Number.parseInt(year), Number.parseInt(monthNum) - 1, 1).toLocaleString(
-                  "default",
-                  {
-                    month: "short",
-                  },
-                )
-                const total = Object.values(counts).reduce((sum, count) => sum + count, 0)
-
-                return (
-                  <div key={month} className="flex justify-between">
-                    <span>
-                      {monthName} {year}:
-                    </span>
-                    <span>{total}</span>
-                  </div>
-                )
-              })}
-          </div>
-        </div>
+      {/* Demo Data Buttons */}
+      <div className="flex flex-wrap gap-3 mb-4">
+        {!hasDemoData ? (
+          <button
+            onClick={handleGenerateDemoData}
+            disabled={isGeneratingData}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isGeneratingData ? (
+              <RefreshCw size={18} className="mr-2 animate-spin" />
+            ) : (
+              <Plus size={18} className="mr-2" />
+            )}
+            Add Demo Data
+          </button>
+        ) : (
+          <button
+            onClick={handleDeleteDemoData}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center"
+          >
+            <Trash2 size={18} className="mr-2" />
+            Remove Demo Data
+          </button>
+        )}
       </div>
 
       {/* Action buttons */}
-      <div className="mb-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Export data */}
-        <button onClick={exportData} className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded">
-          Export Data
-        </button>
-
-        {/* Import data */}
-        <div className="relative">
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded w-full"
-          >
-            Import Data
-          </button>
-          <input type="file" ref={fileInputRef} onChange={importData} accept=".json" className="hidden" />
-        </div>
-
-        {/* Generate demo data */}
+      <div className="flex flex-wrap gap-3">
         <button
-          onClick={handleGenerateDemoData}
-          disabled={isGeneratingData}
-          className="bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded disabled:opacity-50"
+          onClick={exportData}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
         >
-          {isGeneratingData ? "Generating..." : "Generate Demo Data"}
+          <Download size={18} className="mr-2" />
+          Export Data (CSV)
         </button>
 
-        {/* Delete demo data */}
-        <button onClick={handleDeleteDemoData} className="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded">
-          Delete Demo Data
-        </button>
-      </div>
-
-      {/* Toggle demo entries */}
-      <div className="mb-4 flex items-center">
-        <input
-          type="checkbox"
-          id="showDemoEntries"
-          checked={showDemoEntries}
-          onChange={handleToggleShowDemoEntries}
-          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-        />
-        <label htmlFor="showDemoEntries" className="ml-2 text-sm">
-          Show demo entries
+        <label className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center cursor-pointer">
+          <Upload size={18} className="mr-2" />
+          Import Data (CSV)
+          <input type="file" accept=".csv" onChange={importData} className="hidden" ref={fileInputRef} />
         </label>
+
+        <button
+          onClick={shareData}
+          className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center"
+        >
+          <Share2 size={18} className="mr-2" />
+          Share Summary
+        </button>
       </div>
 
-      {/* Monthly groups */}
-      {isLoading ? (
-        <div className="text-center py-8">Loading data...</div>
-      ) : monthlyGroups.length === 0 ? (
-        <div className="text-center py-8">No data available. Try generating demo data or importing data.</div>
-      ) : (
-        <div className="space-y-6">
-          {monthlyGroups.map((group) => (
-            <div key={group.key} className="border rounded-lg overflow-hidden">
-              {/* Month header */}
+      {/* Status message */}
+      {message && (
+        <div
+          className={`p-4 rounded-lg flex items-center ${
+            message.type === "success"
+              ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200"
+              : "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200"
+          }`}
+        >
+          {message.type === "success" ? (
+            <Check size={20} className="mr-2 flex-shrink-0" />
+          ) : (
+            <AlertTriangle size={20} className="mr-2 flex-shrink-0" />
+          )}
+          <span>{message.text}</span>
+        </div>
+      )}
+
+      {/* Data summary */}
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+        <h3 className="text-lg font-semibold mb-3">Data Summary</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+            <h4 className="font-medium flex items-center">
+              <Database size={16} className="mr-2 text-blue-500" />
+              UroLogs
+            </h4>
+            <p className="text-2xl font-bold">{uroLogs.length}</p>
+          </div>
+          <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+            <h4 className="font-medium flex items-center">
+              <Database size={16} className="mr-2 text-green-500" />
+              HydroLogs
+            </h4>
+            <p className="text-2xl font-bold">{hydroLogs.length}</p>
+          </div>
+          <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+            <h4 className="font-medium flex items-center">
+              <Database size={16} className="mr-2 text-purple-500" />
+              KegelLogs
+            </h4>
+            <p className="text-2xl font-bold">{kegelLogs.length}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Auto-backup settings */}
+      <AutoBackupSettings triggerBackup={exportData} />
+
+      {/* Monthly data */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold">Monthly Data</h3>
+
+        {monthlyGroups.length === 0 ? (
+          <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg text-center">
+            <p>No data available. Start tracking to see your data here.</p>
+          </div>
+        ) : (
+          monthlyGroups.map((group) => (
+            <div
+              key={group.key}
+              className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
+            >
               <div
-                className="bg-gray-100 dark:bg-gray-700 p-4 cursor-pointer flex justify-between items-center"
+                className="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
                 onClick={() => toggleMonth(group.key)}
               >
-                <h3 className="text-lg font-semibold">{group.label}</h3>
+                <h4 className="font-medium">{group.label}</h4>
                 <div className="flex items-center">
-                  <span className="mr-4">
-                    {Object.values(group.entries).reduce((sum, entries) => sum + entries.length, 0)} entries
+                  <span className="text-sm text-gray-500 dark:text-gray-400 mr-4">
+                    {group.uroLogs.length} UroLogs, {group.hydroLogs.length} HydroLogs, {group.kegelLogs.length}{" "}
+                    KegelLogs
                   </span>
                   <svg
-                    className={`w-5 h-5 transform ${expandedMonths[group.key] ? "rotate-180" : ""}`}
+                    className={`h-5 w-5 transform transition-transform ${
+                      expandedMonths[group.key] ? "rotate-180" : ""
+                    }`}
                     fill="none"
-                    stroke="currentColor"
                     viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
+                    stroke="currentColor"
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </div>
               </div>
 
-              {/* Month content */}
               {expandedMonths[group.key] && (
-                <div className="p-4">
-                  {/* Entry type tabs */}
-                  <div className="mb-4 border-b">
-                    <div className="flex overflow-x-auto">
-                      {Object.entries(group.entries).map(([entryType, entries]) => (
-                        <button
-                          key={entryType}
-                          className={`px-4 py-2 whitespace-nowrap ${
-                            activeTab === entryType
-                              ? "border-b-2 border-blue-500 text-blue-600"
-                              : "text-gray-600 dark:text-gray-300"
-                          }`}
-                          onClick={() => setActiveTab(entryType)}
-                        >
-                          {entryType} ({entries.length})
-                        </button>
-                      ))}
+                <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+                  {/* Month summary */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                      <h5 className="text-sm font-medium text-gray-500 dark:text-gray-400">Avg Flow Rate</h5>
+                      <p className="text-xl font-bold">
+                        {group.averageFlowRate > 0 ? group.averageFlowRate.toFixed(2) : "N/A"} mL/s
+                      </p>
+                    </div>
+                    <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                      <h5 className="text-sm font-medium text-gray-500 dark:text-gray-400">Avg Volume</h5>
+                      <p className="text-xl font-bold">
+                        {group.averageVolume > 0 ? group.averageVolume.toFixed(0) : "N/A"} mL
+                      </p>
+                    </div>
+                    <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                      <h5 className="text-sm font-medium text-gray-500 dark:text-gray-400">Avg Duration</h5>
+                      <p className="text-xl font-bold">
+                        {group.averageDuration > 0 ? group.averageDuration.toFixed(1) : "N/A"} sec
+                      </p>
+                    </div>
+                    <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                      <h5 className="text-sm font-medium text-gray-500 dark:text-gray-400">Avg Fluid Intake</h5>
+                      <p className="text-xl font-bold">
+                        {group.averageFluidIntake > 0 ? group.averageFluidIntake.toFixed(0) : "N/A"} mL
+                      </p>
                     </div>
                   </div>
 
-                  {/* Entry type content */}
-                  {Object.entries(group.entries).map(
-                    ([entryType, entries]) =>
-                      activeTab === entryType && (
-                        <div key={entryType} className="overflow-x-auto">
-                          <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50 dark:bg-gray-800">
-                              <tr>
-                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                  Date & Time
-                                </th>
-                                {entries.length > 0 &&
-                                  Object.keys(entries[0].fields).map((fieldName) => (
-                                    <th
-                                      key={fieldName}
-                                      className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                                    >
-                                      {fieldName}
-                                    </th>
-                                  ))}
-                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                  Demo
-                                </th>
-                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                  Actions
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                              {entries
-                                .filter((entry) => showDemoEntries || !entry.isDemo)
-                                .map((entry) => (
-                                  <tr
-                                    key={entry.timestamp}
-                                    className={entry.isDemo ? "bg-yellow-50 dark:bg-yellow-900/20" : ""}
-                                  >
-                                    <td className="px-4 py-2 whitespace-nowrap text-sm">
-                                      {formatDate(entry.timestamp)}
-                                    </td>
-                                    {Object.entries(entry.fields).map(([fieldName, value]) => (
-                                      <td key={fieldName} className="px-4 py-2 whitespace-nowrap text-sm">
-                                        {Array.isArray(value)
-                                          ? value.join(", ")
-                                          : typeof value === "boolean"
-                                            ? value
-                                              ? "Yes"
-                                              : "No"
-                                            : String(value)}
-                                      </td>
-                                    ))}
-                                    <td className="px-4 py-2 whitespace-nowrap text-sm">
-                                      <div className="flex items-center">
-                                        <input
-                                          type="checkbox"
-                                          checked={entry.isDemo || false}
-                                          onChange={() => handleToggleDemo(entry.timestamp)}
-                                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                        />
-                                      </div>
-                                    </td>
-                                    <td className="px-4 py-2 whitespace-nowrap text-sm">
-                                      <button
-                                        onClick={() => deleteEntry(entry.entryType, entry.timestamp)}
-                                        className="text-red-600 hover:text-red-900"
-                                      >
-                                        Delete
-                                      </button>
-                                    </td>
-                                  </tr>
-                                ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      ),
-                  )}
+                  {/* Tabs for UroLogs, HydroLogs, and KegelLogs */}
+                  <div className="mb-4">
+                    <div className="flex border-b">
+                      <button
+                        className="px-4 py-2 border-b-2 border-blue-500 text-blue-600 dark:text-blue-400"
+                        onClick={() => {}}
+                      >
+                        UroLogs ({group.uroLogs.length})
+                      </button>
+                      <button
+                        className="px-4 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                        onClick={() => {}}
+                      >
+                        HydroLogs ({group.hydroLogs.length})
+                      </button>
+                      <button
+                        className="px-4 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                        onClick={() => {}}
+                      >
+                        KegelLogs ({group.kegelLogs.length})
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* UroLogs table */}
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                      <thead className="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                          <th
+                            scope="col"
+                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                          >
+                            Date & Time
+                          </th>
+                          <th
+                            scope="col"
+                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                          >
+                            Volume (mL)
+                          </th>
+                          <th
+                            scope="col"
+                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                          >
+                            Duration (s)
+                          </th>
+                          <th
+                            scope="col"
+                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                          >
+                            Flow Rate (mL/s)
+                          </th>
+                          <th
+                            scope="col"
+                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                          >
+                            Color
+                          </th>
+                          <th
+                            scope="col"
+                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                          >
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        {group.uroLogs.slice(0, 5).map((log) => (
+                          <tr key={log.timestamp}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                              {formatDate(log.timestamp)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                              {log.volume}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                              {log.duration.toFixed(1)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                              {log.flowRate.toFixed(2)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                              {log.color || "N/A"}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                              <button
+                                onClick={() => deleteEntry("uroLog", log.timestamp)}
+                                className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                        {group.uroLogs.length > 5 && (
+                          <tr>
+                            <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-300">
+                              {group.uroLogs.length - 5} more entries...
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
             </div>
-          ))}
-        </div>
-      )}
+          ))
+        )}
+      </div>
     </div>
   )
 }

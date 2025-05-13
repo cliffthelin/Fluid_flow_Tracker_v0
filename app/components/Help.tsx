@@ -17,7 +17,6 @@ import {
   BookOpenCheck,
   ShoppingBag,
   Github,
-  Activity,
 } from "lucide-react"
 import CollapsibleSection from "./CollapsibleSection"
 import { useBuilderLog } from "../hooks/useBuilderLog"
@@ -33,8 +32,6 @@ import { DatabaseReset } from "./DatabaseReset"
 import { ValidateAll } from "./ValidateAll"
 import { ApplicationLog } from "./ApplicationLog"
 import { getDatabaseCounts } from "../services/db"
-// Add this import at the top
-import TrackerHelp from "./TrackerHelp"
 
 const Help: React.FC = () => {
   const { logEntries } = useBuilderLog()
@@ -439,16 +436,6 @@ const Help: React.FC = () => {
             </p>
           </div>
         </div>
-      </CollapsibleSection>
-
-      {/* Add this section to the Help component, right before the Manual section */}
-      <CollapsibleSection
-        title="Custom Trackers"
-        defaultExpanded={false}
-        title2={<Activity className="mr-2 text-purple-500" size={20} />}
-        className="mb-6 bg-purple-50 dark:bg-purple-900/10 rounded-xl shadow-md border border-purple-100 dark:border-purple-800/30 overflow-hidden transition-all duration-200"
-      >
-        <TrackerHelp />
       </CollapsibleSection>
 
       {/* Manual Section */}
